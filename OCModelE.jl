@@ -64,7 +64,7 @@
 
 using Parameters,LinearAlgebra,BasisMatrices,SparseArrays,Arpack,Roots, 
       KrylovKit,QuantEcon, PrettyTables,StatsBase,ForwardDiff,Dierckx,
-      Plots,NPZ,NLsolve,Printf
+      Plots,NPZ,NLsolve,Printf,DataFrames
 
 """
 Parameters of the Occupation Choice Model (Lucas Version)
@@ -177,6 +177,10 @@ Parameters of the Occupation Choice Model (Lucas Version)
     bf::NamedTuple = (c=Vector{Spline1D}(), a=Vector{Spline1D}(), v=Vector{Spline1D}(),
                       k=Vector{Spline1D}(), n=Vector{Spline1D}(), y=Vector{Spline1D}(), π=Vector{Spline1D}())
     egi::Vector{Spline1D}=Vector{Spline1D}(undef,Nθ)
+    ab_col_cutoff::Dict{Vector{Float64},Float64} = Dict{Vector{Float64},Float64}() #Stores the points at which the borrowing constraint binds
+    ab_bor_cutoff::Dict{Vector{Float64},Float64} = Dict{Vector{Float64},Float64}() #Stores the points at which the borrowing constraint binds
+    aw_bor_cutoff::Dict{Vector{Float64},Float64} = Dict{Vector{Float64},Float64}() #Stores the points at which the borrowing constraint binds
+
 
 end
 
@@ -806,11 +810,12 @@ function check!(OCM::OCModel)
 end
 
 
-function assign!(OCM::OCModel,r::Float64,tr::Float64)
+function assign!(OCM::OCModel,r::Float64,tr::Float64, τb::Float64)
 
     setup!(OCM)
     OCM.r  = r
     OCM.tr = tr
+    OCM.τb = τb
 
     @unpack τp,τd,τb,τc,τw,δ,Θ̄,α,b,γ,g = OCM
 
@@ -820,6 +825,7 @@ function assign!(OCM::OCModel,r::Float64,tr::Float64)
 
     setup_egi!(OCM)
     solve_eg!(OCM)
+    updatecutoffs!(OCM)
     cdst,adst,vdst,ybdst,kbdst,nbdst,nwdst = dist!(OCM)
 
     Nb     = dot(OCM.ω,nbdst)
@@ -840,4 +846,111 @@ function assign!(OCM::OCModel,r::Float64,tr::Float64)
     res    = [dot(OCM.ω,tem)-b,g+(OCM.r-γ)*b+OCM.tr-OCM.tx]
     @printf("  Asset market  %10.3e, Govt budget   %10.3e\n",res[1],res[2])
 
+end
+
+
+function updatecutoffs!(OCM::OCModel)
+
+    @unpack alθ,Ia,Nθ,lθ, χ,agrid,  a̲, Na,Ia, ab_col_cutoff,ab_bor_cutoff, aw_bor_cutoff, bf,wf = OCM
+    
+    # where do constraints bind?
+    ah  = agrid #grids are all the same for all shocks
+    ah=alθ[1:Ia,1]
+    kb     = hcat([bf.k[s](ah) for s in 1:Nθ]...)
+
+    # for each shock, find the borrowing constraint
+    for s in 1:Nθ
+        indices = findall(kb[:,s] .≈ ah*χ)
+        ab_col_cutoff[lθ[s,:]] = maximum(indices)==1 ?   -Inf : ah[maximum(indices)]
+    end
+
+
+
+    # borrowing constraint for owners
+    a′ =hcat([bf.a[s](ah) for s in 1:Nθ]...)
+    # for each shock, find the borrowing constraint
+    for s in 1:Nθ
+        indices = findall(a′[:,s] .> 0)
+        ab_bor_cutoff[lθ[s,:]] = minimum(indices)==1 ?   -Inf : ah[minimum(indices)-1]
+    end
+
+    # borrowing constraint for workers
+    a′ =hcat([wf.a[s](ah) for s in 1:Nθ]...)
+    # for each shock, find the borrowing constraint
+    for s in 1:Nθ
+        indices = findall(a′[:,s] .> 0)
+        aw_bor_cutoff[lθ[s,:]] = minimum(indices)==1 ?   -Inf : ah[minimum(indices)-1]
+    end
+
+end
+
+
+ """
+    save_policy_functions!(OCM::OCModel)
+
+Saves the policy functions in the OCModel object
+"""
+
+function get_policy_functions(OCM::OCModel)
+    @unpack bf,wf,curv_a,Na,amax,a̲,curv_h,Ia,r,σ=OCM
+    #save the policy functions a,n,k,λ,v
+    af(lθ,a,c) = c==1 ? wf.a[[lθ].==eachrow(OCM.lθ)][1](a) : bf.a[[lθ].==eachrow(OCM.lθ)][1](a)
+    nf(lθ,a,c) = c==1 ? -exp.(lθ[2]) : bf.n[[lθ].==eachrow(OCM.lθ)][1](a)
+    kf(lθ,a,c) = c==1 ? 0 : bf.k[[lθ].==eachrow(OCM.lθ)][1](a)
+    yf(lθ,a,c) = c==1 ? 0 : bf.y[[lθ].==eachrow(OCM.lθ)][1](a)
+    nbf(lθ,a,c) = c==1 ? 0 : bf.n[[lθ].==eachrow(OCM.lθ)][1](a)
+    cf(lθ,a,c) = c==1 ? wf.c[[lθ].==eachrow(OCM.lθ)][1](a) : bf.c[[lθ].==eachrow(OCM.lθ)][1](a)
+    λf(lθ,a,c) = (1+r)*cf(lθ,a,c).^(-σ)
+    vf(lθ,a,c) = c==1 ? wf.v[[lθ].==eachrow(OCM.lθ)][1](a) : bf.v[[lθ].==eachrow(OCM.lθ)][1](a)
+    πf(lθ,a,c) = c==1 ? 0 : bf.π[[lθ].==eachrow(OCM.lθ)][1](a)
+    Ibf(lθ,a,c) = c==1 ? 0 : 1
+
+   
+    return [af,nf,kf,yf,nbf,πf,Ibf,λf,vf] #return xf
+end
+
+
+function get_grids(OCM)
+    @unpack bf,wf,curv_a,Na,amax,a̲,curv_h,Ia,πθ,lθ=OCM
+    xvec = LinRange(0,1,Na-1).^curv_a  #The Na -1 to adjust for the quadratic splines
+    âgrid = a̲ .+ (amax - a̲).*xvec #nonlinear grid for knot points
+    xvec = LinRange(0,1,Ia).^curv_h 
+    āgrid = a̲ .+ (amax - a̲).*xvec #nonlinear grids for distribution
+    aknots = [âgrid]
+    a_sp = nodes(SplineParams(aknots[1],0,OCM.so)) #construct gridpoints from knots
+    a_Ω = āgrid
+    nθ,nsp,nΩ = size(πθ,1),length(a_sp),length(a_Ω)
+    aθ_sp = hcat(kron(ones(nθ),a_sp),kron(lθ,ones(nsp)))
+    aθc_sp = [aθ_sp ones(size(aθ_sp,1));aθ_sp 2*ones(size(aθ_sp,1))]
+    aθ_Ω = hcat(kron(ones(nθ),a_Ω),kron(lθ,ones(nΩ)))
+    aθc_Ω = [aθ_Ω ones(size(aθ_Ω,1));aθ_Ω 2*ones(size(aθ_Ω,1))]
+
+    #next get kinks
+    ℵ = Int[]
+    #for s in 1:nθ
+    #    if OCM.a_cutoff[θ[s]] > -Inf
+    #        push!(ℵ,findlast(a_sp .< OCM.a_cutoff[θ[s]])+(s-1)*nsp)
+    #    end
+    #end 
+    mask = OCM.ω .> 1e-10
+    println("Maximum assets: $(maximum(aθc_Ω[mask,1]))")
+
+    return aknots,OCM.so,aθc_sp,aθc_Ω,ℵ
+end
+
+
+
+function getX(OCM::OCModel)
+   @unpack r,tr,w,b = OCM 
+   cdst,adst,vdst,_,_,_,_ = dist!(OCM)
+
+   R=r+1 # gross interest rate
+   W=w # wage rate
+   T=tr # transfer
+   Frac_b =sum(reshape(OCM.ω,:,2),dims=1)[2] # fraction of borrowing agents
+   V = dot(OCM.ω,vdst) #average utility
+   A = dot(OCM.ω,adst) # average assets
+   C      = dot(OCM.ω,cdst) # average consumption
+   X̄ = [R,W,T,Frac_b,V,A,C]
+   return X̄ 
 end

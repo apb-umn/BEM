@@ -68,174 +68,9 @@ include("FirstOrderApproximation.jl")
 
 
 
-# old ss
-OCM_=OCModel()
-τb_val=0.2
-r_val=0.0416708746736356
-tr_val=0.6270852509001674
-assign!(OCM_,r_val,tr_val,τb_val)
 
-
-# new ss
-OCM=OCModel()
-τb_val=0.25
-r_val=0.04180897741139521
-tr_val=0.6536626966299931
-assign!(OCM,r_val,tr_val,τb_val)
-
-
-
-ab_col_cutoff::Dict{Vector{Float64},Float64} = Dict{Vector{Float64},Float64}() #Stores the points at which the borrowing constraint binds
-ab_bor_cutoff::Dict{Vector{Float64},Float64} = Dict{Vector{Float64},Float64}() #Stores the points at which the borrowing constraint binds
-aw_bor_cutoff::Dict{Vector{Float64},Float64} = Dict{Vector{Float64},Float64}() #Stores the points at which the borrowing constraint binds
-
-
-# where do constraints bind?
-bf=OCM.bf
-wf=OCM.wf
-@unpack alθ,Ia,Nθ,lθ, χ,agrid,  a̲, Na,Ia = OCM
-ah  = agrid #grids are all the same for all shocks
-ah=alθ[1:Ia,1]
-kb     = hcat([bf.k[s](ah) for s in 1:Nθ]...)
-
-# for each shock, find the borrowing constraint
-for s in 1:Nθ
-    indices = findall(kb[:,s] .≈ ah*χ)
-    ab_col_cutoff[lθ[s,:]] = maximum(indices)==1 ?   -Inf : ah[maximum(indices)]
-end
-
-
-
-# borrowing constraint for owners
-a′ =hcat([bf.a[s](ah) for s in 1:Nθ]...)
-# for each shock, find the borrowing constraint
-for s in 1:Nθ
-    indices = findall(a′[:,s] .> 0)
-    ab_bor_cutoff[lθ[s,:]] = minimum(indices)==1 ?   -Inf : ah[minimum(indices)-1]
-end
-
-# borrowing constraint for workers
-a′ =hcat([wf.a[s](ah) for s in 1:Nθ]...)
-# for each shock, find the borrowing constraint
-for s in 1:Nθ
-    indices = findall(a′[:,s] .> 0)
-    aw_bor_cutoff[lθ[s,:]] = minimum(indices)==1 ?   -Inf : ah[minimum(indices)-1]
-end
-
-
-
-
- """
-    save_policy_functions!(OCM::OCModel)
-
-Saves the policy functions in the OCModel object
-"""
-
-function get_policy_functions(OCM::OCModel)
-    @unpack bf,wf,curv_a,Na,amax,a̲,curv_h,Ia,r,σ=OCM
-    #save the policy functions a,n,k,λ,v
-    af(lθ,a,c) = c==1 ? wf.a[[lθ].==eachrow(OCM.lθ)][1](a) : bf.a[[lθ].==eachrow(OCM.lθ)][1](a)
-    nf(lθ,a,c) = c==1 ? -exp.(lθ[2]) : bf.n[[lθ].==eachrow(OCM.lθ)][1](a)
-    kf(lθ,a,c) = c==1 ? 0 : bf.k[[lθ].==eachrow(OCM.lθ)][1](a)
-    yf(lθ,a,c) = c==1 ? 0 : bf.y[[lθ].==eachrow(OCM.lθ)][1](a)
-    nbf(lθ,a,c) = c==1 ? 0 : bf.n[[lθ].==eachrow(OCM.lθ)][1](a)
-    cf(lθ,a,c) = c==1 ? wf.c[[lθ].==eachrow(OCM.lθ)][1](a) : bf.c[[lθ].==eachrow(OCM.lθ)][1](a)
-    λf(lθ,a,c) = (1+r)*cf(lθ,a,c).^(-σ)
-    vf(lθ,a,c) = c==1 ? wf.v[[lθ].==eachrow(OCM.lθ)][1](a) : bf.v[[lθ].==eachrow(OCM.lθ)][1](a)
-    πf(lθ,a,c) = c==1 ? 0 : bf.π[[lθ].==eachrow(OCM.lθ)][1](a)
-    Ibf(lθ,a,c) = c==1 ? 0 : 1
-
-   
-    return [af,nf,kf,yf,nbf,πf,Ibf,λf,vf] #return xf
-end
-xf=get_policy_functions(OCM)
-
-
-function get_grids(OCM)
-    @unpack bf,wf,curv_a,Na,amax,a̲,curv_h,Ia,πθ,lθ=OCM
-    xvec = LinRange(0,1,Na-1).^curv_a  #The Na -1 to adjust for the quadratic splines
-    âgrid = a̲ .+ (amax - a̲).*xvec #nonlinear grid for knot points
-    xvec = LinRange(0,1,Ia).^curv_h 
-    āgrid = a̲ .+ (amax - a̲).*xvec #nonlinear grids for distribution
-    aknots = [âgrid]
-    a_sp = nodes(SplineParams(aknots[1],0,OCM.so)) #construct gridpoints from knots
-    a_Ω = āgrid
-    nθ,nsp,nΩ = size(πθ,1),length(a_sp),length(a_Ω)
-    aθ_sp = hcat(kron(ones(nθ),a_sp),kron(lθ,ones(nsp)))
-    aθc_sp = [aθ_sp ones(size(aθ_sp,1));aθ_sp 2*ones(size(aθ_sp,1))]
-    aθ_Ω = hcat(kron(ones(nθ),a_Ω),kron(lθ,ones(nΩ)))
-    aθc_Ω = [aθ_Ω ones(size(aθ_Ω,1));aθ_Ω 2*ones(size(aθ_Ω,1))]
-
-    #next get kinks
-    ℵ = Int[]
-    #for s in 1:nθ
-    #    if OCM.a_cutoff[θ[s]] > -Inf
-    #        push!(ℵ,findlast(a_sp .< OCM.a_cutoff[θ[s]])+(s-1)*nsp)
-    #    end
-    #end 
-    mask = OCM.ω .> 1e-10
-    println("Maximum assets: $(maximum(aθc_Ω[mask,1]))")
-
-    return aknots,OCM.so,aθc_sp,aθc_Ω,ℵ
-end
-
-aknots,ka,aθc_sp,aθc_Ω,ℵ = get_grids(OCM)
-
-
-function getX(OCM::OCModel)
-   @unpack r,tr,w,b = OCM 
-   cdst,adst,vdst,_,_,_,_ = dist!(OCM)
-
-   R=r+1 # gross interest rate
-   W=w # wage rate
-   T=tr # transfer
-   Frac_b =sum(reshape(OCM.ω,:,2),dims=1)[2] # fraction of borrowing agents
-   V = dot(OCM.ω,vdst) #average utility
-   A = dot(OCM.ω,adst) # average assets
-   C      = dot(OCM.ω,cdst) # average consumption
-   X̄ = [R,W,T,Frac_b,V,A,C]
-   return X̄ 
-end
-
-#= 
-using Plots
-using LaTeXStrings
-s=11
-# Define the cutoff values
-cut_bor = ab_bor_cutoff[s]
-cut_col = ab_col_cutoff[s]
-sel=ah.<max(cut_bor,cut_col)*1.1
-
-# First plot: Borrowing constraint
-p1 = plot(ah[sel], a′[sel, s],
-    label = L"savings",
-    ylabel = L"$a'$",
-    title = "Borrowing Constraint",
-    legend = :topleft)
-
-# Add vertical line at cutoff
-vline!(p1, [cut_bor], label = "borrowing Cutoff", color = :red, linestyle = :dash)
-
-vline!(p1, [cut_col], label = "Collateral Cutoff", color = :blue, linestyle = :dash)
-# Second plot: Collateral constraint
-p2 = plot!(ah[sel], kb[sel, s],
-    label = L"capital",
-    xlabel = L"$a$",
-    ylabel = L"$k$",
-    title = "Collateral Constraint",
-    legend = :topleft)
-
-# Add vertical line at cutoff
-vline!(p2, [cut_col], label = "collateral Cutoff", color = :blue, linestyle = :dash)
-vline!(p2, [cut_bor], label = "borrowing Cutoff", color = :red, linestyle = :dash)
-
-# Combine side by side
-plot(p1, p2, layout = (1, 2), size = (900, 400))
-
-
- =#
 function Fw(OCM::OCModel,lθ,a_,x,X,yᵉ)
-    @unpack β,σ,a̲,τc,τw,γ = OCM
+    @unpack aw_bor_cutoff,β,σ,a̲,τc,τw,γ = OCM
     a_ = a_[1]
     #unpack variables 
     a,n,k,yb,nb,profit,b,λ,v  = x
@@ -264,7 +99,7 @@ end
 
 
 function Fb(OCM::OCModel,lθ,a_,x,X,yᵉ)
-    @unpack β,σ,α_b,ν,χ,a̲,δ,τb,τc,τw,γ,α_b = OCM
+    @unpack ab_bor_cutoff,ab_col_cutoff,β,σ,α_b,ν,χ,a̲,δ,τb,τc,τw,γ,α_b = OCM
     a_ = a_[1] #deal with vector if needed
     #unpack variables
     a,n,k,yb,nb,profit,b,λ,v  = x
@@ -356,8 +191,8 @@ end
 
 function ff(para::OCModel,x⁻,x⁺) #do the discrete choice part
     @unpack σ_ε = para
-    _,_,_,_,_,λ⁻,v⁻  = x⁻
-    _,_,_,_,_,λ⁺,v⁺  = x⁺
+    _,_,_,_,_,_,_,λ⁻,v⁻  = x⁻
+    _,_,_,_,_,_,_,λ⁺,v⁺  = x⁺
 
     p = 1/(1+exp((v⁺-v⁻)/σ_ε))
     if p<1e-9
@@ -404,7 +239,34 @@ end
 
 
 
-# construct the derivatives
+# old ss
+OCM_=OCModel()
+τb_val=0.2
+r_val=0.0416708746736356
+tr_val=0.6270852509001674
+assign!(OCM_,r_val,tr_val,τb_val)
+
+# get the initial distribution for the old steady state
+X̄_ = getX(OCM_)
+A_0 = X̄_[6]
+ω̄_0_base = sum(reshape(OCM_.ω,:,2),dims=2) #get distribution over a and θ
+
+
+# # new ss
+# OCM=OCModel()
+# τb_val=0.25
+# r_val=0.04180897741139521
+# tr_val=0.6536626966299931
+# assign!(OCM,r_val,tr_val,τb_val)
+
+# new ss
+OCM=OCModel()
+τb_val=0.40
+r_val=0.04213185316804985
+tr_val=0.7230089457411855
+assign!(OCM,r_val,tr_val,τb_val)
+
+# construct the derivatives at the new steady state
 inputs = construct_inputs(OCM)
 ZO =ZerothOrderApproximation(inputs)
 computeDerivativesF!(ZO,inputs)
@@ -417,13 +279,6 @@ compute_Lemma4!(FO)
 compute_Corollary2!(FO)
 compute_Proposition1!(FO)
 compute_BB!(FO)
-
-
-# get the initial distribution for the old steady state
-X̄_ = getX(OCM_)
-A_0 = X̄_[6]
-ω̄_0_base = sum(reshape(OCM_.ω,:,2),dims=2) #get distribution over a and θ
-
 
 ω̄ = reshape(OCM.ω,:,2)
 p̄ = ω̄./sum(ω̄,dims=2)
@@ -442,10 +297,9 @@ solve_Xt!(FO)
 Xpath = [X̄_ ZO.X̄.+FO.X̂t]
 
 
-using DataFrames
 df = DataFrame(Xpath',inputs.Xlab)
 df.t = 0:FO.T 
 
 default(linewidth=2)
-#p1 = plot(df.t, df.A, ylabel="Capital", label="")
+p1 = plot(df.t, df.A, ylabel="Capital", label="")
 p2 = plot(df.t, df.Frac_b, ylabel="Fraction Self Employed", label="")
