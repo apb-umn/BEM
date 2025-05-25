@@ -60,7 +60,7 @@
 #
 
 #   Ellen McGrattan, 5/9/2025
-#   Revised, ERM, 5/23/2025
+#   Revised, ERM, 5/25/2025
 
 using Parameters,LinearAlgebra,BasisMatrices,SparseArrays,Arpack,Roots, 
       KrylovKit,QuantEcon, PrettyTables,StatsBase,ForwardDiff,Dierckx,
@@ -73,9 +73,9 @@ Parameters of the Occupation Choice Model (Lucas Version)
 
     #Preferences
     σ::Float64   = 1.5                  #Risk Aversion
-    βo::Float64  = 0.988*(1.02)                #Discount Factor (original)
+    βo::Float64  = 1.00776              #Discount Factor (original)
     γ::Float64   = 0.02                 #Economy growth rate
-    β::Float64   = 0.988/(1+ γ)           #Discount Factor (with growth) 
+    β::Float64   = 0.99978311           #Discount Factor (with growth) 
     σ_ε::Float64 = 0.05                 #St.Dev. of taste shock ε
 
     #Corporate parameters
@@ -176,6 +176,7 @@ Parameters of the Occupation Choice Model (Lucas Version)
     wf::NamedTuple = (c=Vector{Spline1D}(), a=Vector{Spline1D}(), v=Vector{Spline1D}())
     bf::NamedTuple = (c=Vector{Spline1D}(), a=Vector{Spline1D}(), v=Vector{Spline1D}(),
                       k=Vector{Spline1D}(), n=Vector{Spline1D}(), y=Vector{Spline1D}(), π=Vector{Spline1D}())
+    egi::Vector{Spline1D}=Vector{Spline1D}(undef,Nθ)
 
 end
 
@@ -204,7 +205,6 @@ function setup!(OCM::OCModel)
         πθw = mc.p
         θwgrid = exp.(mc.state_values)
     end
-
     
     #Productivity shocks of entrepreneurs
     if bm_θb==0
@@ -252,7 +252,7 @@ function setup!(OCM::OCModel)
     OCM.tx  = 0.12728259420181093   
 
     #Ensure discount factor is updated properly
-    OCM.β   = β = βo*(1+γ)^(1-σ)/(1+γ)
+    OCM.β   = β = βo*(1+γ)^(-σ)
 
     #Guess for unknown coefficients
     c_guess = (1-β)*agrid .+ w
@@ -296,6 +296,7 @@ function policyw(OCM::OCModel)
     #Compute value function derivative
     EVₐ′ = reshape(EΦ_aeg*Vcoefs,:,Nθ) 
     EVₐ′ = max.(EVₐ′,1e-6)
+
     #Compute consumption today implied by Euler equation
     cEE = (β.*EVₐ′).^(-1/σ) #consumption today
 
@@ -332,7 +333,7 @@ function policyw(OCM::OCModel)
             if Implieda[p[1],s] > a̲ #borrowing constraint binds
                 #Add extra points on the borrowing constraint for interpolation
                 â = [a̲;Implieda[p,s]]
-                ĉ = [((1+r)*a̲-(1+γ)*a̲+w̄*θw[s]+tr)/(1+τc);cEE[p,s]]
+                ĉ = [((1+r)*a̲-(1+γ)a̲+w̄*θw[s]+tr)/(1+τc);cEE[p,s]]
                 cf[s] = Spline1D(â,ĉ,k=1)
                 af[s] = Spline1D(â,[a̲;agrid[p]],k=1)
             else
@@ -367,7 +368,6 @@ function policyb(OCM::OCModel)
     nf  = Vector{Spline1D}(undef,Nθ)
     yf  = Vector{Spline1D}(undef,Nθ)
     πf  = Vector{Spline1D}(undef,Nθ)
-    egi = Vector{Spline1D}(undef,Nθ)
 
     #Compute firms profit (ignoring constraints)
     nbyk = ν*(r+δ)/(α_b*w) 
@@ -379,7 +379,6 @@ function policyb(OCM::OCModel)
     EVₐ′ = max.(EVₐ′,1e-6)
 
     #Compute consumption today implied by Euler equation
-
     cEE = (β.*EVₐ′).^(-1/σ) 
 
     #Compute asset today implied by savings and consumtion
@@ -392,21 +391,11 @@ function policyb(OCM::OCModel)
     n   = nbyk.*k
 
     #Compute the argument for EGM Inverse 
-    numk = 30
-    numa = 10
     argEGMinv = (1+γ).*agrid .+  (1+τc).*cEE .- tr
     for s in 1:Nθ
         ic   = χ.*Implieda[:,s] .< kvec[s] 
         if sum(ic) > 0
-            ahold    = LinRange(-10.,kvec[s]/χ,numa) 
-            khold    = max.(ahold.*χ,0)
-            nhold    = (w./(ν.*θb[s].*khold.^α_b)).^(1/(ν-1))
-            yhold    = θb[s].*khold.^α_b.*nhold.^ν
-            πbhold   = yhold - w.*nhold - (r+δ).*khold
-            aret     = (1+r).*ahold .+ (1 .- τb).*πbhold
-            egi[s]   = Spline1D(aret,ahold,k=1,bc="extrapolate")
-
-            Implieda[ic,s] = egi[s](argEGMinv[ic,s])
+            Implieda[ic,s] = OCM.egi[s](argEGMinv[ic,s])
             k[ic,s]  = max.(χ.*Implieda[ic,s],0)
             n[ic,s]  = (w./(ν.*θb[s].*k[ic,s].^α_b)).^(1/(ν-1))
             y[ic,s]  = θb[s].*k[ic,s].^α_b.*n[ic,s].^ν
@@ -415,6 +404,7 @@ function policyb(OCM::OCModel)
     end
 
     #Update where borrowing constraint binding and interpolate
+    numa = 10
     for s in 1:Nθ
         min_a=minimum(Implieda[:,s])
         if min_a > a̲ 
@@ -467,6 +457,38 @@ function policyb(OCM::OCModel)
     end
     return cf,af,kf,nf,yf,πf
 end
+
+"""
+egi[s] = setup_egi!(OCM)
+
+Computes the spline inverse in the EG algorithm
+Inputs: parameters (OCM)
+Outputs: eg inverse for each shock s
+"""
+function setup_egi!(OCM::OCModel)
+
+    @unpack Nθ,lθ,α_b,ν,χ,r,w,δ,τb = OCM
+
+    #Compute unconstrained capital
+    lθb  = lθ[:,1]
+    θb   = exp.(lθb)
+    nbyk = ν*(r+δ)/(α_b*w) 
+    kvec = @. (w/(ν*θb*nbyk^(ν-1)))^(1/(α_b+ν-1))
+
+    #Compute EG inverse spline
+    numk = 10
+    for s in 1:Nθ
+        ahold    = LinRange(-10.,kvec[s]/χ,numk) 
+        khold    = max.(ahold.*χ,0)
+        nhold    = (w./(ν.*θb[s].*khold.^α_b)).^(1/(ν-1))
+        yhold    = θb[s].*khold.^α_b.*nhold.^ν
+        πbhold   = yhold - w.*nhold - (r+δ).*khold
+        aret     = (1+r).*ahold .+ (1 .- τb).*πbhold
+        OCM.egi[s] = Spline1D(aret,ahold,k=1,bc="extrapolate")
+    end
+end 
+
+
 
 """
 V,wf,bf = solve_eg!(OCM)
@@ -610,6 +632,7 @@ function solvess!(OCM::OCModel)
         K2Nc   = ((rc+δ)/(Θ̄*α))^(1/(α-1))
         OCM.w  = w = (1-α)*Θ̄*K2Nc^α
 
+        setup_egi!(OCM)
         solve_eg!(OCM)
         cdst,adst,vdst,ybdst,kbdst,nbdst,nwdst = dist!(OCM)
         tem    = adst-((1-τd)*K2Nc) .* (nwdst-nbdst)-kbdst
@@ -630,6 +653,7 @@ function solvess!(OCM::OCModel)
         K2Nc   = ((rc+δ)/(Θ̄*α))^(1/(α-1))
         OCM.w  = w = (1-α)*Θ̄*K2Nc^α
 
+        setup_egi!(OCM)
         solve_eg!(OCM)
         cdst,adst,vdst,ybdst,kbdst,nbdst,nwdst = dist!(OCM)
 
@@ -713,7 +737,7 @@ function solvess!(OCM::OCModel)
                     w*Nb,OCM.r*Kb,δ*Kb,Yb-(OCM.r+δ)*Kb-w*Nb,Yb,Kb]
         den   = hcat((Yc+Yb) .*ones(1,21),
                       Yc .* ones(1,5),Yb .* ones(1,6))
-        shr   = (lev ./ den) .* 100.0
+        shr   = (lev[:] ./ den[:]) .* 100.0
     end
     return ss,lev,shr
 end
@@ -744,6 +768,7 @@ function check!(OCM::OCModel)
         K2Nc   = ((rc+δ)/(Θ̄*α))^(1/(α-1))
         OCM.w  = w = (1-α)*Θ̄*K2Nc^α
 
+        setup_egi!(OCM)
         solve_eg!(OCM)
         cdst,adst,vdst,ybdst,kbdst,nbdst,nwdst = dist!(OCM)
 
@@ -780,17 +805,23 @@ function check!(OCM::OCModel)
     return chk1,chk2
 end
 
-function assign!(OCM::OCModel,r::Float64,tr::Float64,τb::Float64)
+
+function assign!(OCM::OCModel,r::Float64,tr::Float64)
+
     setup!(OCM)
-    OCM.r=r
-    OCM.tr=tr
-    OCM.τb=τb
-    @unpack r,τp,τd,τb,τc,τw,δ,Θ̄,α,b,γ,g = OCM
+    OCM.r  = r
+    OCM.tr = tr
+
+    @unpack τp,τd,τb,τc,τw,δ,Θ̄,α,b,γ,g = OCM
+
     rc     = r/(1-τp)
     K2Nc   = ((rc+δ)/(Θ̄*α))^(1/(α-1))
     OCM.w  = w = (1-α)*Θ̄*K2Nc^α
+
+    setup_egi!(OCM)
     solve_eg!(OCM)
     cdst,adst,vdst,ybdst,kbdst,nbdst,nwdst = dist!(OCM)
+
     Nb     = dot(OCM.ω,nbdst)
     Nc     = dot(OCM.ω,nwdst)-Nb
     Kc     = K2Nc*Nc
@@ -804,7 +835,9 @@ function assign!(OCM::OCModel,r::Float64,tr::Float64,τb::Float64)
     Tn     = τw*w*(Nc+Nb)
     Tb     = τb*(Yb-(r+δ)*Kb-w*Nb)
     OCM.tx = Tc+Tp+Td+Tn+Tb
+
     tem    = adst-((1-τd)*K2Nc) .* (nwdst-nbdst)-kbdst
     res    = [dot(OCM.ω,tem)-b,g+(OCM.r-γ)*b+OCM.tr-OCM.tx]
-       @printf("  Asset market  %10.3e, Govt budget   %10.3e\n",res[1],res[2])
+    @printf("  Asset market  %10.3e, Govt budget   %10.3e\n",res[1],res[2])
+
 end
