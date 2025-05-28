@@ -244,7 +244,9 @@ OCM_=OCModel()
 τb_val=0.2
 r_val=0.0416708746736356
 tr_val=0.6270852509001674
-assign!(OCM_,r_val,tr_val,τb_val)
+OCM_.τb = τb_val
+
+assign!(OCM_,r_val,tr_val)
 
 # get the initial distribution for the old steady state
 X̄_ = getX(OCM_)
@@ -264,7 +266,8 @@ OCM=OCModel()
 τb_val=0.40
 r_val=0.04213185316804985
 tr_val=0.7230089457411855
-assign!(OCM,r_val,tr_val,τb_val)
+OCM.τb = τb_val
+assign!(OCM,r_val,tr_val)
 
 # construct the derivatives at the new steady state
 inputs = construct_inputs(OCM)
@@ -295,6 +298,7 @@ FO.Δ_0 = ω̄_0 - ZO.ω̄
 solve_Xt!(FO)
 
 Xpath = [X̄_ ZO.X̄.+FO.X̂t]
+Vinit = ZO.X̄[inputs.Xlab.==:V]+FO.X̂t[inputs.Xlab.==:V,1]
 
 
 df = DataFrame(Xpath',inputs.Xlab)
@@ -303,3 +307,10 @@ df.t = 0:FO.T
 default(linewidth=2)
 p1 = plot(df.t, df.A, ylabel="Capital", label="")
 p2 = plot(df.t, df.Frac_b, ylabel="Fraction Self Employed", label="")
+plot(p1, p2, layout=(2, 1), size=(800, 600), legend=:topright)
+
+# save CSV
+CSV.write("df_transition.csv", df)
+## 
+
+

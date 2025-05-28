@@ -64,7 +64,7 @@
 
 using Parameters,LinearAlgebra,BasisMatrices,SparseArrays,Arpack,Roots, 
       KrylovKit,QuantEcon, PrettyTables,StatsBase,ForwardDiff,Dierckx,
-      Plots,NPZ,NLsolve,Printf,DataFrames
+      Plots,NPZ,NLsolve,Printf,DataFrames,CSV
 
 """
 Parameters of the Occupation Choice Model (Lucas Version)
@@ -120,16 +120,19 @@ Parameters of the Occupation Choice Model (Lucas Version)
     tx::Float64   = 0.0                 #Total tax
 
     #Numerical parameters
-    trlb::Float64 = 0.5                 #Transfers lower bound
-    trub::Float64 = 0.7                 #Transfers upper bound
+    trlb::Float64 = 0.2                 #Transfers lower bound
+    trub::Float64 = 1.0                 #Transfers upper bound
     Ntr::Int      = 1                   #Number of transfer evaluations
-    rlb::Float64  = 0.035               #Rate lower bound 
+    rlb::Float64  = 0.0375               #Rate lower bound 
     rub::Float64  = 0.045               #Rate upper bound 
     Nr::Int       = 3                   #Number of rate evaluations (in check!)
     Neval::Int    = 2                   #Number of bisection evaluations
     iagg::Int     = 1                   #Show aggregate data for each r/tr combo
     λ::Float64    = 1.0                 #Weight on Vcoefs update
-    Nit::Int      = 5000                #Number of iterations in solve_eg!
+    Nit::Int      = 500                #Number of iterations in solve_eg!
+    tolegm::Float64 = 1e-5            #Tolerance for EGM convergence
+    tolmk::Float64 = 1e-5            #Tolerance for market clearing
+    ibisection::Int = 1              #Bisection method for initial guess of r/tr
 
     #Vector/matrix lengths
     Nθ::Int       = N_θb*N_θw           #Total number of income shocks
@@ -504,7 +507,7 @@ Outputs: V coefficients (Vcoefs), wf,bf (policies)
 """
 function solve_eg!(OCM::OCModel)
  
-    @unpack Na,agrid,abasis,σ,β,Φ,Nθ,lθ,πθ,σ_ε,λ,Nit = OCM
+    @unpack Na,agrid,abasis,σ,β,Φ,Nθ,lθ,πθ,σ_ε,λ,Nit,tolegm = OCM
 
     Vhold = OCM.Vcoefs
 
@@ -515,7 +518,7 @@ function solve_eg!(OCM::OCModel)
     #Iterate on the value function coefficients
     diff  = 1.
     dchg  = 1.
-    tol   = 1e-8
+    tol   = tolegm
     luΦ   = lu(Φ)
     it    = 0
     while diff > tol && it < Nit && dchg > 1e-5
@@ -624,7 +627,7 @@ Outputs: steady state values of interest (ss)
 
 """
 function solvess!(OCM::OCModel)
-    @unpack Θ̄,α,δ,γ,g,b,τc,τd,τp,τw,τb,trlb,trub,rlb,rub,Neval,iagg = OCM
+    @unpack Θ̄,α,δ,γ,g,b,τc,τd,τp,τw,τb,trlb,trub,rlb,rub,Neval,iagg,ibisection,tolmk = OCM
 
     ss      = zeros(5)
     lev     = zeros(32)
@@ -677,35 +680,48 @@ function solvess!(OCM::OCModel)
         tem    = adst-((1-τd)*K2Nc) .* (nwdst-nbdst)-kbdst
         res    = [dot(OCM.ω,tem)-b,g+(OCM.r-γ)*b+tr-OCM.tx]
 
+        @printf(" case: τb=%10.3f, τw=%10.3f\n",τb,τw)
         @printf("  Interest rate %10.2f, Govt transfer %10.2f\n",r*100,tr)
         @printf("  Asset market  %10.3e, Govt budget   %10.3e\n",res[1],res[2])
-
+        
         return res[1:2]
 
     end
-    println("")
-    println("      Intermediate Results")
-    println("      ====================")
 
-    OCM.tr  = trlb
-    ret1    = find_zero(ss1Res, (rlb,rub), Bisection(), maxevals=Neval, atol=1e-8)
-    res1    = ss1Res(ret1)
+    function initialguessbisection!(OCM::OCModel)
+        println("\n      Intermediate Results")
+        println("      ====================")
 
-    OCM.tr  = trub
-    ret2    = find_zero(ss1Res, (rlb,rub), Bisection(), maxevals=Neval, atol=1e-8)
-    res2    = ss1Res(ret2)
-
-    println("")
-    println("")
-
-    if abs(res1)<abs(res2)
-        OCM.r  = ret1 
+        # Evaluate at tr = trlb
         OCM.tr = trlb
-    else
-        OCM.r  = ret2
+        ret1 = find_zero(ss1Res, (rlb, rub), Bisection(); maxevals=Neval, atol=1e-8)
+        res1 = ss1Res(ret1)
+
+        # Evaluate at tr = trub
         OCM.tr = trub
-    end
-    ret    = nlsolve(ssRes,[OCM.r,OCM.tr],ftol=1e-6)
+        ret2 = find_zero(ss1Res, (rlb, rub), Bisection(); maxevals=Neval, atol=1e-8)
+        res2 = ss1Res(ret2)
+
+        println("\n")
+
+        # Choose better root
+        if abs(res1) < abs(res2)
+            OCM.r = ret1
+            OCM.tr = trlb
+        else
+            OCM.r = ret2
+            OCM.tr = trub
+        end
+
+        return nothing
+end
+
+if ibisection == 1
+    initialguessbisection!(OCM)
+end
+
+
+    ret    = nlsolve(ssRes,[OCM.r,OCM.tr],ftol=tolmk)
     res    = ssRes(ret.zero)
     OCM.r  = ret.zero[1]
     OCM.tr = ret.zero[2]
@@ -743,7 +759,7 @@ function solvess!(OCM::OCModel)
                       Yc .* ones(1,5),Yb .* ones(1,6))
         shr   = (lev[:] ./ den[:]) .* 100.0
     end
-    return ss,lev,shr
+    return ss,lev,shr,res
 end
 
 
@@ -810,12 +826,11 @@ function check!(OCM::OCModel)
 end
 
 
-function assign!(OCM::OCModel,r::Float64,tr::Float64, τb::Float64)
+function assign!(OCM::OCModel,r::Float64,tr::Float64)
 
     setup!(OCM)
     OCM.r  = r
     OCM.tr = tr
-    OCM.τb = τb
 
     @unpack τp,τd,τb,τc,τw,δ,Θ̄,α,b,γ,g = OCM
 
@@ -954,3 +969,76 @@ function getX(OCM::OCModel)
    X̄ = [R,W,T,Frac_b,V,A,C]
    return X̄ 
 end
+
+
+
+function diffegm(OCM::OCModel) 
+        @unpack Na,agrid,abasis,σ,β,Φ,Nθ,lθ,πθ,σ_ε,λ,Nit,tolegm = OCM
+
+    Vhold = OCM.Vcoefs
+
+    # Placeholders for splines
+    cf_w  = af_w = Vf_w = nothing
+    cf_b  = af_b = kf = nf = yf = πf = Vf_b = nothing
+
+    #Iterate on the value function coefficients
+    diff  = 1.
+    dchg  = 1.
+    tol   = tolegm
+    luΦ   = lu(Φ)
+    it    = 0
+      #Compute optimal consumption, asset, and value functions
+      cf_w,af_w = policyw(OCM)
+      cf_b,af_b,kf,nf,yf,πf = policyb(OCM)
+
+      #Compute values at gridpoints
+      c_w,c_b = zeros(Na,Nθ),zeros(Na,Nθ) 
+      a_w,a_b = zeros(Na,Nθ),zeros(Na,Nθ)
+      Vw,Vb   = zeros(Na,Nθ),zeros(Na,Nθ)
+      for s in 1:Nθ
+          c_w[:,s] = cf_w[s](agrid) 
+          c_b[:,s] = cf_b[s](agrid) 
+          a_w[:,s] = af_w[s](agrid) 
+          a_b[:,s] = af_b[s](agrid) 
+          EΦw      = kron(πθ[s,:]',BasisMatrix(abasis,Direct(),a_w[:,s]).vals[1])
+          EΦb      = kron(πθ[s,:]',BasisMatrix(abasis,Direct(),a_b[:,s]).vals[1])
+          Vw[:,s]  = c_w[:,s].^(1-σ)/(1-σ) + β.*EΦw*OCM.Vcoefs
+          Vb[:,s]  = c_b[:,s].^(1-σ)/(1-σ) + β.*EΦb*OCM.Vcoefs
+      end
+      p       = probw.(Vb.-Vw,σ_ε)
+      V       = p.*Vw .+ (1 .- p).*Vb
+      ptol    = 1e-8
+      ip      = ptol.< p .< 1-ptol
+      V[ip]  .= Vw[ip] .+ σ_ε.*log.(1 .+ exp.((Vb[ip].-Vw[ip])./σ_ε))
+
+      #Implied value functions
+      Vf_w    = [Spline1D(agrid,Vw[:,s],k=1) for s in 1:Nθ]
+      Vf_b    = [Spline1D(agrid,Vb[:,s],k=1) for s in 1:Nθ]
+
+      #Update the coefficients using the linear system ΦVcoefs = V
+      Vcnew   = luΦ\V[:]
+      diff    = norm(OCM.Vcoefs.-Vcnew)
+      return diff
+
+end
+
+
+    function solvecase(τb, τw, r_guess, tr_guess)
+        diff_v=Inf
+        res=zeros(2)
+        try
+            # Recreate a fresh copy of OCM for each worker
+            OCM = OCModel()
+            OCM.τb = τb
+            OCM.τw = τw
+
+            assign!(OCM, r_guess, tr_guess)
+            OCM.ibisection = 1
+            ss,lev,shr,res=solvess!(OCM)
+            diff_v = diffegm(OCM)
+            return NamedTuple{(:τb, :τw, :r, :tr,:diffv,:diffasset,:diffgbc)}((τb, τw, OCM.r, OCM.tr, diff_v,res[1],res[2]))
+        catch e
+            @warn "Solver failed at τb = $τb, τw = $τw" exception=(e, catch_backtrace())
+            return NamedTuple{(:τb, :τw, :r, :tr,:diffv,:diffasset,:diffgbc)}((τb, τw, NaN, NaN, NaN,NaN,NaN))
+        end
+    end

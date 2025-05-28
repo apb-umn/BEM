@@ -65,13 +65,17 @@
 
 include("OCModelE.jl")
 OCM=OCModel()
+OCM.trlb=0.5
+OCM.trub=1.0
+OCM.τb=0.6
+OCM.τw=0.6
 setup!(OCM)
 ichk = 0
 
 if ichk==1
     chk1,chk2=check!(OCM)
 else
-    ss,lev,shr = solvess!(OCM)
+    ss,lev,shr,res = solvess!(OCM)
 
 
     if OCM.iagg==1
