@@ -104,7 +104,7 @@ Parameters of the Occupation Choice Model (Lucas Version)
     a̲::Float64    = 0.0                 #Borrowing constraint
     amax::Float64 = 150.0               #Maximum asset grid point
     Na::Int       = 30                  #Number of gridpoints for splines
-    so::Int       = 2                   #Spline order for asset grid
+    so::Int       = 3                   #Spline order for asset grid
     Ia::Int       = 1000                #Number of gridpoints for histogram
     curv_a::Float64 = 3.0               #Controls spacing for asset grid
     curv_h::Float64 = 3.0               #Controls spacing for histogram
@@ -240,7 +240,7 @@ function setup!(OCM::OCModel)
     lθ = OCM.lθ = log.(θ)
 
     #Grid points and basis matrices for policy functions
-    xvec = LinRange(0,1,Na-1).^curv_a 
+    xvec = LinRange(0,1,Na-(so-1)).^curv_a 
     gridknots = a̲ .+ (amax - a̲).*xvec 
     abasis = OCM.abasis = Basis(SplineParams(gridknots,0,so))
     agrid = OCM.agrid = nodes(abasis)[1]
@@ -928,8 +928,8 @@ end
 
 
 function get_grids(OCM)
-    @unpack bf,wf,curv_a,Na,amax,a̲,curv_h,Ia,πθ,lθ=OCM
-    xvec = LinRange(0,1,Na-1).^curv_a  #The Na -1 to adjust for the quadratic splines
+    @unpack bf,wf,curv_a,Na,amax,a̲,curv_h,Ia,πθ,lθ,so=OCM
+    xvec = LinRange(0,1,Na-(so-1)).^curv_a  #The Na -1 to adjust for the quadratic splines
     âgrid = a̲ .+ (amax - a̲).*xvec #nonlinear grid for knot points
     xvec = LinRange(0,1,Ia).^curv_h 
     āgrid = a̲ .+ (amax - a̲).*xvec #nonlinear grids for distribution

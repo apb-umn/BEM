@@ -65,7 +65,9 @@
 
 include("OCModelE.jl")
 include("FirstOrderApproximation.jl")
+using Base.Threads
 
+@info "Using $(Threads.nthreads()) threads"
 
 
 
@@ -235,82 +237,104 @@ function construct_inputs(OCM)
     return inputs
 end
 
+function compute_FO_transition_path(τb_val,τw_val, r_val,tr_val, ω̄_0_base, A_0; T=300)
+    OCM=OCModel()
+    OCM.τb = τb_val
+    OCM.τw = τw_val
+    assign!(OCM,r_val,tr_val)
 
+    # construct the derivatives at the new steady state
+    inputs = construct_inputs(OCM)
+    ZO =ZerothOrderApproximation(inputs)
+    computeDerivativesF!(ZO,inputs)
+    computeDerivativesG!(ZO,inputs)
+    FO = FirstOrderApproximation(ZO,300)
+    compute_f_matrices!(FO)
+    compute_f_matrices!(FO)
+    compute_Lemma3!(FO)
+    compute_Lemma4!(FO)
+    compute_Corollary2!(FO)
+    compute_Proposition1!(FO)
+    compute_BB!(FO)
+
+    ω̄ = reshape(OCM.ω,:,2)
+    p̄ = ω̄./sum(ω̄,dims=2)
+    p̄[isnan.(p̄[:,1]),1] .= 1.
+    p̄[isnan.(p̄[:,2]),2] .= 0.
+    ω̄_0 = (p̄.*ω̄_0_base)[:] #apply choices under new τ_b  to initial distributon
+
+
+
+
+    FO.X_0 = [A_0]-ZO.P*ZO.X̄
+    FO.Θ_0 = [0.]
+    FO.Δ_0 = ω̄_0 - ZO.ω̄
+    solve_Xt!(FO)
+
+    Xpath = [X̄_ ZO.X̄.+FO.X̂t]
+    Vinit = ZO.X̄[inputs.Xlab.==:V]+FO.X̂t[inputs.Xlab.==:V,1]
+
+    return Xpath, Vinit
+end 
 
 
 
 # old ss
 OCM_=OCModel()
 τb_val=0.2
-r_val=0.0416708746736356
-tr_val=0.6270852509001674
+r_val=0.041634407732543365
+tr_val=0.6276923506074257
 OCM_.τb = τb_val
-
 assign!(OCM_,r_val,tr_val)
+inputs_ = construct_inputs(OCM_)
+
 
 # get the initial distribution for the old steady state
 X̄_ = getX(OCM_)
-A_0 = X̄_[6]
+A_0 = X̄_[inputs_.Xlab .== :A][1] #initial capital stock
 ω̄_0_base = sum(reshape(OCM_.ω,:,2),dims=2) #get distribution over a and θ
 
 
-# # new ss
-# OCM=OCModel()
-# τb_val=0.25
-# r_val=0.04180897741139521
-# tr_val=0.6536626966299931
-# assign!(OCM,r_val,tr_val,τb_val)
+    # new ss
 
-# new ss
-OCM=OCModel()
-τb_val=0.40
-r_val=0.04213185316804985
-tr_val=0.7230089457411855
-OCM.τb = τb_val
-assign!(OCM,r_val,tr_val)
+results_df = CSV.read("grid_results.csv", DataFrame)
+results_df[!,:value]=ones(length(results_df.r))*NaN
+using Base.Threads
 
-# construct the derivatives at the new steady state
-inputs = construct_inputs(OCM)
-ZO =ZerothOrderApproximation(inputs)
-computeDerivativesF!(ZO,inputs)
-computeDerivativesG!(ZO,inputs)
-FO = FirstOrderApproximation(ZO,300)
-compute_f_matrices!(FO)
-compute_f_matrices!(FO)
-compute_Lemma3!(FO)
-compute_Lemma4!(FO)
-compute_Corollary2!(FO)
-compute_Proposition1!(FO)
-compute_BB!(FO)
+n = nrow(results_df)
+values = Vector{Union{Float64, Missing}}(undef, n)
 
-ω̄ = reshape(OCM.ω,:,2)
-p̄ = ω̄./sum(ω̄,dims=2)
-p̄[isnan.(p̄[:,1]),1] .= 1.
-p̄[isnan.(p̄[:,2]),2] .= 0.
-ω̄_0 = (p̄.*ω̄_0_base)[:] #apply choices under new τ_b  to initial distributon
+Threads.@threads for i in 1:n
+    row = results_df[i, :]
+    if !ismissing(row.r) && !ismissing(row.tr)
+        try
+            println("Thread $(threadid()) processing row $i")
+            Xpath, Vinit = compute_FO_transition_path(
+                row.τb, row.τw, row.r, row.tr, ω̄_0_base, A_0; T=300)
+            values[i] = Vinit[1]
+        catch e
+            @warn "Error in row $i on thread $(threadid()): $e"
+            values[i] = missing
+        end
+    else
+        values[i] = missing
+    end
+end
+
+# Assign the computed values to a new column
+results_df.value = values
+CSV.write("grid_results_with_values.csv", results_df)
 
 
+# df = DataFrame(Xpath',inputs_.Xlab)
+# df.t = 0:(size(Xpath,2)-1)
 
+# default(linewidth=2)
+# p1 = plot(df.t, df.A, ylabel="Capital", label="")
+# p2 = plot(df.t, df.Frac_b, ylabel="Fraction Self Employed", label="")
+# plot(p1, p2, layout=(2, 1), size=(800, 600), legend=:topright)
 
-FO.X_0 = [A_0]-ZO.P*ZO.X̄
-FO.Θ_0 = [0.]
-FO.Δ_0 = ω̄_0 - ZO.ω̄
-solve_Xt!(FO)
-
-Xpath = [X̄_ ZO.X̄.+FO.X̂t]
-Vinit = ZO.X̄[inputs.Xlab.==:V]+FO.X̂t[inputs.Xlab.==:V,1]
-
-
-df = DataFrame(Xpath',inputs.Xlab)
-df.t = 0:FO.T 
-
-default(linewidth=2)
-p1 = plot(df.t, df.A, ylabel="Capital", label="")
-p2 = plot(df.t, df.Frac_b, ylabel="Fraction Self Employed", label="")
-plot(p1, p2, layout=(2, 1), size=(800, 600), legend=:topright)
-
-# save CSV
-CSV.write("df_transition.csv", df)
+# # save CSV
+# CSV.write("df_transition.csv", df)
 ## 
-
 
