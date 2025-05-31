@@ -65,10 +65,8 @@
 
 include("OCModelE.jl")
 OCM=OCModel()
-OCM.trlb=0.5
-OCM.trub=1.0
-OCM.τb=0.6
-OCM.τw=0.6
+OCM.τb = 0.4888888888888889
+OCM.τw = 0.26666666666666666
 setup!(OCM)
 ichk = 0
 
@@ -168,3 +166,4 @@ else
                        shr[12]+shr[13]+shr[14]+shr[15]+shr[16],shr[18]+shr[19]+shr[20])
     end 
 end
+

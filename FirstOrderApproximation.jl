@@ -163,6 +163,7 @@ function compute_f_matrices!(FO::FirstOrderApproximation)
     Eȳ′_a = ȳ_a*Φ̃ᵉ
     x̄_a = zeros(n.x,n.a,n.sp)
     for j in 1:n.sp
+        #println("Computing f for j = ", j)
         @views f[j] = -inv(dF.x[j] + dF.yᵉ[j]*Eȳ′_a[:,:,j]*p)
         @views x̄_a[:,:,j] .= f[j]*dF.a[j]
     end

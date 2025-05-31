@@ -39,47 +39,47 @@ CSV.write(path*"grid_results.csv", results_df)
 
 
 
-# # Plots
-# using Plots
+# Plots
+using Plots
 
-# @unpack bf, Ia,alθ,Nθ = OCM
+@unpack bf, Ia,alθ,Nθ = OCM
 
-# ah  = alθ[1:Ia,1] #grids are all the same for all shocks
-# kb     = hcat([bf.k[s](ah) for s in 1:Nθ]...)
-# aprime = hcat([bf.a[s](ah) for s in 1:Nθ]...)
-# cb = hcat([bf.c[s](ah) for s in 1:Nθ]...)
-# vb = hcat([bf.v[s](ah) for s in 1:Nθ]...)
+ah  = alθ[1:Ia,1] #grids are all the same for all shocks
+kb     = hcat([bf.k[s](ah) for s in 1:Nθ]...)
+aprime = hcat([bf.a[s](ah) for s in 1:Nθ]...)
+cb = hcat([bf.c[s](ah) for s in 1:Nθ]...)
+vb = hcat([bf.v[s](ah) for s in 1:Nθ]...)
 
-# s=10
-# sel= ah .< 1. # select a range for plotting
-# plot(ah[sel], kb[sel,s], label="kb", xlabel="a", ylabel="kb", title="Business Capital")
-# plot(ah[sel], aprime[sel,s], label="aprime", title="Business Capital")
-# plot(ah[sel], cb[sel,s], label="cb", title="consumption")
-# plot(ah[sel], vb[sel,s], label="vb", title="value function")
+s=10
+sel= ah .< 1. # select a range for plotting
+plot(ah[sel], kb[sel,s], label="kb", xlabel="a", ylabel="kb", title="Business Capital")
+plot(ah[sel], aprime[sel,s], label="aprime", title="Business Capital")
+plot(ah[sel], cb[sel,s], label="cb", title="consumption")
+plot(ah[sel], vb[sel,s], label="vb", title="value function")
 
 
 
-# @unpack Vcoefs,σ,β,γ,Nθ,lθ,a̲,EΦ_aeg,Na,agrid,α_b,ν,δ,χ,r,w,tr,τc,τb = OCM
+@unpack Vcoefs,σ,β,γ,Nθ,lθ,a̲,EΦ_aeg,Na,agrid,α_b,ν,δ,χ,r,w,tr,τc,τb = OCM
 
-# lθb = lθ[:,1]
-# θb  = exp.(lθb)
+lθb = lθ[:,1]
+θb  = exp.(lθb)
 
-# #Initialize policy rules for each productivity
-# cf  = Vector{Spline1D}(undef,Nθ)
-# af  = Vector{Spline1D}(undef,Nθ)
-# kf  = Vector{Spline1D}(undef,Nθ)
-# nf  = Vector{Spline1D}(undef,Nθ)
-# yf  = Vector{Spline1D}(undef,Nθ)
-# πf  = Vector{Spline1D}(undef,Nθ)
+#Initialize policy rules for each productivity
+cf  = Vector{Spline1D}(undef,Nθ)
+af  = Vector{Spline1D}(undef,Nθ)
+kf  = Vector{Spline1D}(undef,Nθ)
+nf  = Vector{Spline1D}(undef,Nθ)
+yf  = Vector{Spline1D}(undef,Nθ)
+πf  = Vector{Spline1D}(undef,Nθ)
 
-# #Compute firms profit (ignoring constraints)
-# nbyk = ν*(r+δ)/(α_b*w) 
-# kvec = @. (w/(ν*θb*nbyk^(ν-1)))^(1/(α_b+ν-1))
-# πu   = @. θb*kvec^α_b*(nbyk*kvec)^ν-(r+δ)*kvec-w*(nbyk*kvec)
+#Compute firms profit (ignoring constraints)
+nbyk = ν*(r+δ)/(α_b*w) 
+kvec = @. (w/(ν*θb*nbyk^(ν-1)))^(1/(α_b+ν-1))
+πu   = @. θb*kvec^α_b*(nbyk*kvec)^ν-(r+δ)*kvec-w*(nbyk*kvec)
 
-# #Compute value function derivative
-# EVₐ′ = reshape(EΦ_aeg*Vcoefs,:,Nθ) 
+#Compute value function derivative
+EVₐ′ = reshape(EΦ_aeg*Vcoefs,:,Nθ) 
 
-# asp=OCM.agrid
-# sel= asp .< 2. # select a range for plotting
-# plot(asp[sel], EVₐ′[sel,s], label="EVprime", xlabel="a", ylabel="EV", title="Expected Value Function")
+asp=OCM.agrid
+sel= asp .< 2. # select a range for plotting
+plot(asp[sel], EVₐ′[sel,s], label="EVprime", xlabel="a", ylabel="EV", title="Expected Value Function")

@@ -361,7 +361,7 @@ cf,af,kf,nf,yf,πf = policyb(OCM)
 
 EG method applied to business dynamic program
 Inputs: parameters (OCM), V coefficients (Vcoefs)
-Outputs: policy rules (cf,af,kf,nf,yf,πf)
+Outputs: policy rules (cf,af,kf,nf,yf,πf,ζf)
 
 """
 function policyb(OCM::OCModel)
@@ -909,7 +909,32 @@ Saves the policy functions in the OCModel object
 """
 
 function get_policy_functions(OCM::OCModel)
-    @unpack bf,wf,curv_a,Na,amax,a̲,curv_h,Ia,r,σ=OCM
+    @unpack bf,wf,curv_a,Na,amax,a̲,curv_h,Ia,r,σ,δ,α_b,agrid,Nθ,lθ,ν,χ=OCM
+
+
+
+    
+    λb = Vector{Spline1D}(undef,Nθ)
+    λw = Vector{Spline1D}(undef,Nθ)
+    cb=zeros(Na)
+    cw=zeros(Na)
+    kb=zeros(Na)
+    nb=zeros(Na)
+    mpk=zeros(Na)
+    ζval=zeros(Na)
+    for s in 1:Nθ
+        cb .= bf.c[s](agrid)
+        cw .= wf.c[s](agrid)
+        kb .= max.(bf.k[s](agrid),1e-3)
+        nb .= max.(bf.n[s](agrid),1e-3)
+        z   = exp.(lθ[s,1]) # productivity shock
+        mpk .= α_b*z*kb.^(α_b-1).*nb.^ν
+        ζval .= cb.^(-σ).*(mpk .-r .-δ)
+        λb[s]  = Spline1D(agrid,(1+r)*cb.^(-σ)+χ*ζval,k=1)   
+        λw[s]  = Spline1D(agrid,(1+r)*cw.^(-σ),k=1)
+    end
+
+
     #save the policy functions a,n,k,λ,v
     af(lθ,a,c) = c==1 ? wf.a[[lθ].==eachrow(OCM.lθ)][1](a) : bf.a[[lθ].==eachrow(OCM.lθ)][1](a)
     nf(lθ,a,c) = c==1 ? -exp.(lθ[2]) : bf.n[[lθ].==eachrow(OCM.lθ)][1](a)
@@ -917,13 +942,13 @@ function get_policy_functions(OCM::OCModel)
     yf(lθ,a,c) = c==1 ? 0 : bf.y[[lθ].==eachrow(OCM.lθ)][1](a)
     nbf(lθ,a,c) = c==1 ? 0 : bf.n[[lθ].==eachrow(OCM.lθ)][1](a)
     cf(lθ,a,c) = c==1 ? wf.c[[lθ].==eachrow(OCM.lθ)][1](a) : bf.c[[lθ].==eachrow(OCM.lθ)][1](a)
-    λf(lθ,a,c) = (1+r)*cf(lθ,a,c).^(-σ)
+    λf(lθ,a,c) = c==1 ? λw[[lθ].==eachrow(OCM.lθ)][1](a) : λb[[lθ].==eachrow(OCM.lθ)][1](a)
     vf(lθ,a,c) = c==1 ? wf.v[[lθ].==eachrow(OCM.lθ)][1](a) : bf.v[[lθ].==eachrow(OCM.lθ)][1](a)
     πf(lθ,a,c) = c==1 ? 0 : bf.π[[lθ].==eachrow(OCM.lθ)][1](a)
     Ibf(lθ,a,c) = c==1 ? 0 : 1
 
    
-    return [af,nf,kf,yf,nbf,πf,Ibf,λf,vf] #return xf
+    return [af,nf,kf,yf,nbf,cf,πf,Ibf,λf,vf] #return xf
 end
 
 
@@ -1044,3 +1069,17 @@ end
             return NamedTuple{(:τb, :τw, :r, :tr,:diffv,:diffasset,:diffgbc)}((τb, τw, NaN, NaN, NaN,NaN,NaN))
         end
     end
+
+function guess_from_csv(τb, τw, df)
+    row = df[(df.τb .≈ τb) .& (df.τw .≈ τw), :]
+    if nrow(row) == 1 && !isnan(row.r[1]) && !isnan(row.tr[1])
+        return row.r[1], row.tr[1]
+    else
+        # Prepare data: each column is a point in 2D
+        pts = permutedims(hcat(df.τb, df.τw))  # 2×N matrix
+        query = reshape([τb, τw], 2, 1)        # 2×1 matrix
+        dists = pairwise(Euclidean(), pts, query)  # (N×1 matrix)
+        idx = argmin(dists)
+        return df.r[idx], df.tr[idx]
+    end
+end
