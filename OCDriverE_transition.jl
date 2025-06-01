@@ -2,9 +2,6 @@
 
 include("OCModelE.jl")
 include("FirstOrderApproximation.jl")
-using Base.Threads
-
-@info "Using $(Threads.nthreads()) threads"
 
 
 """
@@ -63,9 +60,12 @@ function Fb(OCM::OCModel, lθ, a_, x, X, yᵉ)
     r = R - 1
     z, _ = exp.(lθ)
 
+
+
     # Marginal products
     mpk = α_b * z * k^(α_b - 1) * n^ν       # MPK: ∂Y/∂K
     mpn = ν * z * k^α_b * n^(ν - 1)         # MPN: ∂Y/∂N
+ 
 
     # Utility
     u_c = c^(-σ)
@@ -74,7 +74,7 @@ function Fb(OCM::OCModel, lθ, a_, x, X, yᵉ)
     # System of residuals
     ret = [
         R*a_ + (1 - τb)*profit + Tr - (1 + τc)*c - (1 + γ)*a,              # (1) Budget constraint
-        λ - R*u_c - χ*(mpk - r - δ),                                       # (2) Marginal value of wealth
+        λ - R*u_c - u_c*χ*(mpk - r - δ),                                       # (2) Marginal value of wealth
         β*λᵉ - u_c,                                                        # (3) Euler equation
         u + β*vᵉ - v,                                                      # (4) Value function
         mpn - W,                                                           # (5) Labor FOC
@@ -93,7 +93,7 @@ function Fb(OCM::OCModel, lθ, a_, x, X, yᵉ)
     end
 
     if a_ == 0
-        ret[2] = λ
+        ret[2] = λ- R*u_c - u_c*χ*( α_b * z * (max(k,1e-4))^(α_b - 1) * (max(n,1e-4))^ν - r - δ)  # Marginal value of wealth at zero assets
         ret[5] = n
         ret[6] = nb
         ret[7] = k
@@ -240,25 +240,47 @@ distribution `ω̄_0_base` and aggregate capital `A_0`.
 """
 function compute_FO_transition_path(τb_val, τw_val, r_val, tr_val, ω̄_0_base, A_0,X̄_; T=300)
     # Initialize model and assign new policy parameters
+    println("Setting up new steady state with τb=$(τb_val), τw=$(τw_val), r=$(r_val), tr=$(tr_val)")
     OCM = OCModel()
     OCM.τb = τb_val
     OCM.τw = τw_val
     assign!(OCM, r_val, tr_val)
-
-    # Construct approximation objects around new steady state
+    println("... Steady state assigned")
+    
+# Construct approximation objects around new steady state
+    println("Constructing inputs and zeroth order approximation")
     inputs = construct_inputs(OCM)
+    println("... Inputs constructed")
+    println("Constructing zeroth order approximation")
     ZO = ZerothOrderApproximation(inputs)
+    println("... Zeroth order approximation constructed")
+    # populate derivative
+    println("Computing derivatives for zeroth order approximation")
     computeDerivativesF!(ZO, inputs)
     computeDerivativesG!(ZO, inputs)
+    println("... Derivatives computed")
+    println("Setting up the first order approximation")
     FO = FirstOrderApproximation(ZO, T)
+    println("... First order approximation constructed")
 
-    # Compute linear transition system (some functions redundant by design)
+    println("computing  f matrices")
     compute_f_matrices!(FO)
+    println("... f matrices computed")
+    println("computing Lemma3")
     compute_Lemma3!(FO)
+    println("... Lemma3 computed")
+    println("computing Lemma4")
     compute_Lemma4!(FO)
+    println("... Lemma4 computed")
+    println("computing Corollary2")
     compute_Corollary2!(FO)
+    println("... Corollary2 computed")
+    println("computing Proposition1")
     compute_Proposition1!(FO)
+    println("... Proposition1 computed")
+    println("computing BB")
     compute_BB!(FO)
+    println("... BB computed")
 
     # Adjust initial distribution using occupational choices implied by new τb
     ω̄ = reshape(OCM.ω, :, 2)
@@ -273,7 +295,9 @@ function compute_FO_transition_path(τb_val, τw_val, r_val, tr_val, ω̄_0_base
     FO.Δ_0 = ω̄_0 - ZO.ω̄
 
     # Solve forward transition path
+    println("Solving forward transition path")
     solve_Xt!(FO)
+    println("... Transition path solved")
 
     # Construct final time path and value function at t=0
     Xpath = [X̄_ ZO.X̄ .+ FO.X̂t]
@@ -281,82 +305,3 @@ function compute_FO_transition_path(τb_val, τw_val, r_val, tr_val, ω̄_0_base
 
     return Xpath, Vinit
 end
-
-# === Simulation Setup ===
-
-# --- Old steady state ---
-OCM_ = OCModel()
-r_val,tr_val = 0.041634407732543365,0.6276923506074257
-assign!(OCM_, r_val, tr_val)
-inputs_ = construct_inputs(OCM_)
-
-# Extract initial asset distribution and capital
-X̄_ = getX(OCM_)
-A_0 = X̄_[inputs_.Xlab .== :A][1]                       # Initial capital stock
-ω̄_0_base = sum(reshape(OCM_.ω, :, 2), dims=2)         # Distribution over (a, θ)
-
-# --- New steady state ---
-τb_val,τw_val = 0.43333333333333335,0.43333333333333335
-r_val, tr_val = 0.04223537778372754,0.7674582411891628
-# Compute transition path from old to new policy regime
-Xpath, Vinit = compute_FO_transition_path(
-    τb_val, τw_val, r_val, tr_val, ω̄_0_base, A_0,X̄_;
-    T = 300
-)
-
-# --- Plots ---
-
-
-df = DataFrame(Xpath',inputs_.Xlab)
-df.t = 0:(size(Xpath,2)-1)
-
-default(linewidth=2)
-p1 = plot(df.t, df.A, ylabel="Capital", label="")
-p2 = plot(df.t, df.Frac_b, ylabel="Fraction Self Employed", label="")
-plot(p1, p2, layout=(2, 1), size=(800, 600), legend=:topright)
-
-
-
-default(linewidth=2)
-p1 = plot(df.t, df.R, ylabel="R", label="")
-p2 = plot(df.t, df.Tr, ylabel="Tr", label="")
-plot(p1, p2, layout=(2, 1), size=(800, 600), legend=:topright)
-# --- Save results ---
-CSV.write("df_transition.csv", df)
-
-
-    # new ss
-
-# results_df = CSV.read("grid_results.csv", DataFrame)
-# results_df[!,:value]=ones(length(results_df.r))*NaN
-# using Base.Threads
-
-# n = nrow(results_df)
-# values = Vector{Union{Float64, Missing}}(undef, n)
-
-# Threads.@threads for i in 1:n
-#     row = results_df[i, :]
-#     if !ismissing(row.r) && !ismissing(row.tr)
-#         try
-#             println("Thread $(threadid()) processing row $i")
-#             Xpath, Vinit = compute_FO_transition_path(
-#                 row.τb, row.τw, row.r, row.tr, ω̄_0_base, A_0; T=300)
-#             values[i] = Vinit[1]
-#         catch e
-#             @warn "Error in row $i on thread $(threadid()): $e"
-#             values[i] = missing
-#         end
-#     else
-#         values[i] = missing
-#     end
-# end
-
-# # Assign the computed values to a new column
-# results_df.value = values
-# CSV.write("grid_results_with_values.csv", results_df)
-
-
-# save CSV
-#CSV.write("df_transition.csv", df)
-# 
-

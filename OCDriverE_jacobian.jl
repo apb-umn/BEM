@@ -55,8 +55,8 @@ function Fb(OCM::OCModel, lθ, a_, x, X, yᵉ)
     u_c = c^(-σ)
     u = c^(1 - σ) / (1 - σ)
     ret = [
-        R*a_ + (1 - τb)*profit + Tr - (1 + τc)*c - (1 + γ)*a,     # (1)
-        λ - R*u_c - χ*(mpk - r - δ),                             # (2)
+        R*a_ + (1 - τb)*profit + Tr - (1 + τc)*c - (1 + γ)*a,    # (1)
+        λ - R*u_c - u_c*χ*(mpk - r - δ),                         # (2)
         β*λᵉ - u_c,                                              # (3)
         u + β*vᵉ - v,                                           # (4)
         mpn - W,                                                # (5)
@@ -73,7 +73,7 @@ function Fb(OCM::OCModel, lθ, a_, x, X, yᵉ)
         ret[7] = k - χ*a_
     end
     if a_ == 0
-        ret[2] = λ
+        ret[2] = λ- R*u_c - u_c*χ*( α_b * z * (max(k,1e-4))^(α_b - 1) * (max(n,1e-4))^ν - r - δ)  # Marginal value of wealth at zero assets
         ret[5:9] .= [n, nb, k, yb, profit]
     end
     return ret
@@ -194,7 +194,7 @@ end
 
 Compute transition path from initial capital and distribution under new tax policy.
 """
-function compute_FO_transition_path(τb_val, τw_val, r_val, tr_val, ω̄_0_base, A_0; T=300)
+function compute_FO_transition_path(τb_val, τw_val, r_val, tr_val, ω̄_0_base, A_0,X̄_; T=300)
     OCM = OCModel()
     OCM.τb = τb_val
     OCM.τw = τw_val

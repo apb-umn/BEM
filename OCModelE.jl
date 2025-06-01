@@ -80,7 +80,7 @@ Parameters of the Occupation Choice Model (Lucas Version)
 
     #Corporate parameters
     α::Float64   = 0.5                  #Corporate capital share
-    Θ̄::Float64   = 0.7                  #Corporate TFP
+    Θ̄::Float64   = 0.70                  #Corporate TFP
     δ::Float64   = 0.041                #Depreciation rate
 
     #Entrepreneur parameters
@@ -102,8 +102,8 @@ Parameters of the Occupation Choice Model (Lucas Version)
 
     #Asset grids
     a̲::Float64    = 0.0                 #Borrowing constraint
-    amax::Float64 = 150.0               #Maximum asset grid point
-    Na::Int       = 30                  #Number of gridpoints for splines
+    amax::Float64 = 150.             #Maximum asset grid point
+    Na::Int       = 50                  #Number of gridpoints for splines
     so::Int       = 2                   #Spline order for asset grid
     Ia::Int       = 1000                #Number of gridpoints for histogram
     curv_a::Float64 = 3.0               #Controls spacing for asset grid
@@ -129,12 +129,16 @@ Parameters of the Occupation Choice Model (Lucas Version)
     Neval::Int    = 2                   #Number of bisection evaluations
     iagg::Int     = 1                   #Show aggregate data for each r/tr combo
     λ::Float64    = 1.0                 #Weight on Vcoefs update
-    Nit::Int      = 500                #Number of iterations in solve_eg!
+    Nit::Int      = 1000                #Number of iterations in solve_eg!
     tolegm::Float64 = 1e-5            #Tolerance for EGM convergence
-    ftolmk::Float64 = 1e-5            #Tolerance for market clearing
+    ftolmk::Float64 = 1e-6            #Tolerance for market clearing
     xtolxmk::Float64 = 1e-3            #Tolerance for market clearing
     maxitermk::Int = 1000         #Maximum iterations for market clearing
-    ibisection::Int = 1              #Bisection method for initial guess of r/tr
+    ibise::Int = 1              #Bisection method for initial guess of r/tr
+    iprint::Int   = 1                   #Turn on=1/off=0 intermediate printing
+    T::Int        = 300                 #Number of periods in solve_tr!
+    ξ::Float64    = 1.0                 #Newton relaxation parameter
+    inewt::Int    = 1                   #Use simple Newton in solvess
 
     #Vector/matrix lengths
     Nθ::Int       = N_θb*N_θw           #Total number of income shocks
@@ -487,7 +491,7 @@ function setup_egi!(OCM::OCModel)
     #Compute EG inverse spline
     numk = 10
     for s in 1:Nθ
-        ahold    = LinRange(-10.,kvec[s]/χ,numk) 
+        ahold    = LinRange(-5.,kvec[s]/χ,numk) 
         khold    = max.(ahold.*χ,0)
         nhold    = (w./(ν.*θb[s].*khold.^α_b)).^(1/(ν-1))
         yhold    = θb[s].*khold.^α_b.*nhold.^ν
@@ -566,6 +570,8 @@ function solve_eg!(OCM::OCModel)
 
     if it>= Nit
         println("solve_eg did not converge: $diff")
+    else
+        println("solve_eg converged in $it iterations: $diff")
     end
     if dchg<=1e-5
         println("solve_eg is making no progress: $dchg")
@@ -619,6 +625,54 @@ function dist!(OCM::OCModel)
 end
 
 
+
+"""
+
+x = newton fixed point of f(x;ξ)=0
+
+Simple newton
+Inputs: initial guess (x0), relaxation (ξ)
+Output: fixed point (x)
+
+"""
+function newton(f::Function, x0::Vector{Float64}, ξ::Float64;
+                tol::Float64 = 1e-8, maxit::Int = 20)
+
+    x   = copy(x0)                     # preserve original input
+    lx  = length(x)
+    fx  = similar(x)                   # f(x)
+    fxp = similar(x)                   # f(xp)
+    dx  = similar(x)                   # Newton step
+    J   = zeros(Float64, lx, lx)       # Jacobian
+
+    for it in 1:maxit
+        fx .= f(x)                     # res = f(x)
+        if norm(fx) < tol
+            return x
+        end
+
+        @views begin
+            del = 1e-2 .* abs.(x) .+ 1e-8
+
+            for i in 1:lx
+                xi = x[i]
+                x[i] = xi + del[i]
+                fxp .= f(x)
+                x[i] = xi             # restore x[i]
+                J[:, i] .= (fxp .- fx) ./ del[i]
+            end
+
+            dx .= J \ fx              # solve J dx = fx
+            x  .-= ξ .* dx            # update step
+        end
+    end
+
+    println("      NEWTON WARNING:")
+    @printf("      Increase maxit %9.0f\n", maxit)
+    return x
+end
+    
+
 """
 
 ss  = solvess!(OCM::OCModel)
@@ -629,11 +683,19 @@ Outputs: steady state values of interest (ss)
 
 """
 function solvess!(OCM::OCModel)
-    @unpack Θ̄,α,δ,γ,g,b,τc,τd,τp,τw,τb,trlb,trub,rlb,rub,Neval,iagg,ibisection,ftolmk,xtolxmk,maxitermk = OCM
+    @unpack Θ̄,α,δ,γ,g,b,τc,τd,τp,τw,τb,trlb,trub,rlb,rub,Neval,iagg,ibise,iprint,ftolmk,xtolxmk,ξ,maxitermk,inewt = OCM
 
     ss      = zeros(5)
     lev     = zeros(32)
     shr     = zeros(32)
+
+    x0      = zeros(2)
+    xp      = zeros(2)
+    fn      = zeros(2)
+    fnp     = zeros(2)
+    jac     = zeros(2,2)
+    del     = zeros(2,2)
+
 
     function ss1Res(x)
         OCM.r  = r = x[1]
@@ -644,12 +706,18 @@ function solvess!(OCM::OCModel)
         setup_egi!(OCM)
         solve_eg!(OCM)
         cdst,adst,vdst,ybdst,kbdst,nbdst,nwdst = dist!(OCM)
-        tem    = adst-((1-τd)*K2Nc) .* (nwdst-nbdst)-kbdst
-        res    = dot(OCM.ω,tem)-b
+        A      = dot(OCM.ω,adst)
+        Nb     = dot(OCM.ω,nbdst)
+        Nc     = dot(OCM.ω,nwdst)-Nb
+        Kc     = K2Nc*Nc
+        Kb     = dot(OCM.ω,kbdst)
+        res    = 1-((1-τd)*Kc+Kb+b)/A
 
-        @printf("  Interest rate %10.2f\n",r*100)
-        @printf("  Asset market  %10.3e\n",res)
-
+        if iprint==1
+            @printf("      Interest rate %10.2f\n",r*100)
+            @printf("      Asset market  %10.3e\n",res)
+            println("")
+        end
         return res
     end
 
@@ -666,6 +734,7 @@ function solvess!(OCM::OCModel)
         solve_eg!(OCM)
         cdst,adst,vdst,ybdst,kbdst,nbdst,nwdst = dist!(OCM)
 
+        A      = dot(OCM.ω,adst)
         Nb     = dot(OCM.ω,nbdst)
         Nc     = dot(OCM.ω,nwdst)-Nb
         Kc     = K2Nc*Nc
@@ -676,57 +745,60 @@ function solvess!(OCM::OCModel)
         Tc     = τc*C
         Tp     = τp*(Yc-w*Nc-δ*Kc)
         Td     = τd*(Yc-w*Nc-(γ+δ)*Kc-Tp)
-        Tn     = τw*w*(Nc+Nb)
+        Tw     = τw*w*(Nc+Nb)
         Tb     = τb*(Yb-(r+δ)*Kb-w*Nb)
-        OCM.tx = Tc+Tp+Td+Tn+Tb
-        tem    = adst-((1-τd)*K2Nc) .* (nwdst-nbdst)-kbdst
-        res    = [dot(OCM.ω,tem)-b,g+(OCM.r-γ)*b+tr-OCM.tx]
+        OCM.tx = Tc+Tp+Td+Tw+Tb
+        res    = [1-((1-τd)*Kc+Kb+b)/A,1-(OCM.tx-tr-(OCM.r-γ)*b)/g]
 
-        @printf(" case: τb=%10.3f, τw=%10.3f\n",τb,τw)
-        @printf("  Interest rate %10.2f, Govt transfer %10.2f\n",r*100,tr)
-        @printf("  Asset market  %10.3e, Govt budget   %10.3e\n",res[1],res[2])
-        
+        if iprint==1
+            @printf("      Tax on business %10.2f, Tax on wages %10.2f\n",τb*100,τw*100)
+            @printf("      Interest rate %10.2f, Govt transfer %10.2f\n",r*100,tr)
+            @printf("      Asset market  %10.3e, Govt budget   %10.3e\n",res[1],res[2])
+            println("")
+        end
         return res[1:2]
 
     end
 
-    function initialguessbisection!(OCM::OCModel)
-        println("\n      Intermediate Results")
-        println("      ====================")
-
-        # Evaluate at tr = trlb
-        OCM.tr = trlb
-        ret1 = find_zero(ss1Res, (rlb, rub), Bisection(); maxevals=Neval, atol=1e-8)
-        res1 = ss1Res(ret1)
-
-        # Evaluate at tr = trub
-        OCM.tr = trub
-        ret2 = find_zero(ss1Res, (rlb, rub), Bisection(); maxevals=Neval, atol=1e-8)
-        res2 = ss1Res(ret2)
-
-        println("\n")
-
-        # Choose better root
-        if abs(res1) < abs(res2)
-            OCM.r = ret1
+    if ibise==1
+        @printf("      Using bisection method\n")
+        OCM.tr  = trlb
+        ret1    = find_zero(ss1Res,(rlb,rub),Bisection(),maxevals=Neval,atol=1e-8)
+        res1    = ss1Res(ret1)
+        OCM.tr  = trub
+        ret2    = find_zero(ss1Res,(rlb,rub),Bisection(),maxevals=Neval,atol=1e-8)
+        res2    = ss1Res(ret2)
+        if abs(res1)<abs(res2)
+            OCM.r  = ret1 
             OCM.tr = trlb
         else
-            OCM.r = ret2
+            OCM.r  = ret2
             OCM.tr = trub
         end
+    else
+        OCM.r  = 0.5*(rlb+rub)
+        OCM.tr = 0.5*(trlb+trub)
+    end
 
-        return nothing
-end
+    if inewt==1
+        println("      Using newton method")
+        rtr    = newton(ssRes,[OCM.r,OCM.tr],ξ,tol=ftolmk)   
+        OCM.r  = rtr[1]
+        OCM.tr = rtr[2]
+        res    = ssRes(rtr) 
+    else
+        ret    = nlsolve(ssRes,[OCM.r,OCM.tr],ftol=1e-6)
+        OCM.r  = ret.zero[1]
+        OCM.tr = ret.zero[2]
+        res    = ssRes(ret.zero)
+    end
 
-if ibisection == 1
-    initialguessbisection!(OCM)
-end
+    if iprint==0
+        @printf("      Interest rate %10.2f, Govt transfer %10.2f\n",OCM.r*100,OCM.tr)
+        @printf("      Asset market  %10.3e, Govt budget   %10.3e\n",res[1],res[2])
+        println("")
+    end
 
-
-    ret    = nlsolve(ssRes,[OCM.r,OCM.tr],ftol=ftolmk,xtol=xtolxmk,method=:newton)
-    res    = ssRes(ret.zero)
-    OCM.r  = ret.zero[1]
-    OCM.tr = ret.zero[2]
     bshr   = sum(reshape(OCM.ω,:,2),dims=1)[2]
     ss     = [OCM.r*100,OCM.tr,res[1],res[2],bshr*100] 
    
@@ -862,6 +934,8 @@ function assign!(OCM::OCModel,r::Float64,tr::Float64)
     tem    = adst-((1-τd)*K2Nc) .* (nwdst-nbdst)-kbdst
     res    = [dot(OCM.ω,tem)-b,g+(OCM.r-γ)*b+OCM.tr-OCM.tx]
     @printf("  Asset market  %10.3e, Govt budget   %10.3e\n",res[1],res[2])
+    diffv=diffegm(OCM)
+    @printf("  Diff in EGM     %10.3e\n",diffv)
 
 end
 
@@ -925,8 +999,8 @@ function get_policy_functions(OCM::OCModel)
     for s in 1:Nθ
         cb .= bf.c[s](agrid)
         cw .= wf.c[s](agrid)
-        kb .= max.(bf.k[s](agrid),1e-3)
-        nb .= max.(bf.n[s](agrid),1e-3)
+        kb .= max.(bf.k[s](agrid),1e-4)
+        nb .= bf.n[s](agrid)
         z   = exp.(lθ[s,1]) # productivity shock
         mpk .= α_b*z*kb.^(α_b-1).*nb.^ν
         ζval .= cb.^(-σ).*(mpk .-r .-δ)
@@ -1050,25 +1124,33 @@ function diffegm(OCM::OCModel)
 end
 
 
-    function solvecase(τb, τw, r_guess, tr_guess)
-        diff_v=Inf
-        res=zeros(2)
-        try
-            # Recreate a fresh copy of OCM for each worker
-            OCM = OCModel()
-            OCM.τb = τb
-            OCM.τw = τw
+function solvecase(τb, τw, r_guess, tr_guess)
+    diff_v = Inf
+    res = zeros(2)
+    try
+        # Recreate a fresh copy of OCM for each worker
+        OCM = OCModel()
+        OCM.τb = τb
+        OCM.τw = τw
 
-            assign!(OCM, r_guess, tr_guess)
-            OCM.ibisection = 1
-            ss,lev,shr,res=solvess!(OCM)
-            diff_v = diffegm(OCM)
-            return NamedTuple{(:τb, :τw, :r, :tr,:diffv,:diffasset,:diffgbc)}((τb, τw, OCM.r, OCM.tr, diff_v,res[1],res[2]))
-        catch e
-            @warn "Solver failed at τb = $τb, τw = $τw" exception=(e, catch_backtrace())
-            return NamedTuple{(:τb, :τw, :r, :tr,:diffv,:diffasset,:diffgbc)}((τb, τw, NaN, NaN, NaN,NaN,NaN))
-        end
+        assign!(OCM, r_guess, tr_guess)
+        OCM.ibise = 1
+        ss, lev, shr, res = solvess!(OCM)
+        diff_v = diffegm(OCM)
+        Xss = getX(OCM)  # [R, W, Tr, Frac_b, V, A, C]
+        R, W, Tr, Frac_b, V, A, C = Xss
+
+        return NamedTuple{
+            (:τb, :τw, :r, :tr, :diffv, :diffasset, :diffgbc, :Rss, :Wss, :Trss, :Frac_bss, :Vss, :Ass, :Css)
+        }((τb, τw, OCM.r, OCM.tr, diff_v, res[1], res[2], R, W, Tr, Frac_b, V, A, C))
+
+    catch e
+        @warn "Solver failed at τb = $τb, τw = $τw" exception=(e, catch_backtrace())
+        return NamedTuple{
+            (:τb, :τw, :r, :tr, :diffv, :diffasset, :diffgbc, :Rss, :Wss, :Trss, :Frac_bss, :Vss, :Ass, :Css)
+        }((τb, τw, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN))
     end
+end
 
 function guess_from_csv(τb, τw, df)
     row = df[(df.τb .≈ τb) .& (df.τw .≈ τw), :]
@@ -1082,4 +1164,293 @@ function guess_from_csv(τb, τw, df)
         idx = argmin(dists)
         return df.r[idx], df.tr[idx]
     end
+end
+
+
+
+
+
+#
+# Functions for nonlinear transition path
+#
+
+function forward!(OCM,ω,ωn,r,tr,wf,bf)
+
+    @unpack Nθ,πθ,lθ,Ia,alθ,δ,Θ̄,α,τp,τc,τb,τw,γ,σ_ε = OCM
+
+    K2Nc   = ((r/(1-τp)+δ)/(Θ̄*α))^(1/(α-1))
+    w      = (1-α)*Θ̄*K2Nc^α
+
+    ah     = alθ[1:Ia,1] 
+    cw     = hcat([wf.c[s](ah) for s in 1:Nθ]...)
+    cb     = hcat([bf.c[s](ah) for s in 1:Nθ]...)
+    πb     = hcat([bf.π[s](ah) for s in 1:Nθ]...)
+    Vw     = hcat([wf.v[s](ah) for s in 1:Nθ]...)
+    Vb     = hcat([bf.v[s](ah) for s in 1:Nθ]...)
+    p      = probw.(Vb.-Vw,σ_ε)
+
+    anw    = ((1+r) .* ah .+ (1-τw)*w.*exp.(lθ[:,2]') .- (1+τc) .*cw .+tr) ./(1+γ)
+    anb    = ((1+r) .* ah .+ (1-τb).*πb .- (1+τc) .*cb .+tr) ./(1+γ)
+    anw    = max.(min.(anw,ah[end]),ah[1])
+    anb    = max.(min.(anb,ah[end]),ah[1])
+
+    # Qsw    = [kron(πθ[s,:],BasisMatrix(Basis(SplineParams(ah,0,1)),Direct(),@view anw[:,s]).vals[1]') for s in 1:Nθ]
+    # Qsb    = [kron(πθ[s,:],BasisMatrix(Basis(SplineParams(ah,0,1)),Direct(),@view anb[:,s]).vals[1]') for s in 1:Nθ]
+    # Λtemp  = hcat(Qsw...,Qsb...)
+    # Λ      = vcat(p[:].*Λtemp,(1 .- p[:]).*Λtemp)
+
+        # Precompute spline basis only once
+    B = Basis(SplineParams(ah, 0, 1))
+
+    # Precompute sparse Qsw and Qsb matrices
+    Qsw = [sparse(kron(πθ[s, :], BasisMatrix(B, Direct(), @view anw[:, s]).vals[1]')) for s in 1:Nθ]
+    Qsb = [sparse(kron(πθ[s, :], BasisMatrix(B, Direct(), @view anb[:, s]).vals[1]')) for s in 1:Nθ]
+
+    # Build Λtemp = hcat(Qsw..., Qsb...) (size: 25_000 × 50_000)
+    Λtemp = hcat(Qsw..., Qsb...)
+    vbuf= zeros(Ia * Nθ )  # Buffer for the result
+    # Sparse matvec multiply without building full Λ
+    #Λtempω = Λtemp * ω
+    update_density!(ωn, Λtemp, p[:], ω,Ia,Nθ,vbuf)  # **fast call**
+    # ωn    .= Λ*ω
+     ωn   ./= sum(ωn)
+
+end 
+
+
+
+function forward_alt!(OCM,ω,ωn,r,tr,wf,bf)
+
+    @unpack Nθ,πθ,lθ,Ia,alθ,δ,Θ̄,α,τp,τc,τb,τw,γ,σ_ε = OCM
+
+    K2Nc   = ((r/(1-τp)+δ)/(Θ̄*α))^(1/(α-1))
+    w      = (1-α)*Θ̄*K2Nc^α
+
+    ah     = alθ[1:Ia,1] 
+    cw     = hcat([wf.c[s](ah) for s in 1:Nθ]...)
+    cb     = hcat([bf.c[s](ah) for s in 1:Nθ]...)
+    πb     = hcat([bf.π[s](ah) for s in 1:Nθ]...)
+    Vw     = hcat([wf.v[s](ah) for s in 1:Nθ]...)
+    Vb     = hcat([bf.v[s](ah) for s in 1:Nθ]...)
+    p      = probw.(Vb.-Vw,σ_ε)
+
+    anw    = ((1+r) .* ah .+ (1-τw)*w.*exp.(lθ[:,2]') .- (1+τc) .*cw .+tr) ./(1+γ)
+    anb    = ((1+r) .* ah .+ (1-τb).*πb .- (1+τc) .*cb .+tr) ./(1+γ)
+    anw    = max.(min.(anw,ah[end]),ah[1])
+    anb    = max.(min.(anb,ah[end]),ah[1])
+
+    # Qsw    = [kron(πθ[s,:],BasisMatrix(Basis(SplineParams(ah,0,1)),Direct(),@view anw[:,s]).vals[1]') for s in 1:Nθ]
+    # Qsb    = [kron(πθ[s,:],BasisMatrix(Basis(SplineParams(ah,0,1)),Direct(),@view anb[:,s]).vals[1]') for s in 1:Nθ]
+    # Λtemp  = hcat(Qsw...,Qsb...)
+    # Λ      = vcat(p[:].*Λtemp,(1 .- p[:]).*Λtemp)
+
+        # Precompute spline basis only once
+    B = Basis(SplineParams(ah, 0, 1))
+    #compute transition matrix for exogenous states 
+    Qθs = [kron(πθ[s,:], sparse(I, Ia, Ia)) for s in 1:Nθ]  # Sparse matrix for each shock state
+    #next transition matrix for occupational choice 
+    Pw = spdiagm(p[:])                          # Diagonal matrix for worker choice probabilities
+    Pb = spdiagm(1.0 .- p[:])           # Diagonal matrix for business owner choice probabilities
+    P = vcat(Pw, Pb)  # Combine into a block diagonal matrix
+
+    ω = reshape(ω, Ia,Nθ, 2)  # Reshape ω to a matrix of size (Ia*Nθ, 2)
+    ωn .= 0.0
+    for s in 1:Nθ
+        # Compute the transition probabilities for workers and business owners
+        Qsw = BasisMatrix(B, Direct(), @view anw[:, s]).vals[1]'
+        Qsb = BasisMatrix(B, Direct(), @view anb[:, s]).vals[1]'
+        
+        ωn .+= P*Qθs[s]*(Qsw * ω[:, s, 1] + Qsb * ω[:, s, 2])  # Apply the transition probabilities
+    end
+    ωn   ./= sum(ωn)
+
+end 
+
+function update_density!(ωn, Λtemp, p, ω,Ia, Nθ,v)
+    v = Λtemp * ω                 # 25 000-vector
+    @views begin
+        ωn[1:Ia*Nθ]         .= p .* v
+        ωn[Ia*Nθ+1:end]     .= (1 .- p) .* v
+    end
+    return nothing
+end
+
+function forward2!(OCM,ω,ωn,r,tr,wf,bf)
+
+    @unpack Nθ,πθ,lθ,Ia,alθ,δ,Θ̄,α,τp,τc,τb,τw,γ,σ_ε = OCM
+
+    K2Nc   = ((r/(1-τp)+δ)/(Θ̄*α))^(1/(α-1))
+    w      = (1-α)*Θ̄*K2Nc^α
+
+    ah     = alθ[1:Ia,1] 
+    cw     = hcat([wf.c[s](ah) for s in 1:Nθ]...)
+    cb     = hcat([bf.c[s](ah) for s in 1:Nθ]...)
+    πb     = hcat([bf.π[s](ah) for s in 1:Nθ]...)
+    Vw     = hcat([wf.v[s](ah) for s in 1:Nθ]...)
+    Vb     = hcat([bf.v[s](ah) for s in 1:Nθ]...)
+    p      = probw.(Vb.-Vw,σ_ε)
+
+    anw    = ((1+r) .* ah .+ (1-τw)*w.*exp.(lθ[:,2]') .- (1+τc) .*cw .+tr) ./(1+γ)
+    anb    = ((1+r) .* ah .+ (1-τb).*πb .- (1+τc) .*cb .+tr) ./(1+γ)
+    anw    = max.(min.(anw,ah[end]),ah[1])
+    anb    = max.(min.(anb,ah[end]),ah[1])
+
+    Qsw    = [kron(πθ[s,:],BasisMatrix(Basis(SplineParams(ah,0,1)),Direct(),@view anw[:,s]).vals[1]') for s in 1:Nθ]
+    Qsb    = [kron(πθ[s,:],BasisMatrix(Basis(SplineParams(ah,0,1)),Direct(),@view anb[:,s]).vals[1]') for s in 1:Nθ]
+    Λtemp  = hcat(Qsw...,Qsb...)
+    Λ      = vcat(p[:].*Λtemp,(1 .- p[:]).*Λtemp)
+    ωn    .= Λ*ω
+    ωn   ./= sum(ωn)
+
+end 
+
+    
+function policy_path(OCM,rT,trT)
+
+    @unpack Na,agrid,abasis,σ,β,Φ,Nθ,lθ,πθ,σ_ε,α,Θ̄,τp,δ = OCM
+
+    T       = length(rT)
+    wfT     = [(c = Vector{Spline1D}(undef,Nθ),
+                a = Vector{Spline1D}(undef,Nθ),
+                v = Vector{Spline1D}(undef,Nθ)) for t in 1:T]
+    bfT     = [(c = Vector{Spline1D}(undef,Nθ),
+                a = Vector{Spline1D}(undef,Nθ),
+                v = Vector{Spline1D}(undef,Nθ),
+                k = Vector{Spline1D}(undef,Nθ),
+                n = Vector{Spline1D}(undef,Nθ),
+                y = Vector{Spline1D}(undef,Nθ),
+                π = Vector{Spline1D}(undef,Nθ)) for t in 1:T]
+
+    cf_w    = Vector{Spline1D}(undef,Nθ)
+    af_w    = Vector{Spline1D}(undef,Nθ)
+    Vf_w    = Vector{Spline1D}(undef,Nθ)
+    cf_b    = Vector{Spline1D}(undef,Nθ)
+    af_b    = Vector{Spline1D}(undef,Nθ)
+    Vf_b    = Vector{Spline1D}(undef,Nθ)
+    kf      = Vector{Spline1D}(undef,Nθ)
+    nf      = Vector{Spline1D}(undef,Nθ)
+    yf      = Vector{Spline1D}(undef,Nθ)
+    πf      = Vector{Spline1D}(undef,Nθ)
+
+    Vhold   = OCM.Vcoefs 
+    luΦ     = lu(Φ)
+
+    
+    for t in reverse(1:T)
+
+        OCM.Vcoefs = Vhold
+        OCM.r      = rT[t]
+        OCM.tr     = trT[t]
+        OCM.w      = (1-α)*Θ̄*((rT[t]/(1-τp)+δ)/(Θ̄*α))^(α/(α-1))
+
+        cf_w,af_w = policyw(OCM)
+        cf_b,af_b,kf,nf,yf,πf = policyb(OCM)
+    
+        #Compute values at gridpoints     
+        c_w,c_b = zeros(Na,Nθ),zeros(Na,Nθ) 
+        a_w,a_b = zeros(Na,Nθ),zeros(Na,Nθ)
+        Vw,Vb   = zeros(Na,Nθ),zeros(Na,Nθ)
+        for s in 1:Nθ 
+            c_w[:,s] = cf_w[s](agrid)
+            c_b[:,s] = cf_b[s](agrid)
+            a_w[:,s] = af_w[s](agrid)     
+            a_b[:,s] = af_b[s](agrid)     
+            EΦw      = kron(πθ[s,:]',BasisMatrix(abasis,Direct(),a_w[:,s]).vals[1])
+            EΦb      = kron(πθ[s,:]',BasisMatrix(abasis,Direct(),a_b[:,s]).vals[1])
+            Vw[:,s]  = c_w[:,s].^(1-σ)/(1-σ) + β.*EΦw*Vhold
+            Vb[:,s]  = c_b[:,s].^(1-σ)/(1-σ) + β.*EΦb*Vhold
+        end
+        p       = probw.(Vb.-Vw,σ_ε)      
+        V       = p.*Vw .+ (1 .- p).*Vb
+        ptol    = 1e-8
+        ip      = ptol.< p .< 1-ptol      
+        V[ip]  .= Vw[ip] .+ σ_ε.*log.(1 .+ exp.((Vb[ip].-Vw[ip])./σ_ε))
+
+        #Implied value functions
+        Vf_w    = [Spline1D(agrid,Vw[:,s],k=1) for s in 1:Nθ]
+        Vf_b    = [Spline1D(agrid,Vb[:,s],k=1) for s in 1:Nθ]
+    
+        #Update the coefficients using the linear system ΦVcoefs = V
+        Vhold  .= luΦ\V[:]                
+        wfT[t]  = (c=cf_w,a=af_w,v=Vf_w)
+        bfT[t]  = (c=cf_b,a=af_b,v=Vf_b,k=kf,n=nf,y=yf,π=πf)
+
+    end
+    return wfT,bfT
+end 
+
+function residual_tr!(x0,OCMold,OCMnew)
+
+    @unpack T,Nh,alθ,Ia,Nθ,τc,τp,τd,τw,τb,δ,Θ̄,α,γ,g,b = OCMnew
+
+    #Initialize paths
+    rT      = x0[1:T]
+    trT     = x0[T+1:2*T]
+    ωT      = zeros(Nh,T+1)
+    ωT[:,1] = OCMold.ω
+    OCMtmp  = deepcopy(OCMnew)
+    kres    = zeros(T)
+    gres    = zeros(T)
+
+    #Backward: compute policies
+    wfT,bfT = policy_path(OCMtmp,rT,trT)
+
+    #Forward: update distribution over time 
+    ah      = alθ[1:Ia,1] 
+    adst    = hcat([alθ[:,1];alθ[:,1]])
+    for t in 1:T
+
+        @views forward_alt!(OCMnew,ωT[:,t],ωT[:,t+1],rT[t],trT[t],wfT[t],bfT[t])
+
+        nb      = hcat([bfT[t].n[s](ah) for s in 1:Nθ]...)
+        kb      = hcat([bfT[t].k[s](ah) for s in 1:Nθ]...)
+        yb      = hcat([bfT[t].y[s](ah) for s in 1:Nθ]...)
+        vw      = hcat([wfT[t].v[s](ah) for s in 1:Nθ]...)
+        vb      = hcat([bfT[t].v[s](ah) for s in 1:Nθ]...)
+        cw      = hcat([wfT[t].c[s](ah) for s in 1:Nθ]...)
+        cb      = hcat([bfT[t].c[s](ah) for s in 1:Nθ]...)
+        nwdst   = [exp.(alθ[:,3]);zeros(Ia*Nθ)]
+        nbdst   = [zeros(Ia*Nθ);nb[:]]
+        kbdst   = [zeros(Ia*Nθ);kb[:]]
+        ybdst   = [zeros(Ia*Nθ);yb[:]]
+        vdst    = [vw[:];vb[:]]
+        cdst    = [cw[:];cb[:]]
+        A       = dot(ωT[:,t+1],adst)
+        Nb      = dot(ωT[:,t+1],nbdst)
+        Nc      = dot(ωT[:,t+1],nwdst)-Nb
+        K2Nc    = ((rT[t]/(1-τp)+δ)/(Θ̄*α))^(1/(α-1))
+        Kc      = K2Nc*Nc
+        w       = (1-α)*Θ̄*K2Nc^α
+        Yc      = Θ̄*Kc^α*Nc^(1-α)
+        Kb      = dot(ωT[:,t+1],kbdst)
+        Yb      = dot(ωT[:,t+1],ybdst)
+        C       = dot(ωT[:,t+1],cdst)
+        Tc      = τc*C
+        Tp      = τp*(Yc-w*Nc-δ*Kc)
+        Td      = τd*(Yc-w*Nc-(γ+δ)*Kc-Tp)
+        Tw      = τw*w*(Nc+Nb)
+        Tb      = τb*(Yb-(rT[t]+δ)*Kb-w*Nb)
+        tx      = Tc+Tp+Td+Tw+Tb
+        kres[t] = 1-((1-τd)*Kc+Kb+b)/A
+        gres[t] = 1-(tx-trT[t]-(rT[t]-γ)*b)/g
+
+    end
+    res  = vcat(kres,gres)
+    return res
+end
+
+function solve_tr!(OCMold::OCModel, OCMnew::OCModel)
+
+    #Initial transition path guess and temporary struct
+    x0      = vcat(LinRange(OCMold.r,OCMnew.r,OCMold.T),
+                   LinRange(OCMold.tr,OCMnew.tr,OCMold.T))
+
+    #Residuals for asset markets and government budgets
+    f!(x)   = residual_tr!(x,OCMold,OCMNew)
+
+    res     = nlsolve(f!,x0; method = :newton, linesearch = :bt)
+    x       = res.zero
+    rT      = x[1:T]
+    trT     = x[T+1:2*T]
+
 end
