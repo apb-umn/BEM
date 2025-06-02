@@ -102,8 +102,8 @@ Parameters of the Occupation Choice Model (Lucas Version)
 
     #Asset grids
     a̲::Float64    = 0.0                 #Borrowing constraint
-    amax::Float64 = 150.             #Maximum asset grid point
-    Na::Int       = 50                  #Number of gridpoints for splines
+    amax::Float64 = 200.             #Maximum asset grid point
+    Na::Int       = 40                  #Number of gridpoints for splines
     so::Int       = 2                   #Spline order for asset grid
     Ia::Int       = 1000                #Number of gridpoints for histogram
     curv_a::Float64 = 3.0               #Controls spacing for asset grid
@@ -137,7 +137,7 @@ Parameters of the Occupation Choice Model (Lucas Version)
     ibise::Int = 1              #Bisection method for initial guess of r/tr
     iprint::Int   = 1                   #Turn on=1/off=0 intermediate printing
     T::Int        = 300                 #Number of periods in solve_tr!
-    ξ::Float64    = 1.0                 #Newton relaxation parameter
+    ξ::Float64    = 1.                 #Newton relaxation parameter
     inewt::Int    = 1                   #Use simple Newton in solvess
 
     #Vector/matrix lengths
@@ -1134,7 +1134,7 @@ function solvecase(τb, τw, r_guess, tr_guess)
         OCM.τw = τw
 
         assign!(OCM, r_guess, tr_guess)
-        OCM.ibise = 1
+        OCM.ibise = 0
         ss, lev, shr, res = solvess!(OCM)
         diff_v = diffegm(OCM)
         Xss = getX(OCM)  # [R, W, Tr, Frac_b, V, A, C]

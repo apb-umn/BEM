@@ -3,7 +3,7 @@ using Distributed, CSV, DataFrames
 addprocs(10)
 
 @everywhere begin
-    path = "/Users/apb/Dropbox/optimal_business_taxation/noncompliance/Approximation Code/"
+    path = "/Users/bhandari/Dropbox/optimal_business_taxation/noncompliance/Approximation Code/"
     cd(path)
 
     include("OCModelE.jl")               # defines OCModel and solvecase
@@ -13,7 +13,7 @@ addprocs(10)
 
     # --- Old steady state ---
     OCM_ = OCModel()
-    r_val,tr_val = 0.04162616198911325, 0.6221974322920143
+    r_val,tr_val = 0.04167393868478763, 0.627060033883048
     assign!(OCM_, r_val, tr_val)
     inputs_ = construct_inputs(OCM_)
 

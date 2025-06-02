@@ -2,7 +2,7 @@
 
 include("OCModelE.jl")
 include("FirstOrderApproximation.jl")
-
+ 
 
 """
     Fw(OCM::OCModel, lθ, a_, x, X, yᵉ)
@@ -240,47 +240,25 @@ distribution `ω̄_0_base` and aggregate capital `A_0`.
 """
 function compute_FO_transition_path(τb_val, τw_val, r_val, tr_val, ω̄_0_base, A_0,X̄_; T=300)
     # Initialize model and assign new policy parameters
-    println("Setting up new steady state with τb=$(τb_val), τw=$(τw_val), r=$(r_val), tr=$(tr_val)")
     OCM = OCModel()
     OCM.τb = τb_val
     OCM.τw = τw_val
     assign!(OCM, r_val, tr_val)
-    println("... Steady state assigned")
-    
-# Construct approximation objects around new steady state
-    println("Constructing inputs and zeroth order approximation")
+
+    # Construct approximation objects around new steady state
     inputs = construct_inputs(OCM)
-    println("... Inputs constructed")
-    println("Constructing zeroth order approximation")
     ZO = ZerothOrderApproximation(inputs)
-    println("... Zeroth order approximation constructed")
-    # populate derivative
-    println("Computing derivatives for zeroth order approximation")
     computeDerivativesF!(ZO, inputs)
     computeDerivativesG!(ZO, inputs)
-    println("... Derivatives computed")
-    println("Setting up the first order approximation")
     FO = FirstOrderApproximation(ZO, T)
-    println("... First order approximation constructed")
 
-    println("computing  f matrices")
+    # Compute linear transition system (some functions redundant by design)
     compute_f_matrices!(FO)
-    println("... f matrices computed")
-    println("computing Lemma3")
     compute_Lemma3!(FO)
-    println("... Lemma3 computed")
-    println("computing Lemma4")
     compute_Lemma4!(FO)
-    println("... Lemma4 computed")
-    println("computing Corollary2")
     compute_Corollary2!(FO)
-    println("... Corollary2 computed")
-    println("computing Proposition1")
     compute_Proposition1!(FO)
-    println("... Proposition1 computed")
-    println("computing BB")
     compute_BB!(FO)
-    println("... BB computed")
 
     # Adjust initial distribution using occupational choices implied by new τb
     ω̄ = reshape(OCM.ω, :, 2)
@@ -295,9 +273,7 @@ function compute_FO_transition_path(τb_val, τw_val, r_val, tr_val, ω̄_0_base
     FO.Δ_0 = ω̄_0 - ZO.ω̄
 
     # Solve forward transition path
-    println("Solving forward transition path")
     solve_Xt!(FO)
-    println("... Transition path solved")
 
     # Construct final time path and value function at t=0
     Xpath = [X̄_ ZO.X̄ .+ FO.X̂t]
