@@ -279,5 +279,87 @@ function compute_FO_transition_path(τb_val, τw_val, r_val, tr_val, ω̄_0_base
     Xpath = [X̄_ ZO.X̄ .+ FO.X̂t]
     Vinit = ZO.X̄[inputs.Xlab .== :V] + FO.X̂t[inputs.Xlab .== :V, 1]
 
-    return Xpath, Vinit
+    return Xpath, Vinit,inputs
+end
+
+function compute_FO_transition_path(τb_val, τw_val)
+
+    # === Old Steady State ===
+    println("setting up the initial ss...")
+    OCM_ = OCModel()
+    OCM_.iprint = 0
+    setup!(OCM_)
+    OCM_.ibise = 1
+    ss_,_,shr_,res=solvess!(OCM_)
+    inputs_ = construct_inputs(OCM_)
+    X̄_ = getX(OCM_)
+    A_0 = X̄_[inputs_.Xlab .== :A][1]
+    ω̄_0_base = sum(reshape(OCM_.ω, :, 2), dims=2)
+    println("....done")
+    case_ = (τb=OCM_.τb, τw=OCM_.τw, χ=OCM_.χ)
+    print_OC_model_summary(ss_, shr_,case_)
+
+
+    # === New Steady State ===
+    println("setting up the new ss...")
+    OCM = deepcopy(OCM_)
+    OCM.τb = τb_val
+    OCM.τw = τw_val
+    assign!(OCM, OCM_.r, OCM_.tr)
+    OCM.ibise = 0
+    OCM.iprint = 0
+    ss,_,shr,res= solvess!(OCM)
+    diff_v = OCM.diffv
+    Xss = getX(OCM)
+    R, W, Tr, Frac_b, V, A, C = Xss
+    println("....done")
+    case = (τb=OCM.τb, τw=OCM.τw, χ=OCM.χ)
+    print_OC_model_summary(ss, shr,case)
+
+
+    # === Construct Inputs ===
+    println("constructing inputs...")
+    inputs = construct_inputs(OCM)
+    ZO = ZerothOrderApproximation(inputs)
+    computeDerivativesF!(ZO, inputs)
+    computeDerivativesG!(ZO, inputs)
+    FO = FirstOrderApproximation(ZO, OCM.T)
+    println("....done")
+
+    # === Compute FO Transition Path ===
+    println("computing FO transition path...")
+    compute_f_matrices!(FO)
+    compute_Lemma3!(FO)
+    compute_Lemma4!(FO)
+    compute_Corollary2!(FO)
+    compute_Proposition1!(FO)
+    compute_BB!(FO)
+
+    ω̄ = reshape(OCM.ω, :, 2)
+    p̄ = ω̄ ./ sum(ω̄, dims=2)
+    p̄[isnan.(p̄[:, 1]), 1] .= 1.0
+    p̄[isnan.(p̄[:, 2]), 2] .= 0.0
+    ω̄_0 = (p̄ .* ω̄_0_base)[:]
+
+    FO.X_0 = [A_0] - ZO.P * ZO.X̄
+    FO.Θ_0 = [0.0]
+    FO.Δ_0 = ω̄_0 - ZO.ω̄
+
+    solve_Xt!(FO)
+    println("....done")
+
+    # === Collect Results ===
+    println("collecting results...")
+    Xpath = [X̄_ ZO.X̄ .+ FO.X̂t]
+    Vinit = ZO.X̄[inputs.Xlab .== :V] + FO.X̂t[inputs.Xlab .== :V, 1]
+
+    data = NamedTuple{
+        (:τb, :τw, :r, :tr, :diffv, :diffasset, :diffgbc, :Rss, :Wss, :Trss, :Frac_bss, :Vss, :Ass, :Css, :value)
+    }((τb_val, τw_val, OCM.r, OCM.tr, diff_v, res[1], res[2], R, W, Tr, Frac_b, V, A, C, Vinit[1]))
+
+    println("....done")
+
+    df = DataFrame(Xpath',inputs.Xlab)
+    df.t = 0:(size(Xpath,2)-1)
+    return df, data,OCM_,OCM
 end

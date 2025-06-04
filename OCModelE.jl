@@ -86,7 +86,7 @@ Parameters of the Occupation Choice Model (Lucas Version)
     #Entrepreneur parameters
     α_b::Float64 = 0.33                 #Private capital share
     ν::Float64   = 0.33                 #Private labor share 
-    χ::Float64   = 2.0                  #Collateral constraint
+    χ::Float64   = 2.0                  #Collateral constraint. Use 1.5 for comparative stats
 
     #Entrepreneur income shocks
     N_θb::Int     = 5                   #Number of productivity shocks θb
@@ -103,7 +103,7 @@ Parameters of the Occupation Choice Model (Lucas Version)
     #Asset grids
     a̲::Float64    = 0.0                 #Borrowing constraint
     amax::Float64 = 200.             #Maximum asset grid point
-    Na::Int       = 40                  #Number of gridpoints for splines
+    Na::Int       = 50                  #Number of gridpoints for splines
     so::Int       = 2                   #Spline order for asset grid
     Ia::Int       = 1000                #Number of gridpoints for histogram
     curv_a::Float64 = 3.0               #Controls spacing for asset grid
@@ -120,6 +120,7 @@ Parameters of the Occupation Choice Model (Lucas Version)
     tx::Float64   = 0.0                 #Total tax
 
     #Numerical parameters
+    Nhoward::Int = 1               #Number of iterations in Howard's method
     trlb::Float64 = 0.2                 #Transfers lower bound
     trub::Float64 = 1.0                 #Transfers upper bound
     Ntr::Int      = 1                   #Number of transfer evaluations
@@ -129,16 +130,17 @@ Parameters of the Occupation Choice Model (Lucas Version)
     Neval::Int    = 2                   #Number of bisection evaluations
     iagg::Int     = 1                   #Show aggregate data for each r/tr combo
     λ::Float64    = 1.0                 #Weight on Vcoefs update
-    Nit::Int      = 1000                #Number of iterations in solve_eg!
-    tolegm::Float64 = 1e-5            #Tolerance for EGM convergence
-    ftolmk::Float64 = 1e-6            #Tolerance for market clearing
-    xtolxmk::Float64 = 1e-3            #Tolerance for market clearing
-    maxitermk::Int = 1000         #Maximum iterations for market clearing
+    Nit::Int      = 500                #Number of iterations in solve_eg!
+    tolegm::Float64 = 1e-4            #Tolerance for EGM convergence
+    ftolmk::Float64 = 1e-4            #Tolerance for market clearing
+    xtolxmk::Float64 = 1e-4            #Tolerance for market clearing
+    maxitermk::Int = 500         #Maximum iterations for market clearing
     ibise::Int = 1              #Bisection method for initial guess of r/tr
     iprint::Int   = 1                   #Turn on=1/off=0 intermediate printing
     T::Int        = 300                 #Number of periods in solve_tr!
     ξ::Float64    = 1.                 #Newton relaxation parameter
     inewt::Int    = 1                   #Use simple Newton in solvess
+    diffv::Float64 = 1.              #Difference for egm 
 
     #Vector/matrix lengths
     Nθ::Int       = N_θb*N_θw           #Total number of income shocks
@@ -513,9 +515,8 @@ Outputs: V coefficients (Vcoefs), wf,bf (policies)
 """
 function solve_eg!(OCM::OCModel)
  
-    @unpack Na,agrid,abasis,σ,β,Φ,Nθ,lθ,πθ,σ_ε,λ,Nit,tolegm = OCM
+    @unpack Na,agrid,abasis,σ,β,Φ,Nθ,lθ,πθ,σ_ε,λ,Nit,tolegm,Nhoward,iprint = OCM
 
-    Vhold = OCM.Vcoefs
 
     # Placeholders for splines
     cf_w  = af_w = Vf_w = nothing
@@ -528,55 +529,60 @@ function solve_eg!(OCM::OCModel)
     luΦ   = lu(Φ)
     it    = 0
     while diff > tol && it < Nit && dchg > 1e-5
+        Vhold = OCM.Vcoefs
 
       #Compute optimal consumption, asset, and value functions
       cf_w,af_w = policyw(OCM)
       cf_b,af_b,kf,nf,yf,πf = policyb(OCM)
 
-      #Compute values at gridpoints
-      c_w,c_b = zeros(Na,Nθ),zeros(Na,Nθ) 
-      a_w,a_b = zeros(Na,Nθ),zeros(Na,Nθ)
-      Vw,Vb   = zeros(Na,Nθ),zeros(Na,Nθ)
-      for s in 1:Nθ
-          c_w[:,s] = cf_w[s](agrid) 
-          c_b[:,s] = cf_b[s](agrid) 
-          a_w[:,s] = af_w[s](agrid) 
-          a_b[:,s] = af_b[s](agrid) 
-          EΦw      = kron(πθ[s,:]',BasisMatrix(abasis,Direct(),a_w[:,s]).vals[1])
-          EΦb      = kron(πθ[s,:]',BasisMatrix(abasis,Direct(),a_b[:,s]).vals[1])
-          Vw[:,s]  = c_w[:,s].^(1-σ)/(1-σ) + β.*EΦw*OCM.Vcoefs
-          Vb[:,s]  = c_b[:,s].^(1-σ)/(1-σ) + β.*EΦb*OCM.Vcoefs 
-      end
-      p       = probw.(Vb.-Vw,σ_ε)
-      V       = p.*Vw .+ (1 .- p).*Vb
-      ptol    = 1e-8
-      ip      = ptol.< p .< 1-ptol
-      V[ip]  .= Vw[ip] .+ σ_ε.*log.(1 .+ exp.((Vb[ip].-Vw[ip])./σ_ε))
+      for _ =1:Nhoward
+        #Compute values at gridpoints
+        c_w,c_b = zeros(Na,Nθ),zeros(Na,Nθ) 
+        a_w,a_b = zeros(Na,Nθ),zeros(Na,Nθ)
+        Vw,Vb   = zeros(Na,Nθ),zeros(Na,Nθ)
+        for s in 1:Nθ
+            c_w[:,s] = cf_w[s](agrid) 
+            c_b[:,s] = cf_b[s](agrid) 
+            a_w[:,s] = af_w[s](agrid) 
+            a_b[:,s] = af_b[s](agrid) 
+            EΦw      = kron(πθ[s,:]',BasisMatrix(abasis,Direct(),a_w[:,s]).vals[1])
+            EΦb      = kron(πθ[s,:]',BasisMatrix(abasis,Direct(),a_b[:,s]).vals[1])
+            Vw[:,s]  = c_w[:,s].^(1-σ)/(1-σ) + β.*EΦw*OCM.Vcoefs
+            Vb[:,s]  = c_b[:,s].^(1-σ)/(1-σ) + β.*EΦb*OCM.Vcoefs 
+        end
+        p       = probw.(Vb.-Vw,σ_ε)
+        V       = p.*Vw .+ (1 .- p).*Vb
+        ptol    = 1e-8
+        ip      = ptol.< p .< 1-ptol
+        V[ip]  .= Vw[ip] .+ σ_ε.*log.(1 .+ exp.((Vb[ip].-Vw[ip])./σ_ε))
 
-      #Implied value functions
-      Vf_w    = [Spline1D(agrid,Vw[:,s],k=1) for s in 1:Nθ]
-      Vf_b    = [Spline1D(agrid,Vb[:,s],k=1) for s in 1:Nθ]
+        #Implied value functions
+        Vf_w    = [Spline1D(agrid,Vw[:,s],k=1) for s in 1:Nθ]
+        Vf_b    = [Spline1D(agrid,Vb[:,s],k=1) for s in 1:Nθ]
 
-      #Update the coefficients using the linear system ΦVcoefs = V
-      Vcnew   = luΦ\V[:]
-      diff    = norm(OCM.Vcoefs.-Vcnew)
-      OCM.Vcoefs = λ .* Vcnew + (1-λ) .* Vhold
+        #Update the coefficients using the linear system ΦVcoefs = V
+        Vcnew   = luΦ\V[:]
+        OCM.Vcoefs = λ .* Vcnew + (1-λ) .* Vhold
+    end 
+    diff    = norm(OCM.Vcoefs.-Vhold)
+    OCM.diffv= diff
 
       it     += 1
     end
 
     OCM.wf  = (c=cf_w,a=af_w,v=Vf_w)
     OCM.bf  = (c=cf_b,a=af_b,v=Vf_b,k=kf,n=nf,y=yf,π=πf)
-
-    if it>= Nit
-        println("solve_eg did not converge: $diff")
-    else
-        println("solve_eg converged in $it iterations: $diff")
+    if iprint==1
+        
+        if it>= Nit
+            println("solve_eg did not converge: $diff")
+        else
+            println("solve_eg converged in $it iterations: $diff")
+        end
+        if dchg<=1e-5
+            println("solve_eg is making no progress: $dchg")
+        end
     end
-    if dchg<=1e-5
-        println("solve_eg is making no progress: $dchg")
-    end
-
 end
 
 """
@@ -906,7 +912,7 @@ function assign!(OCM::OCModel,r::Float64,tr::Float64)
     OCM.r  = r
     OCM.tr = tr
 
-    @unpack τp,τd,τb,τc,τw,δ,Θ̄,α,b,γ,g = OCM
+    @unpack τp,τd,τb,τc,τw,δ,Θ̄,α,b,γ,g,iprint = OCM
 
     rc     = r/(1-τp)
     K2Nc   = ((rc+δ)/(Θ̄*α))^(1/(α-1))
@@ -933,9 +939,11 @@ function assign!(OCM::OCModel,r::Float64,tr::Float64)
 
     tem    = adst-((1-τd)*K2Nc) .* (nwdst-nbdst)-kbdst
     res    = [dot(OCM.ω,tem)-b,g+(OCM.r-γ)*b+OCM.tr-OCM.tx]
-    @printf("  Asset market  %10.3e, Govt budget   %10.3e\n",res[1],res[2])
-    diffv=diffegm(OCM)
-    @printf("  Diff in EGM     %10.3e\n",diffv)
+    diffv=OCM.diffv
+    if iprint ==1
+        @printf("  Asset market  %10.3e, Govt budget   %10.3e\n",res[1],res[2])
+        @printf("  Diff in EGM     %10.3e\n",diffv)
+    end
 
 end
 
@@ -1049,7 +1057,7 @@ function get_grids(OCM)
     #    end
     #end 
     mask = OCM.ω .> 1e-10
-    println("Maximum assets: $(maximum(aθc_Ω[mask,1]))")
+    #println("Maximum assets: $(maximum(aθc_Ω[mask,1]))")
 
     return aknots,OCM.so,aθc_sp,aθc_Ω,ℵ
 end
@@ -1124,7 +1132,33 @@ function diffegm(OCM::OCModel)
 end
 
 
-function solvecase(τb, τw, r_guess, tr_guess)
+function solvecase_serial!(OCM::OCModel)
+    diff_v = Inf
+    res = zeros(2)
+    try
+        # Recreate a fresh copy of OCM for each worker
+        OCM.τb = τb
+        OCM.τw = τw
+        ss, lev, shr, res = solvess!(OCM)
+        diff_v = OCM.diffv
+        Xss = getX(OCM)  # [R, W, Tr, Frac_b, V, A, C]
+        R, W, Tr, Frac_b, V, A, C = Xss
+
+        return NamedTuple{
+            (:τb, :τw, :r, :tr, :diffv, :diffasset, :diffgbc, :Rss, :Wss, :Trss, :Frac_bss, :Vss, :Ass, :Css)
+        }((τb, τw, OCM.r, OCM.tr, diff_v, res[1], res[2], R, W, Tr, Frac_b, V, A, C))
+
+    catch e
+        @warn "Solver failed at τb = $τb, τw = $τw" exception=(e, catch_backtrace())
+        return NamedTuple{
+            (:τb, :τw, :r, :tr, :diffv, :diffasset, :diffgbc, :Rss, :Wss, :Trss, :Frac_bss, :Vss, :Ass, :Css)
+        }((τb, τw, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN))
+    end
+
+
+end
+
+function solvecase_mpi(τb, τw, r_guess, tr_guess,ibiseval,iprintval)
     diff_v = Inf
     res = zeros(2)
     try
@@ -1132,11 +1166,11 @@ function solvecase(τb, τw, r_guess, tr_guess)
         OCM = OCModel()
         OCM.τb = τb
         OCM.τw = τw
-
+        OCM.iprint=iprintval
         assign!(OCM, r_guess, tr_guess)
-        OCM.ibise = 0
+        OCM.ibise = ibiseval
         ss, lev, shr, res = solvess!(OCM)
-        diff_v = diffegm(OCM)
+        diff_v = OCM.diffv
         Xss = getX(OCM)  # [R, W, Tr, Frac_b, V, A, C]
         R, W, Tr, Frac_b, V, A, C = Xss
 
@@ -1453,4 +1487,46 @@ function solve_tr!(OCMold::OCModel, OCMnew::OCModel)
     rT      = x[1:T]
     trT     = x[T+1:2*T]
 
+end
+
+function print_OC_model_summary(ss, shr, case)
+    println("                    OC Model Results")
+    println("                    ================")
+    println()
+    
+    println("      Case Parameters")
+    println("    -------------------------------------------")
+    @printf("      τᵇ (Capital tax)         %6.2f\n", case.τb)
+    @printf("      τʷ (Labor tax)           %6.2f\n", case.τw)
+    @printf("      χ  (max leverage parameter) %6.2f\n", case.χ)
+    println()
+
+    println("      Equilibrium values and residuals")
+    println("    -------------------------------------------")
+    @printf("      Interest rate           %6.2f%%\n", ss[1])
+    @printf("      Government transfer     %6.2f\n", ss[2])
+    @printf("      Asset market residual   %10.2e\n", ss[3])
+    @printf("      Government budget       %10.2e\n", ss[4])
+    println()
+    println()
+    println("      Incomes (%GDP)            Products             ")
+    println("    -------------------------------------------------")
+    @printf("      Sweat          %6.1f  |  Consumption    %6.1f\n", shr[6], shr[1])
+    @printf("      Compensation   %6.1f  |  Investment     %6.1f\n", shr[7], shr[2] + shr[3])
+    @printf("      Capital income %6.1f  |  Defense        %6.1f\n", 100 - shr[6] - shr[7], shr[4])
+    println("    -------------------------------------------------")
+    println("      Adj GDP         100.0                     100.0  ")
+    println()
+    println()
+    println("      Tax receipts (%GDP)      Expenditures          ")
+    println("    -------------------------------------------------")
+    @printf("      Sweat income   %6.1f  |  Transfers      %6.1f\n", shr[12], shr[20])
+    @printf("      Employee wages %6.1f  |  Defense        %6.1f\n", shr[13], shr[18])
+    @printf("      Profits        %6.1f  |  Net interest   %6.1f\n", shr[14], shr[19])
+    @printf("      Dividends      %6.1f  |                      \n", shr[15])
+    @printf("      Consumption    %6.1f  |                      \n", shr[16])
+    println("    -------------------------------------------------")
+    @printf("      Total          %6.1f                    %6.1f\n",
+            shr[12] + shr[13] + shr[14] + shr[15] + shr[16],
+            shr[18] + shr[19] + shr[20])
 end
