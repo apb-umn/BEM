@@ -80,7 +80,7 @@ Parameters of the Occupation Choice Model (Lucas Version)
 
     #Corporate parameters
     α::Float64   = 0.5                  #Corporate capital share
-    Θ̄::Float64   = 0.70                  #Corporate TFP
+    Θ̄::Float64   = 0.732                  #Corporate TFP
     δ::Float64   = 0.041                #Depreciation rate
 
     #Entrepreneur parameters
@@ -114,8 +114,8 @@ Parameters of the Occupation Choice Model (Lucas Version)
     b::Float64    = 3.0                 #Debt
     τb::Float64   = 0.2                 #Tax on private business
     τw::Float64   = 0.4                 #Tax on wages
-    τp::Float64   = 0.36                #Tax on corporate profits
-    τd::Float64   = 0.133               #Tax on dividend
+    τp::Float64   = 0.36 +.133*(1.0-0.36)               #Tax on corporate profits
+    τd::Float64   = 0.0               #Tax on dividend
     τc::Float64   = 0.065               #Tax on consumption
     tx::Float64   = 0.0                 #Total tax
 
