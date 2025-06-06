@@ -80,7 +80,7 @@ Parameters of the Occupation Choice Model (Lucas Version)
 
     #Corporate parameters
     α::Float64   = 0.5                  #Corporate capital share
-    Θ̄::Float64   = 0.732                  #Corporate TFP
+    Θ̄::Float64   = 0.73                  #Corporate TFP
     δ::Float64   = 0.041                #Depreciation rate
 
     #Entrepreneur parameters
@@ -120,11 +120,11 @@ Parameters of the Occupation Choice Model (Lucas Version)
     tx::Float64   = 0.0                 #Total tax
 
     #Numerical parameters
-    Nhoward::Int = 1               #Number of iterations in Howard's method
+    Nhoward::Int = 5               #Number of iterations in Howard's method
     trlb::Float64 = 0.2                 #Transfers lower bound
     trub::Float64 = 1.0                 #Transfers upper bound
     Ntr::Int      = 1                   #Number of transfer evaluations
-    rlb::Float64  = 0.0375               #Rate lower bound 
+    rlb::Float64  = 0.040               #Rate lower bound 
     rub::Float64  = 0.045               #Rate upper bound 
     Nr::Int       = 3                   #Number of rate evaluations (in check!)
     Neval::Int    = 2                   #Number of bisection evaluations

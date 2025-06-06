@@ -80,7 +80,7 @@ end
 end
 
 # Generate grid of policy parameters
-τb_vals = range(0.21, stop = 0.75, length = 10)
+τb_vals = range(0.2, stop = 0.7, length = 15)
 τw_vals = range(OCM_.τw, stop = OCM_.τw, length = 1)
 grid = collect(Iterators.product(τb_vals, τw_vals))
 
