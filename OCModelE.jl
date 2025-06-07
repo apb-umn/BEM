@@ -1034,6 +1034,58 @@ function get_policy_functions(OCM::OCModel)
 end
 
 
+
+"""
+save_policy_functions!(OCM::OCModel)
+
+Saves the policy functions in the OCModel object
+"""
+
+function get_policy_functions_with_â(OCM::OCModel)
+@unpack bf,wf,curv_a,Na,amax,a̲,curv_h,Ia,r,σ,δ,α_b,agrid,Nθ,lθ,ν,χ=OCM
+
+
+
+
+λb = Vector{Spline1D}(undef,Nθ)
+λw = Vector{Spline1D}(undef,Nθ)
+cb=zeros(Na)
+cw=zeros(Na)
+kb=zeros(Na)
+nb=zeros(Na)
+mpk=zeros(Na)
+ζval=zeros(Na)
+for s in 1:Nθ
+    cb .= bf.c[s](agrid)
+    cw .= wf.c[s](agrid)
+    kb .= max.(bf.k[s](agrid),1e-4)
+    nb .= bf.n[s](agrid)
+    z   = exp.(lθ[s,1]) # productivity shock
+    mpk .= α_b*z*kb.^(α_b-1).*nb.^ν
+    ζval .= cb.^(-σ).*(mpk .-r .-δ)
+    λb[s]  = Spline1D(agrid,(1+r)*cb.^(-σ)+χ*ζval,k=1)   
+    λw[s]  = Spline1D(agrid,(1+r)*cw.^(-σ),k=1)
+end
+
+
+#save the policy functions a,n,k,λ,v
+af(lθ,a,c) = c==1 ? wf.a[[lθ].==eachrow(OCM.lθ)][1](a) : bf.a[[lθ].==eachrow(OCM.lθ)][1](a)
+nf(lθ,a,c) = c==1 ? -exp.(lθ[2]) : bf.n[[lθ].==eachrow(OCM.lθ)][1](a)
+kf(lθ,a,c) = c==1 ? 0 : bf.k[[lθ].==eachrow(OCM.lθ)][1](a)
+yf(lθ,a,c) = c==1 ? 0 : bf.y[[lθ].==eachrow(OCM.lθ)][1](a)
+nbf(lθ,a,c) = c==1 ? 0 : bf.n[[lθ].==eachrow(OCM.lθ)][1](a)
+cf(lθ,a,c) = c==1 ? wf.c[[lθ].==eachrow(OCM.lθ)][1](a) : bf.c[[lθ].==eachrow(OCM.lθ)][1](a)
+λf(lθ,a,c) = c==1 ? λw[[lθ].==eachrow(OCM.lθ)][1](a) : λb[[lθ].==eachrow(OCM.lθ)][1](a)
+vf(lθ,a,c) = c==1 ? wf.v[[lθ].==eachrow(OCM.lθ)][1](a) : bf.v[[lθ].==eachrow(OCM.lθ)][1](a)
+πf(lθ,a,c) = c==1 ? 0 : bf.π[[lθ].==eachrow(OCM.lθ)][1](a)
+Ibf(lθ,a,c) = c==1 ? 0 : 1
+âf(lθ,a,c) = c==1 ? a : a
+
+
+return [af,âf,nf,kf,yf,nbf,cf,πf,Ibf,λf,vf] #return xf
+end
+
+
 function get_grids(OCM)
     @unpack bf,wf,curv_a,Na,amax,a̲,curv_h,Ia,πθ,lθ=OCM
     xvec = LinRange(0,1,Na-1).^curv_a  #The Na -1 to adjust for the quadratic splines
