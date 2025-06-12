@@ -182,6 +182,5 @@ println("Transition analysis completed successfully.")
 println("All results saved to CSV files.")
 
 # === Plotting ===
-plot_transition_comparison_dfs(df_slow, df_fast)
-
+plot_transition_comparison_dfs(df_transition_fast,df_transition_slow)
 # === End of script ===

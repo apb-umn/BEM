@@ -220,7 +220,9 @@ function construct_inputs(OCM)
 end
 
 
-function plot_transition_comparison_dfs(df_slow::DataFrame, df_fast::DataFrame)
+using Plots, DataFrames
+
+function plot_transition_comparison_dfs(df_slow::DataFrame, df_fast::DataFrame; savepath::String="transition_comparison.pdf")
     # Add time column if not present
     if :t ∉ names(df_slow)
         df_slow.t = 0:(nrow(df_slow)-1)
@@ -246,6 +248,8 @@ function plot_transition_comparison_dfs(df_slow::DataFrame, df_fast::DataFrame)
         plot!(plt[i], xlabel="Time", ylabel=string(var), title=titles[i])
     end
 
+    # Save and display
+    savefig(plt, savepath)
     display(plt)
 end
 
@@ -273,13 +277,26 @@ function analyze_optimal_taub(file::String)
     println("\nSummary Table:")
     pretty_table(summary; formatters = ft_printf("%.4f"))
 
+    # Save summary table to LaTeX file
+    open("optimal_tau_summary.tex", "w") do io
+        pretty_table(
+            io, summary;
+            header = names(summary),
+            backend = Val(:latex),
+            tf = tf_latex_booktabs,   # <- FIXED: no parentheses
+            formatters = ft_printf("%.4f")
+        )
+    end
+
     # Step 4: Plot Vinit vs τb with optima marked
     default(linewidth=2)
-    plt = plot(df.τb, df.Vinit, label = "V0", xlabel = "τb", ylabel = "Vinit",
+    plt = plot(df.τb, df.Vinit, label = "V₀", xlabel = "τb", ylabel = "Vinit",
                title = "Value vs τb", legend = :bottomright, grid = true)
 
     vline!([best_taub_vinit], label = "Best τb", linestyle = :dash, color = :red)
 
+    # Save the plot as PDF
+    savefig(plt, "vinit_vs_taub.pdf")
     display(plt)
 
     return summary
