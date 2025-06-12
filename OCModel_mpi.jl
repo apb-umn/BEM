@@ -1,93 +1,133 @@
 using Distributed, CSV, DataFrames
-include("OCModelE.jl")               # defines OCModel and solvecase
-path = "/Users/bhandari/Dropbox/optimal_business_taxation/noncompliance/Approximation Code/"
+path = "/Users/bhandari/Dropbox/optimal_business_taxation/noncompliance/Approximation Code/anm_git/"
 cd(path)
-OCM_ = OCModel()
-setup!(OCM_)
-solvess!(OCM_)
-r_val=OCM_.r
-tr_val=OCM_.tr
-addprocs(10)
+
+addprocs(8)  # or however many cores you want to use
 
 @everywhere begin
     include("OCModelE.jl")               # defines OCModel and solvecase
-    include("OCModelE_transition.jl")   # defines compute_FO_transition_path
+    include("OCModelE_transition_speed.jl")
+    function setup_old_steady_state()
+        OCM = OCModel()
+        OCM.χ=2.0
+        setup!(OCM)
+        OCM.r = 0.04176095778425395 #baseline
+        OCM.tr = 0.65256444424614563 #baseline
+        OCM.ibise = 0
+        solvess!(OCM)
+        assign!(OCM, OCM.r, OCM.tr)
+        inputs = construct_inputs(OCM)
+        X̄_0 = [getX(OCM); OCM.τb]
+        A_0 = X̄_0[inputs.Xlab .== :A][1]
+        Taub_0 = X̄_0[inputs.Xlab .== :Taub][1]
+        ω̄_0_base = sum(reshape(OCM.ω, :, 2), dims=2)
+        return OCM, inputs, X̄_0,A_0, Taub_0, ω̄_0_base
+    end
+    
+        
+    function setup_new_steady_state(τb, τw, ρ_τ, OCM_old)
+        OCM = deepcopy(OCM_old)
+        OCM.τb = τb
+        OCM.τw = τw
+        OCM.ρ_τ = ρ_τ
+        OCM.iprint = 1
+        OCM.ibise = 0
+        assign!(OCM, OCM_old.r, OCM_old.tr)
+        ss, lev, shr, res = solvess!(OCM)
+        Xss = [getX(OCM); OCM.τb]
+        return OCM, Xss
+    end
+    
+    function perform_transition_analysis(X̄_0,A_0, Taub_0, ω̄_0_base, OCM_new)
+        println("→ Constructing inputs...")
+        inputs = construct_inputs(OCM_new)
+        println("...done")
+    
+        println("→ Zeroth-order approximation...")
+        ZO = ZerothOrderApproximation(inputs)
+        println("...done")
+    
+        println("→ Computing derivatives...")
+        computeDerivativesF!(ZO, inputs)
+        computeDerivativesG!(ZO, inputs)
+        println("...done")
+    
+        println("→ First-order approximation...")
+        FO = FirstOrderApproximation(ZO, OCM_new.T)
+        println("...done")
+    
+        println("→ Computing x,M,L,Js components...")
+        compute_f_matrices!(FO)
+        compute_Lemma3!(FO)
+        compute_Lemma4!(FO)
+        compute_Corollary2!(FO)
+        compute_Proposition1!(FO)
+        compute_BB!(FO)
+        println("...done")
+    
+        println("→ Constructing initial ω̄ vector...")
+        ω̄ = reshape(OCM_new.ω, :, 2)
+        p̄ = ω̄ ./ sum(ω̄, dims=2)
+        p̄[isnan.(p̄[:, 1]), 1] .= 1.0
+        p̄[isnan.(p̄[:, 2]), 2] .= 0.0
+        ω̄_0 = (p̄ .* ω̄_0_base)[:]
+        println("...done")
+    
+        println("→ Setting initial conditions...")
+        FO.X_0 = [A_0; Taub_0] - ZO.P * ZO.X̄
+        FO.Θ_0 = [0.0]
+        FO.Δ_0 = ω̄_0 - ZO.ω̄
+        println("...done")
+    
+        println("→ Solving transition path...")
+        solve_Xt!(FO)
+        println("...done")
+    
+        println("→ Constructing X paths and value function...")
+        Xpath = [X̄_0 ZO.X̄ .+ FO.X̂t]
+        Vinit = ZO.X̄[inputs.Xlab .== :V] + FO.X̂t[inputs.Xlab .== :V, 1]
+    
+    
+        println("...done ✅")
+    
+        return Xpath,inputs, Vinit
+    end
 end
 
-@everywhere path = $path
-@everywhere r_val = $r_val
-@everywhere tr_val = $tr_val
 
-@everywhere begin
-    OCM_ = OCModel()
-    assign!(OCM_, r_val, tr_val)
-    # file = path * "grid_results_with_values.csv"
-    # if isfile(file)
-    #     df = CSV.read(file, DataFrame)
-    # else
-    #     @warn "File not found: $file"
-    #     df = DataFrame()
-    # end
-    assign!(OCM_, r_val, tr_val)
-    inputs_ = construct_inputs(OCM_)
+# Define your parameter grid
+τb_vals = collect(range(0.2, stop=0.7, length=24))
+ρ_τ_vals = collect(range(0.0, stop=0.0, length=1))
 
-    # Extract initial asset distribution and capital
-    X̄_ = getX(OCM_)
-    A_0 = X̄_[inputs_.Xlab .== :A][1]                       # Initial capital stock
-    ω̄_0_base = sum(reshape(OCM_.ω, :, 2), dims=2)         # Distribution over (a, θ)
-
-    function savecase(τb, τw,res)
-        df_res=DataFrame()
-        push!(df_res,res)
-        name = string("case_", round(τb, digits=3), "_", round(τw, digits=3), ".csv")
-        CSV.write(name, df_res)
-    end
-
-    # Combined solver + transition evaluator
-    function process_case(τb, τw)
-        # if nrow(df) > 0
-        #     r_val, tr_val = guess_from_csv(τb, τw, df)
-        #     ibise=0
-        #     iprint = 1
-        # else
-        #     @warn "Skipping guess_from_csv: df is empty"
-        #    r_val,tr_val = 0.04167393868478763, 0.627060033883048
-            ibise=1
-            iprint = 1
-        #end
-        sol = solvecase_mpi(τb, τw, r_val, tr_val,ibise,iprint)
-
-        if isnan(sol.r) || isnan(sol.tr)
-            res=merge(sol, (; value = NaN))
-            savecase(τb, τw, res)
-            return res
+@everywhere function run_grid_point(τb_val, ρ_τ_vals)
+    local_results = NamedTuple[]
+    try
+        OCM_old, inputs_old, X̄_old, A_old, Taub_old, ω̄_old = setup_old_steady_state()
+        for ρ_τ_val in ρ_τ_vals
+            try
+                OCM_new, Xss = setup_new_steady_state(τb_val, OCM_old.τw, ρ_τ_val, OCM_old)
+                Vss = Xss[inputs_old.Xlab .== :V][1]
+                _, _, Vinit = perform_transition_analysis(X̄_old, A_old, Taub_old, ω̄_old, OCM_new)
+                push!(local_results, (τb=τb_val, ρ_τ=ρ_τ_val, Vss=Vss, Vinit=Vinit[1]))
+            catch e_inner
+                @warn "Inner failure at (τb=$τb_val, ρ_τ=$ρ_τ_val)" exception=(e_inner, catch_backtrace())
+            end
         end
-
-        try
-            Xpath, Vinit = compute_FO_transition_path(sol.τb, sol.τw, sol.r, sol.tr,
-                                                      ω̄_0_base, A_0, X̄_; T = 300)
-           
-            res=merge(sol, (; value = Vinit[1]))
-            savecase(τb, τw, res)                                              
-            return res
-        catch e
-            @warn "Transition path failed at τb=$(sol.τb), τw=$(sol.τw)" exception=(e, catch_backtrace())
-            res=merge(sol, (; value = NaN))
-            savecase(τb, τw, res)                                              
-            return res
-        end
+    catch e_outer
+        @warn "Outer failure at τb = $τb_val" exception=(e_outer, catch_backtrace())
     end
+    return local_results
 end
 
-# Generate grid of policy parameters
-τb_vals = range(0.2, stop = 0.7, length = 15)
-τw_vals = range(OCM_.τw, stop = OCM_.τw, length = 1)
-grid = collect(Iterators.product(τb_vals, τw_vals))
 
-# Run in parallel across all workers
-results = pmap(x -> process_case(x[1], x[2]), grid)
-flat_results = vec(results)
+# Parallel map over τb_vals
+results = pmap(τb -> run_grid_point(τb, ρ_τ_vals), τb_vals)
+successes = filter(!isempty, results)
+failures = filter(isempty, results)
+println("Successful τb count: ", length(successes))
+println("Failed τb count: ", length(failures))
 
-# Save results
-#results_df = DataFrame(flat_results)
-#CSV.write("grid_results_with_values.csv", results_df)
+# Flatten the list of results
+df_results = DataFrame(reduce(vcat, successes))
+
+CSV.write("data_opt_base.csv", df_results)

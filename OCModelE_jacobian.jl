@@ -15,7 +15,7 @@ savings, labor, and value function conditions.
 function Fw(OCM::OCModel, lθ, a_, x, X, yᵉ)
     @unpack aw_bor_cutoff, β, σ, a̲, τc, τw, γ, α, Θ̄, τp, δ = OCM
     a_ = a_[1]
-    a, n, k, yb, nb, c, profit, b, λ, v = x
+    a,â_, n, k, yb, nb, c, profit, b, λ, v = x
     λᵉ, vᵉ = yᵉ
     R, Tr = X
     _, ϵ = exp.(lθ)
@@ -29,7 +29,8 @@ function Fw(OCM::OCModel, lθ, a_, x, X, yᵉ)
         β*λᵉ - u_c,                                         # (3) Euler
         u + β*vᵉ - v,                                      # (4) Bellman
         n + ϵ,                                             # (5) Labor supply
-        k, yb, nb, profit, b                               # (6–10) Unused
+        k, yb, nb, profit, b,                               # (6–10) Unused
+        â_ - a_                                           #track previous period's assets
     ]
     if a_ <= aw_bor_cutoff[lθ]
         ret[3] = a̲ - a  # (3b) Borrowing constraint binds
@@ -49,7 +50,7 @@ first-order conditions for inputs, and collateral/borrowing constraints.
 function Fb(OCM::OCModel, lθ, a_, x, X, yᵉ)
     @unpack ab_bor_cutoff, ab_col_cutoff, β, σ, α_b, ν, χ, a̲, τb, τc, τw, γ, Θ̄, τp, δ, α = OCM
     a_ = a_[1]
-    a, n, k, yb, nb, c, profit, b, λ, v = x
+    a,â_, n, k, yb, nb, c, profit, b, λ, v = x
     λᵉ, vᵉ = yᵉ
     R, Tr = X
     r = R - 1
@@ -75,7 +76,8 @@ function Fb(OCM::OCModel, lθ, a_, x, X, yᵉ)
         mpk - r - δ,                                            # (7)
         yb - z*k^α_b*n^ν,                                       # (8)
         profit - (z*k^α_b*n^ν - δ*k - r*k - W*n),                # (9)
-        b - 1                                                   # (10)
+        b - 1,                                                   # (10)
+        â_ - a_                                               #track previous period's assets
     ]
     if a_ <= ab_bor_cutoff[lθ]
         ret[3] = a̲ - a
@@ -101,10 +103,10 @@ function G(para::OCModel, Ix, A_, X, Xᵉ, Θ)
     @unpack α, δ, τw, τb, τp, τd, τc, b, w, γ, r, g = para
 
     # === Unpack aggregate integrals ===
-    Ia, In, Ik, Iyb, Inb, Ic, Iprofit, Ib, _, Iv = Ix
-    R, Tr, A = X
+    Ia,Ia_, In, Ik, Iyb, Inb, Ic, Iprofit, Ib, _, Iv = Ix
+    R, Tr = X
     TFP = Θ[1]               # Current TFP
-    A_ = A_[1]               # Lagged aggregate assets
+    #A_ = Ia_               # Lagged aggregate assets
     B = b                    # Government debt
     r = R - 1.0              # Interest rate on capital
     Rc = (R - 1) / (1 - τp) + 1
@@ -113,25 +115,30 @@ function G(para::OCModel, Ix, A_, X, Xᵉ, Θ)
     Nc = -In                 # Corporate labor (In is negative by convention)
     Nb = Inb                 # Business labor
     Kb = Ik                  # Business capital
-    Kc = (A_ - Ik - B) / (1 - τd)   #  corporate capital (from assets)
-    MPKc = α * TFP * Kc^(α - 1) * Nc^(1 - α)
+    #Kc = (A_ - Ik - B) / (1 - τd)   #  corporate capital (from assets)
+    #MPKc = α * TFP * Kc^(α - 1) * Nc^(1 - α)
+
+    #Solve for Kc from MPKc
+    MPKc = Rc - 1 + δ
+    Kc = (MPKc / (α * TFP))^(1 / (α - 1)) * Nc 
+    A_ = Kc + Ik + B
 
     # === Output in each sector ===
     Yc = TFP * Kc^α * Nc^(1 - α)    # Corporate output
     Yb = Iyb                         # Business output (from integral)
 
+    #1-(tx-trT[t]-(rT[t]-γ)*b)/g
 
     # === Government tax revenues ===
     Tp = τp * (Yc - w * Nc - δ * Kc)                    # Capital income tax
     Td = τd * (Yc - w * Nc - (γ + δ) * Kc - Tp)         # Dividend tax
     Tn = τw * w * (Nc + Nb)                             # Labor income tax
     Tb = τb * (Yb - (r + δ) * Kb - w * Nb)              # Business profit tax
-
+    Tx=τc * Ic + Tp + Td + Tn + Tb
     # === General equilibrium residuals ===
     return [
-        1 - Ia/A,  # (1) Asset market clearing: actual assets vs. distribution-integrated assets
-        (τc * Ic + Tp + Td + Tn + Tb - B * (R - 1 - γ) - g - Tr)/g,  # (2) Government budget constraint
-        Rc - 1 + δ - MPKc,                            # (3) FOC wrt capital
+        1 - Ia_/A_,  # (1) Asset market clearing: actual assets vs. distribution-integrated assets
+        1-(Tx- B * (R - 1 - γ)  - Tr)/g  # (2) Government budget constraint
     ]
 end
 
@@ -145,8 +152,8 @@ Returns expected marginal utility and expected value.
 """
 function ff(para::OCModel, x⁻, x⁺)
     @unpack σ_ε = para
-    _,_,_,_,_,_,_,_,λ⁻,v⁻ = x⁻
-    _,_,_,_,_,_,_,_,λ⁺,v⁺ = x⁺
+    _,_,_,_,_,_,_,_,_,λ⁻,v⁻ = x⁻
+    _,_,_,_,_,_,_,_,_,λ⁺,v⁺ = x⁺
     p = 1 / (1 + exp((v⁺ - v⁻)/σ_ε))
     if p < 1e-9
         return [λ⁺, v⁺]
@@ -167,17 +174,17 @@ Used to compute steady state and approximations.
 """
 function construct_inputs(OCM)
     inputs = Inputs()
-    inputs.xf = get_policy_functions(OCM) 
+    inputs.xf = get_policy_functions_with_â(OCM) 
     inputs.aknots, inputs.ka, inputs.aθc_sp, inputs.aθc_Ω, inputs.ℵ = get_grids(OCM)
-    inputs.xlab = [:a, :n, :k, :yb, :nb, :c, :profit, :b, :λ, :v]
+    inputs.xlab = [:a, :â_, :n, :k, :yb, :nb, :c, :profit, :b, :λ, :v]
     inputs.alab = [:a]
     inputs.κlab = [:v]
     inputs.yᵉlab = [:λ, :v]
     inputs.Γf = κ -> 1 / (1 + exp(κ / OCM.σ_ε))
     inputs.dΓf = κ -> -(1 / OCM.σ_ε) * exp(κ / OCM.σ_ε) / (1 + exp(κ / OCM.σ_ε))^2
-    inputs.X̄ = getX(OCM)[[1, 3, 6]]
-    inputs.Xlab = [:R, :Tr, :A]
-    inputs.Alab = [:A]
+    inputs.X̄ = getX(OCM)[[1, 3]]
+    inputs.Xlab = [:R, :Tr]
+    inputs.Alab = [:R]
     inputs.Qlab = [:R, :Tr]
     inputs.ω̄, inputs.Λ, inputs.πθ = OCM.ω, OCM.Λ, OCM.πθ
     inputs.Θ̄ = ones(1) * OCM.Θ̄
@@ -200,8 +207,8 @@ function compute_FO_transition_path(τb_val, τw_val)
     OCM_.ibise = 1
     ss_,_,shr_,res=solvess!(OCM_)
     inputs_ = construct_inputs(OCM_)
-    X̄_ = getX(OCM_)[[1,3,6]]
-    A_0 = X̄_[3][1]                       # Initial capital stock
+    X̄_ = getX(OCM_)[[1,3]]
+    A_0 = X̄_[1]                       # Initial capital stock
     ω̄_0_base = sum(reshape(OCM_.ω, :, 2), dims=2)
     println("....done")
     case_ = (τb=OCM_.τb, τw=OCM_.τw, χ=OCM_.χ)
@@ -218,8 +225,8 @@ function compute_FO_transition_path(τb_val, τw_val)
     OCM.iprint = 0
     ss,_,shr,res= solvess!(OCM)
     diff_v = OCM.diffv
-    Xss = getX(OCM)[[1,3,6]]
-    R, Tr, A = Xss
+    Xss = getX(OCM)[[1,3]]
+    R, Tr = Xss
     println("....done")
     case = (τb=OCM.τb, τw=OCM.τw, χ=OCM.χ)
     print_OC_model_summary(ss, shr,case)
@@ -255,7 +262,11 @@ function compute_FO_transition_path(τb_val, τw_val)
 
     solve_Xt!(FO)
     println("....done")
+    Xpath = [X̄_ ZO.X̄ .+ FO.X̂t]
+
+    df = DataFrame(Xpath',inputs.Xlab)
+    df.t = 0:(size(Xpath,2)-1)
 
     jac=FO.BB
-    return jac,OCM_,OCM
+    return df,jac,OCM_,OCM
 end

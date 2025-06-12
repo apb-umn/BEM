@@ -2,6 +2,8 @@ include("FirstOrderApproximation.jl")
 using TimerOutputs
 
 
+####NOTE I WILL ASSUME n.a = 1 throughout this
+
 
 """
 SecondOrderApproximation{Model}
@@ -21,11 +23,6 @@ given Model.  Will assume F_x(M::Model,z) etc. exists.
     x̂k::Vector{Matrix{Float64}} =  Vector{Matrix{Float64}}(undef,1)
     X̂k::Matrix{Float64} = zeros(1,1)
 
-    ##PreComputations
-    #x̄_zz object computed for accuracy
-    x̄_aa::Matrix{Float64} = zeros(1,1)
-    Ixaaδ::Matrix{Float64} = zeros(1,1)
-    x̄_aaδ::Matrix{Float64} = zeros(0,0) #kink component
 
     ##Lemma 2 terms
     GΘΘtk::Matrix{Float64} = zeros(1,1) #nX×T
@@ -91,33 +88,6 @@ function Base.copy(SO::SecondOrderApproximation)
         setfield!(SOtemp,k,getfield(SO,k))
     end
     return SOtemp
-end
-
-
-"""
-    computex̄_aa!(SO::SecondOrderApproximation)
-
-Computes the coefficients of x̄_aa
-"""
-function computex̄_aa!(SO::SecondOrderApproximation)
-    @unpack FO = SO
-    @unpack f,ZO,x̄_a = FO
-    @unpack n,x̄,Φ̃ᵉₐ,Φ̃ₐ,Φ̃,Φ̃ᵉ,p,dF = ZO
-    B = spzeros(n.x*n.sp,n.x*n.sp)
-    x̄_a =x̄_a*Φ̃# x̄*Φ̃ₐ
-    Ex̄_a =x̄_a*Φ̃ᵉ#  x̄*Φ̃ᵉₐ
-    Ex̄_aa = x̄_a*Φ̃ᵉₐ
-    x̄_aa = similar(x̄)
-    for j in 1:n.sp
-        x̄_aj = x̄_a[:,j] 
-        ā_aj = (p*x̄_aj)[1]
-        x̄′_a = view(Ex̄_a,:,j)*z̄_aj
-
-        x̄_zz[:,j] = f[j]*(dF.x′[j]*view(Ex̄_aa,:,j)*ā_aj*ā_aj + dF.aa[j] + 2*dF.ax[j]*x̄_aj + 2*dF.ax′[j]* x̄′_a
-                    + dF.xx[j]⋅(x̄_aj,x̄_aj) + 2*dF.xx′[j]⋅(x̄_aj,x̄′_a)
-                    +dF.x′x′[j]⋅(x̄′_a,x̄′_a))
-    end
-    SO.x̄_aa = x̄_aa/Φ̃
 end
 
 

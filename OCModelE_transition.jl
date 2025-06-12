@@ -17,7 +17,7 @@ function Fw(OCM::OCModel, lθ, a_, x, X, yᵉ)
     a_ = a_[1]
     a, n, k, yb, nb, c, profit, b, λ, v = x
     λᵉ, vᵉ = yᵉ
-    R, W, Tr = X
+    R, W, Tr,Taub = X
     _, ϵ = exp.(lθ)
 
     # Marginal utility and utility
@@ -52,11 +52,11 @@ Equilibrium conditions for a business owner. Includes budget constraint,
 first-order conditions for inputs, and collateral/borrowing constraints.
 """
 function Fb(OCM::OCModel, lθ, a_, x, X, yᵉ)
-    @unpack ab_bor_cutoff, ab_col_cutoff, β, σ, α_b, ν, χ, a̲, δ, τb, τc, τw, γ = OCM
+    @unpack ab_bor_cutoff, ab_col_cutoff, τb,β, σ, α_b, ν, χ, a̲, δ , τc, τw, γ = OCM
     a_ = a_[1]
     a, n, k, yb, nb, c, profit, b, λ, v = x
     λᵉ, vᵉ = yᵉ
-    R, W, Tr = X
+    R, W, Tr,Taub = X
     r = R - 1
     z, _ = exp.(lθ)
 
@@ -73,8 +73,8 @@ function Fb(OCM::OCModel, lθ, a_, x, X, yᵉ)
 
     # System of residuals
     ret = [
-        R*a_ + (1 - τb)*profit + Tr - (1 + τc)*c - (1 + γ)*a,              # (1) Budget constraint
-        λ - R*u_c - u_c*χ*(mpk - r - δ),                                       # (2) Marginal value of wealth
+        R*a_ + (1 - Taub)*profit + Tr - (1 + τc)*c - (1 + γ)*a,            # (1) Budget constraint
+        λ - R*u_c - u_c*χ*(mpk - r - δ)*(1-Taub),                          # (2) Marginal value of wealth
         β*λᵉ - u_c,                                                        # (3) Euler equation
         u + β*vᵉ - v,                                                      # (4) Value function
         mpn - W,                                                           # (5) Labor FOC
@@ -111,12 +111,13 @@ end
 Aggregate equilibrium conditions. Ensures market clearing, government budget
 balance, and correct pricing in production sectors.
 """
-function G(para::OCModel, Ix, A_, X, Xᵉ, Θ)
-    @unpack α, δ, τw, τb, τp, τd, τc, b, w, γ, r, g = para
+function G(para::OCModel, Ix, X_, X, Xᵉ, Θ)
+    @unpack α, δ, τw, τp, τd, τc, b, w, γ, r, g, τb, ρ_τ = para
     Ia, In, Ik, Iyb, Inb, Ic, Iprofit, Ib, _, Iv = Ix
-    R, W, Tr, Frac_b, V, A, C = X
+    R, W, Tr, Frac_b, V, A, C,Taub = X
     TFP = Θ[1]
-    A_ = A_[1]
+    A_ = X_[1]
+    Taub_=X_[2]
     B = b
     Gval = g
 
@@ -137,7 +138,7 @@ function G(para::OCModel, Ix, A_, X, Xᵉ, Θ)
     Tp = τp * (Yc - w * Nc - δ * Kc)
     Td = τd * (Yc - w * Nc - (γ + δ) * Kc - Tp)
     Tn = τw * w * (Nc + Nb)
-    Tb = τb * (Yb - (r + δ) * Kb - w * Nb)
+    Tb = Taub * (Yb - (r + δ) * Kb - w * Nb)
 
     return [
         Rc - 1 + δ - MPKc,                            # (1) FOC wrt capital
@@ -146,7 +147,8 @@ function G(para::OCModel, Ix, A_, X, Xᵉ, Θ)
         C - Ic,                                       # (4) Consumption consistency
         (τc * C + Tp + Td + Tn + Tb) - B*(R - 1 - γ) - Gval - Tr, # (5) Gov budget
         Ib - Frac_b,                                  # (6) Fraction self-employed
-        Iv - V                                        # (7) Average utility
+        Iv - V,                                       # (7) Average utility
+        Taub-(τb+ρ_τ*(Taub_-τb)),                     # (8) Business tax rate consistency
     ]
 end
 
@@ -198,10 +200,10 @@ function construct_inputs(OCM)
     inputs.dΓf = κ -> -(1 / OCM.σ_ε) * exp(κ / OCM.σ_ε) / (1 + exp(κ / OCM.σ_ε))^2
 
     # Aggregates and equilibrium labels
-    inputs.X̄ = getX(OCM)
-    inputs.Xlab = [:R, :W, :Tr, :Frac_b, :V, :A, :C]
-    inputs.Alab = [:A]
-    inputs.Qlab = [:R, :W, :Tr]
+    inputs.X̄ = [getX(OCM);OCM.τb]
+    inputs.Xlab = [:R, :W, :Tr, :Frac_b, :V, :A, :C,:Taub]
+    inputs.Alab = [:A,:Taub]
+    inputs.Qlab = [:R, :W, :Tr,:Taub]
 
     # Distributional objects
     inputs.ω̄, inputs.Λ, inputs.πθ = OCM.ω, OCM.Λ, OCM.πθ
@@ -211,156 +213,74 @@ function construct_inputs(OCM)
 
     # Residual functions
     inputs.F = (lθ, a_, c, x, X, yᵉ) -> c == 1 ? Fw(OCM, lθ, a_, x, X, yᵉ) : Fb(OCM, lθ, a_, x, X, yᵉ)
-    inputs.G = (Ix, A_, X, Xᵉ, lΘ) -> G(OCM, Ix, A_, X, Xᵉ, lΘ)
+    inputs.G = (Ix, X_, X, Xᵉ, lΘ) -> G(OCM, Ix, X_, X, Xᵉ, lΘ)
     inputs.f = (x⁻, x⁺) -> ff(OCM, x⁻, x⁺)
 
     return inputs
 end
 
-"""
-    compute_FO_transition_path(τb_val, τw_val, r_val, tr_val, ω̄_0_base, A_0; T=300)
 
-Compute the first-order transition path of aggregate variables and value functions
-in response to a permanent policy change (τb, τw, r, tr), starting from an initial
-distribution `ω̄_0_base` and aggregate capital `A_0`.
+function plot_transition_comparison_dfs(df_slow::DataFrame, df_fast::DataFrame)
+    # Add time column if not present
+    if :t ∉ names(df_slow)
+        df_slow.t = 0:(nrow(df_slow)-1)
+    end
+    if :t ∉ names(df_fast)
+        df_fast.t = 0:(nrow(df_fast)-1)
+    end
 
-# Arguments
-- `τb_val`: New business tax rate.
-- `τw_val`: New wage tax rate.
-- `r_val`:  New interest rate (consistent with new steady state).
-- `tr_val`: New transfers (consistent with new steady state).
-- `ω̄_0_base`: Initial marginal distribution over (a, θ) from old steady state.
-- `A_0`: Initial aggregate capital stock.
-- `X̄_`: Steady state aggregate variables 
-- `T`: Length of transition path (default = 300).
+    # Variables to plot and their titles
+    variables = [:A, :C, :Frac_b, :Tr, :W, :Taub]
+    titles = [
+        "Capital (A)", "Consumption (C)", "Fraction Borrowers (Frac_b)",
+        "Transfers (Tr)", "Wage (W)", "Capital Tax (Taub)"
+    ]
 
-# Returns
-- `Xpath`: Transition path of aggregates.
-- `Vinit`: Initial average value function under new policy.
-"""
-function compute_FO_transition_path(τb_val, τw_val, r_val, tr_val, ω̄_0_base, A_0,X̄_; T=300)
-    # Initialize model and assign new policy parameters
-    OCM = OCModel()
-    OCM.τb = τb_val
-    OCM.τw = τw_val
-    assign!(OCM, r_val, tr_val)
+    # Create the plot layout
+    plt = plot(layout = (3, 2), size=(1000, 800))
 
-    # Construct approximation objects around new steady state
-    inputs = construct_inputs(OCM)
-    ZO = ZerothOrderApproximation(inputs)
-    computeDerivativesF!(ZO, inputs)
-    computeDerivativesG!(ZO, inputs)
-    FO = FirstOrderApproximation(ZO, T)
+    # Plot each variable
+    for (i, var) in enumerate(variables)
+        plot!(plt[i], df_slow.t, df_slow[!, var], label = "Slow Reform", linestyle=:dash, lw=2)
+        plot!(plt[i], df_fast.t, df_fast[!, var], label = "Fast Reform", linestyle=:solid, lw=2)
+        plot!(plt[i], xlabel="Time", ylabel=string(var), title=titles[i])
+    end
 
-    # Compute linear transition system (some functions redundant by design)
-    compute_f_matrices!(FO)
-    compute_Lemma3!(FO)
-    compute_Lemma4!(FO)
-    compute_Corollary2!(FO)
-    compute_Proposition1!(FO)
-    compute_BB!(FO)
-
-    # Adjust initial distribution using occupational choices implied by new τb
-    ω̄ = reshape(OCM.ω, :, 2)
-    p̄ = ω̄ ./ sum(ω̄, dims=2)
-    p̄[isnan.(p̄[:, 1]), 1] .= 1.0
-    p̄[isnan.(p̄[:, 2]), 2] .= 0.0
-    ω̄_0 = (p̄ .* ω̄_0_base)[:]  # full initial distribution over (a, θ, occupation)
-
-    # Set initial deviations from new steady state
-    FO.X_0 = [A_0] - ZO.P * ZO.X̄
-    FO.Θ_0 = [0.0]
-    FO.Δ_0 = ω̄_0 - ZO.ω̄
-
-    # Solve forward transition path
-    solve_Xt!(FO)
-
-    # Construct final time path and value function at t=0
-    Xpath = [X̄_ ZO.X̄ .+ FO.X̂t]
-    Vinit = ZO.X̄[inputs.Xlab .== :V] + FO.X̂t[inputs.Xlab .== :V, 1]
-
-    return Xpath, Vinit,inputs
+    display(plt)
 end
 
-function compute_FO_transition_path(τb_val, τw_val)
-
-    # === Old Steady State ===
-    println("setting up the initial ss...")
-    OCM_ = OCModel()
-    OCM_.iprint = 0
-    setup!(OCM_)
-    OCM_.ibise = 1
-    ss_,_,shr_,res=solvess!(OCM_)
-    inputs_ = construct_inputs(OCM_)
-    X̄_ = getX(OCM_)
-    A_0 = X̄_[inputs_.Xlab .== :A][1]
-    ω̄_0_base = sum(reshape(OCM_.ω, :, 2), dims=2)
-    println("....done")
-    case_ = (τb=OCM_.τb, τw=OCM_.τw, χ=OCM_.χ)
-    print_OC_model_summary(ss_, shr_,case_)
 
 
-    # === New Steady State ===
-    println("setting up the new ss...")
-    OCM = deepcopy(OCM_)
-    OCM.τb = τb_val
-    OCM.τw = τw_val
-    assign!(OCM, OCM_.r, OCM_.tr)
-    OCM.ibise = 0
-    OCM.iprint = 0
-    ss,_,shr,res= solvess!(OCM)
-    diff_v = OCM.diffv
-    Xss = getX(OCM)
-    R, W, Tr, Frac_b, V, A, C = Xss
-    println("....done")
-    case = (τb=OCM.τb, τw=OCM.τw, χ=OCM.χ)
-    print_OC_model_summary(ss, shr,case)
+function analyze_optimal_taub(file::String)
+    # Step 1: Read the data
+    df = CSV.read(file, DataFrame)
 
+    # Step 2: Find the best τb using Vinit and Vss
+    idx_vinit = argmax(df.Vinit)
+    idx_vss   = argmax(df.Vss)
 
-    # === Construct Inputs ===
-    println("constructing inputs...")
-    inputs = construct_inputs(OCM)
-    ZO = ZerothOrderApproximation(inputs)
-    computeDerivativesF!(ZO, inputs)
-    computeDerivativesG!(ZO, inputs)
-    FO = FirstOrderApproximation(ZO, OCM.T)
-    println("....done")
+    best_taub_vinit = df.τb[idx_vinit]
+    best_taub_vss   = df.τb[idx_vss]
 
-    # === Compute FO Transition Path ===
-    println("computing FO transition path...")
-    compute_f_matrices!(FO)
-    compute_Lemma3!(FO)
-    compute_Lemma4!(FO)
-    compute_Corollary2!(FO)
-    compute_Proposition1!(FO)
-    compute_BB!(FO)
+    # Step 3: Construct summary table
+    summary = DataFrame(
+        Criterion = ["Best by Vss+Transition", "Best by Vss"],
+        τb = [best_taub_vinit, best_taub_vss],
+        Vinit = [df.Vinit[idx_vinit], df.Vinit[idx_vss]],
+        Vss = [df.Vss[idx_vinit], df.Vss[idx_vss]]
+    )
 
-    ω̄ = reshape(OCM.ω, :, 2)
-    p̄ = ω̄ ./ sum(ω̄, dims=2)
-    p̄[isnan.(p̄[:, 1]), 1] .= 1.0
-    p̄[isnan.(p̄[:, 2]), 2] .= 0.0
-    ω̄_0 = (p̄ .* ω̄_0_base)[:]
+    println("\nSummary Table:")
+    pretty_table(summary; formatters = ft_printf("%.4f"))
 
-    FO.X_0 = [A_0] - ZO.P * ZO.X̄
-    FO.Θ_0 = [0.0]
-    FO.Δ_0 = ω̄_0 - ZO.ω̄
+    # Step 4: Plot Vinit vs τb with optima marked
+    default(linewidth=2)
+    plt = plot(df.τb, df.Vinit, label = "V0", xlabel = "τb", ylabel = "Vinit",
+               title = "Value vs τb", legend = :bottomright, grid = true)
 
-    solve_Xt!(FO)
-    println("....done")
+    vline!([best_taub_vinit], label = "Best τb", linestyle = :dash, color = :red)
 
-    # === Collect Results ===
-    println("collecting results...")
-    Xpath = [X̄_ ZO.X̄ .+ FO.X̂t]
-    Vinit = ZO.X̄[inputs.Xlab .== :V] + FO.X̂t[inputs.Xlab .== :V, 1]
+    display(plt)
 
-    data = NamedTuple{
-        (:τb, :τw, :r, :tr, :diffv, :diffasset, :diffgbc, :Rss, :Wss, :Trss, :Frac_bss, :Vss, :Ass, :Css, :value)
-    }((τb_val, τw_val, OCM.r, OCM.tr, diff_v, res[1], res[2], R, W, Tr, Frac_b, V, A, C, Vinit[1]))
-
-    println("....done")
-
-    df = DataFrame(Xpath',inputs.Xlab)
-    df.t = 0:(size(Xpath,2)-1)
-    return df, data,OCM_,OCM
+    return summary
 end
-

@@ -20,6 +20,10 @@ function /(A::Array{Float64,3},B::SuiteSparse.UMFPACK.UmfpackLU{Float64, Int64})
     return ret
 end
 
+function /(A::Array{Float64,2},B::SuiteSparse.UMFPACK.UmfpackLU{Float64, Int64})
+    return (B'\A')'
+end
+
 
 """
     /(A::Array{Float64,3},B::SparseMatrixCSC{Float64,Int64})
@@ -76,6 +80,8 @@ given Model.  Will assume that derivatives (e.g. F_x, F_X etc.) exists.
 
     #x̄_a
     x̄_a::Matrix{Float64} = zeros(0,0)
+    #ȳ_a (mostly stored for second order approximation)
+    ȳ_a::Matrix{Float64} = zeros(0,0)
     
     #Terms for Lemma 2
     f::Vector{Matrix{Float64}} = Vector{Matrix{Float64}}(undef,1)
@@ -104,15 +110,15 @@ given Model.  Will assume that derivatives (e.g. F_x, F_X etc.) exists.
     BB::SparseMatrixCSC{Float64, Int64} = spzeros(1,1)
     luBB::SparseArrays.UMFPACK.UmfpackLU{Float64, Int64} = lu(sprand(1,1,1.))
 
+
     #Outputs
-    Ω̂t::Matrix{Float64} =  zeros(1,1)
+    ω̂t::Matrix{Float64} =  zeros(1,1)
+    ω̂at::Matrix{Float64} =  zeros(1,1)
     x̂t::Vector{Matrix{Float64}} =  Vector{Matrix{Float64}}(undef,1)
+    ŷt::Vector{Matrix{Float64}} =  Vector{Matrix{Float64}}(undef,1)
+    κ̂t::Vector{Vector{Float64}} =  Vector{Vector{Float64}}(undef,1)
     X̂t::Matrix{Float64} = zeros(1,1)
 
-
-    Ω̂_Θt::Vector{Matrix{Float64}} =  Vector{Matrix{Float64}}(undef,1)
-    x̂_Θt::Vector{Vector{Matrix{Float64}}} =  Vector{Vector{Matrix{Float64}}}(undef,1)
-    X̂_Θt::Vector{Matrix{Float64}} = Vector{Matrix{Float64}}(undef,1)
 end
 
 
@@ -160,6 +166,7 @@ function compute_f_matrices!(FO::FirstOrderApproximation)
         @views ȳ_a[:,:,j] = df.x⁺[j]*x̄⁺_a[:,:,j] + df.x⁻[j]*x̄⁻_a[:,:,j] 
     end
     ȳ_a = ȳ_a/luΦ̃ #convert to spline coefficients
+    FO.ȳ_a = reshape(ȳ_a,:,n.sp)
     Eȳ′_a = ȳ_a*Φ̃ᵉ
     x̄_a = zeros(n.x,n.a,n.sp)
     for j in 1:n.sp
@@ -365,3 +372,85 @@ function solve_Xt!(FO::FirstOrderApproximation)
     Xt = -(luBB\AA[:])
     FO.X̂t = reshape(Xt,n.X,T)
 end
+
+
+"""
+    compute_x̂t_ω̂t!(FO::FirstOrderApproximation) 
+
+Computes the x̂t and ω̂t objects.  Note assumes Na = 1. 
+"""
+function compute_x̂t_ω̂t!(FO::FirstOrderApproximation)
+    @unpack ZO,T,x,κ,X̂t,L,M,La,Ma,Δ_0 = FO
+    @unpack Q,Φ,ω̄,p,pκ,Δ,Δ⁺,Δ⁻,n,Λ,df,Φ̃ = ZO
+    luΦ̃ = lu(Φ̃)
+    #Fill objects
+    #N = length(ZO.â)
+    FO.x̂t = [zeros(n.x,n.sp) for t in 1:T]
+    κ̂t = FO.κ̂t = [zeros(n.sp) for t in 1:T]
+    QX̂t= Q*X̂t
+
+    for s in 1:T
+        x_s = permutedims(x[s],[1,3,2])
+        κ_s = @view κ[:,:,s]
+        for t in 1:T-(s-1)
+            @views FO.x̂t[t] .+= x_s * QX̂t[:,t+s-1]
+            @views FO.κ̂t[t] .+= κ_s * QX̂t[:,t+s-1]
+        end
+    end
+
+    FO.ŷt = ŷt = [zeros(n.y,n.sp) for t in 1:T]
+    ytemp = zeros(n.y,n.sp)
+    for t in 1:T
+        x̂t⁺ = FO.x̂t[t]*Δ⁺       
+        x̂t⁻ = FO.x̂t[t]*Δ⁻
+        for j in 1:n.sp
+            @views ytemp[:,j] .= df.x⁺[j]*x̂t⁺[:,j] .+ df.x⁻[j]*x̂t⁻[:,j]
+        end
+        @views ŷt[t] .= ytemp/luΦ̃
+    end
+
+    #Next use ā_Z to construct Ω̂t
+    ω̂t = FO.ω̂t = zeros(n.Ω,T)
+    ω̂at = FO.ω̂at = zeros(n.Ω,T)
+    ω̂t[:,1] = Δ_0
+    for t in 2:T
+        ât_t = (p*FO.x̂t[t-1])[:]
+        κ̂t_t = κ̂t[t-1]
+        @views ω̂at[:,t] = La*ω̂at[:,t-1] .+ Ma*ât_t 
+        @views ω̂t[:,t] = Λ*ω̂t[:,t-1] .+ L*ω̂at[:,t-1]  .+ M*κ̂t_t
+    end
+end
+
+"""
+    compute_Ixt!(FO::FirstOrderApproximation)
+
+Computes the path of integrated x_t values (Ixt) using x̂t and ω̂t.
+This computes the aggregate changes in x over time using the distribution weights.
+
+# Arguments
+- `FO::FirstOrderApproximation`: The FirstOrderApproximation object containing x̂t and ω̂t
+
+# Returns
+- Updates Ixt with the computed path of integrated x values
+"""
+function compute_Ixt(FO::FirstOrderApproximation)
+    @unpack ZO, x̂t, ω̂t,κ̂t,ω̂at = FO
+    @unpack n,dlΓ,Φ,Φₐ,ω̄,x̄ = ZO
+
+    IntΦ̃ = Φ * ω̄ #operator to integrate splines over ergodic
+    xvec = x̄*Φ
+    IntΦ̃κ =(xvec.*ω̄'.*dlΓ')*Φ' #operator to integrate κ[s] over ergodic
+    
+    # Initialize Ixt as a matrix of size n.x × T
+    Ixt = zeros(n.x, FO.T)
+    
+    # For each time period, compute the integrated x value
+    for t in 1:FO.T
+
+        @views Ixt[:,t] = x̂t[t]*IntΦ̃ + IntΦ̃κ*κ̂t[t] + FO.I*ω̂t[:,t] + FO.Ia*ω̂at[:,t]
+    end
+
+    return Ixt
+end
+
+

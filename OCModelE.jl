@@ -64,7 +64,8 @@
 
 using Parameters,LinearAlgebra,BasisMatrices,SparseArrays,Arpack,Roots, 
       KrylovKit,QuantEcon, PrettyTables,StatsBase,ForwardDiff,Dierckx,
-      Plots,NPZ,NLsolve,Printf,DataFrames,CSV,Distances
+      Plots,NPZ,NLsolve,Printf,DataFrames,CSV,Distances, Interpolations
+
 
 """
 Parameters of the Occupation Choice Model (Lucas Version)
@@ -101,7 +102,7 @@ Parameters of the Occupation Choice Model (Lucas Version)
     bm_θw::Int    = 1                   #Use estimates from BM (2021)
 
     #Asset grids
-    a̲::Float64    = 0.0                 #Borrowing constraint
+    a̲::Float64    = 0                 #Borrowing constraint
     amax::Float64 = 200.             #Maximum asset grid point
     Na::Int       = 50                  #Number of gridpoints for splines
     so::Int       = 2                   #Spline order for asset grid
@@ -118,19 +119,19 @@ Parameters of the Occupation Choice Model (Lucas Version)
     τd::Float64   = 0.0               #Tax on dividend
     τc::Float64   = 0.065               #Tax on consumption
     tx::Float64   = 0.0                 #Total tax
-
+    ρ_τ::Float64  = 0.9
     #Numerical parameters
-    Nhoward::Int = 5               #Number of iterations in Howard's method
+    Nhoward::Int = 1               #Number of iterations in Howard's method
     trlb::Float64 = 0.2                 #Transfers lower bound
     trub::Float64 = 1.0                 #Transfers upper bound
     Ntr::Int      = 1                   #Number of transfer evaluations
-    rlb::Float64  = 0.040               #Rate lower bound 
-    rub::Float64  = 0.045               #Rate upper bound 
+    rlb::Float64  = 0.030               #Rate lower bound 
+    rub::Float64  = 0.050               #Rate upper bound 
     Nr::Int       = 3                   #Number of rate evaluations (in check!)
     Neval::Int    = 2                   #Number of bisection evaluations
     iagg::Int     = 1                   #Show aggregate data for each r/tr combo
-    λ::Float64    = 1.0                 #Weight on Vcoefs update
-    Nit::Int      = 500                #Number of iterations in solve_eg!
+    λ::Float64    = 1.0/10                 #Weight on Vcoefs update
+    Nit::Int      = 5000                #Number of iterations in solve_eg!
     tolegm::Float64 = 1e-4            #Tolerance for EGM convergence
     ftolmk::Float64 = 1e-4            #Tolerance for market clearing
     xtolxmk::Float64 = 1e-4            #Tolerance for market clearing
@@ -310,6 +311,7 @@ function policyw(OCM::OCModel)
 
     #Compute value function derivative
     EVₐ′ = reshape(EΦ_aeg*Vcoefs,:,Nθ) 
+    #EVₐ′ = compute_smooth_marginal_value(EVₐ′,agrid)
     EVₐ′ = max.(EVₐ′,1e-6)
 
     #Compute consumption today implied by Euler equation
@@ -391,6 +393,7 @@ function policyb(OCM::OCModel)
 
     #Compute value function derivative
     EVₐ′ = reshape(EΦ_aeg*Vcoefs,:,Nθ) 
+    #EVₐ′ = compute_smooth_marginal_value(EVₐ′,agrid)
     EVₐ′ = max.(EVₐ′,1e-6)
 
     #Compute consumption today implied by Euler equation
@@ -473,6 +476,111 @@ function policyb(OCM::OCModel)
     return cf,af,kf,nf,yf,πf
 end
 
+function policybnocol(OCM::OCModel)
+    @unpack Vcoefs,σ,β,γ,Nθ,lθ,a̲,EΦ_aeg,Na,agrid,α_b,ν,δ,χ,r,w,tr,τc,τb = OCM
+
+    lθb = lθ[:,1]
+    θb  = exp.(lθb)
+
+    #Initialize policy rules for each productivity
+    cf  = Vector{Spline1D}(undef,Nθ)
+    af  = Vector{Spline1D}(undef,Nθ)
+    kf  = Vector{Spline1D}(undef,Nθ)
+    nf  = Vector{Spline1D}(undef,Nθ)
+    yf  = Vector{Spline1D}(undef,Nθ)
+    πf  = Vector{Spline1D}(undef,Nθ)
+
+    #Compute firms profit (ignoring constraints)
+    nbyk = ν*(r+δ)/(α_b*w) 
+    kvec = @. (w/(ν*θb*nbyk^(ν-1)))^(1/(α_b+ν-1))
+    πu   = @. θb*kvec^α_b*(nbyk*kvec)^ν-(r+δ)*kvec-w*(nbyk*kvec)
+
+    #Compute value function derivative
+    EVₐ′ = reshape(EΦ_aeg*Vcoefs,:,Nθ) 
+    #EVₐ′ = compute_smooth_marginal_value(EVₐ′,agrid)
+    EVₐ′ = max.(EVₐ′,1e-6)
+
+    #Compute consumption today implied by Euler equation
+    cEE = (β.*EVₐ′).^(-1/σ) 
+
+    #Compute asset today implied by savings and consumtion
+    Implieda = ((1+γ).*agrid .+ (1+τc).*cEE .- (1-τb).*πu' .-tr) ./ (1+r) 
+
+    #Find out where borrowing constraints bind
+    k   = ones(Na).*kvec'
+    y   = ones(Na).*(θb.*kvec.^α_b.*(nbyk.*kvec).^ν)'
+    πb  = ones(Na).*πu'
+    n   = nbyk.*k
+
+    # #Compute the argument for EGM Inverse 
+    # argEGMinv = (1+γ).*agrid .+  (1+τc).*cEE .- tr
+    # for s in 1:Nθ
+    #     ic   = χ.*Implieda[:,s] .< kvec[s] 
+    #     if sum(ic) > 0
+    #         Implieda[ic,s] = OCM.egi[s](argEGMinv[ic,s])
+    #         k[ic,s]  = max.(χ.*Implieda[ic,s],0)
+    #         n[ic,s]  = (w./(ν.*θb[s].*k[ic,s].^α_b)).^(1/(ν-1))
+    #         y[ic,s]  = θb[s].*k[ic,s].^α_b.*n[ic,s].^ν
+    #         πb[ic,s] = y[ic,s] - w.*n[ic,s] - (r+δ).*k[ic,s]
+    #     end
+    # end
+
+    #Update where borrowing constraint binding and interpolate
+    numa = 10
+    for s in 1:Nθ
+        min_a=minimum(Implieda[:,s])
+        if min_a > a̲ 
+            acon  = LinRange(a̲,min_a,numa+1)[1:end-1]
+            kcon  = kvec[s]*ones(numa)
+            ncon  = (w./(ν.*θb[s].*kcon.^α_b)).^(1/(ν-1))
+            ycon  = θb[s].*kcon.^α_b.*ncon.^ν
+            πcon  = ycon - w.*ncon - (r+δ).*kcon
+            ancon = a̲.*ones(numa)
+            ccon  = ((1+r).*acon .+ (1-τb).*πcon .+ tr .- (1+γ)*a̲) ./(1+τc)
+        end
+
+        if issorted(Implieda[:,s])
+            if Implieda[1,s] > a̲ #borrowing constraint binds
+                #now interpolate
+                cf[s] = Spline1D([acon;Implieda[:,s]],[ccon;cEE[:,s]],k=1)
+                af[s] = Spline1D([acon;Implieda[:,s]],[ancon;agrid],k=1)
+                kf[s] = Spline1D([acon;Implieda[:,s]],[kcon;k[:,s]],k=1)
+                nf[s] = Spline1D([acon;Implieda[:,s]],[ncon;n[:,s]],k=1)
+                yf[s] = Spline1D([acon;Implieda[:,s]],[ycon;y[:,s]],k=1)
+                πf[s] = Spline1D([acon;Implieda[:,s]],[πcon;πb[:,s]],k=1)
+            else
+                cf[s] = Spline1D(Implieda[:,s],cEE[:,s],k=1)
+                af[s] = Spline1D(Implieda[:,s],agrid,k=1)
+                kf[s] = Spline1D(Implieda[:,s],k[:,s],k=1)
+                nf[s] = Spline1D(Implieda[:,s],n[:,s],k=1)
+                yf[s] = Spline1D(Implieda[:,s],y[:,s],k=1)
+                πf[s] = Spline1D(Implieda[:,s],πb[:,s],k=1)
+            end
+        else
+            p = sortperm(Implieda[:,s])
+            if Implieda[p[1],s] > a̲ #borrowing constraint binds
+                #now interpolate
+                cf[s] = Spline1D([acon;Implieda[p,s]],[ccon;cEE[p,s]],k=1)
+                af[s] = Spline1D([acon;Implieda[p,s]],[ancon;agrid[p]],k=1)
+                kf[s] = Spline1D([acon;Implieda[p,s]],[kcon;k[p,s]],k=1)
+                nf[s] = Spline1D([acon;Implieda[p,s]],[ncon;n[p,s]],k=1)
+                yf[s] = Spline1D([acon;Implieda[p,s]],[ycon;y[p,s]],k=1)
+                πf[s] = Spline1D([acon;Implieda[p,s]],[πcon;πb[p,s]],k=1)
+            else
+                cf[s] = Spline1D(Implieda[p,s],cEE[p,s],k=1)
+                af[s] = Spline1D(Implieda[p,s],agrid[p],k=1)
+                kf[s] = Spline1D(Implieda[p,s],k[p,s],k=1)
+                nf[s] = Spline1D(Implieda[p,s],n[p,s],k=1)
+                yf[s] = Spline1D(Implieda[p,s],y[p,s],k=1)
+                πf[s] = Spline1D(Implieda[p,s],πb[p,s],k=1)
+            end
+        end
+
+    end
+    return cf,af,kf,nf,yf,πf
+end
+
+
 """
 egi[s] = setup_egi!(OCM)
 
@@ -493,7 +601,7 @@ function setup_egi!(OCM::OCModel)
     #Compute EG inverse spline
     numk = 10
     for s in 1:Nθ
-        ahold    = LinRange(-5.,kvec[s]/χ,numk) 
+        ahold    = LinRange(0.,kvec[s]/χ,numk) 
         khold    = max.(ahold.*χ,0)
         nhold    = (w./(ν.*θb[s].*khold.^α_b)).^(1/(ν-1))
         yhold    = θb[s].*khold.^α_b.*nhold.^ν
@@ -528,12 +636,17 @@ function solve_eg!(OCM::OCModel)
     tol   = tolegm
     luΦ   = lu(Φ)
     it    = 0
+    Vhold0 = OCM.Vcoefs
     while diff > tol && it < Nit && dchg > 1e-5
         Vhold = OCM.Vcoefs
 
       #Compute optimal consumption, asset, and value functions
       cf_w,af_w = policyw(OCM)
-      cf_b,af_b,kf,nf,yf,πf = policyb(OCM)
+      if OCM.χ>100
+        cf_b,af_b,kf,nf,yf,πf = policybnocol(OCM)
+      else
+        cf_b,af_b,kf,nf,yf,πf = policyb(OCM)
+      end
 
       for _ =1:Nhoward
         #Compute values at gridpoints
@@ -905,6 +1018,184 @@ function check!(OCM::OCModel)
     return chk1,chk2
 end
 
+function getMoments(OCM::OCModel)
+     @unpack τp,τd,τb,τc,τw,δ,Θ̄,α,b,γ,g,iprint,r,tr,bf,wf,Ia,Nθ,alθ,ab_col_cutoff,lθ,χ = OCM
+
+    rc     = r/(1-τp)
+    K2Nc   = ((rc+δ)/(Θ̄*α))^(1/(α-1))
+    w = (1-α)*Θ̄*K2Nc^α
+    ah  = alθ[1:Ia,1] #grids are all the same for all shocks
+
+    nb     = hcat([bf.n[s](ah) for s in 1:Nθ]...) #labor demand from business
+    kb     = hcat([bf.k[s](ah) for s in 1:Nθ]...)  #capital demand from business
+    yb     = hcat([bf.y[s](ah) for s in 1:Nθ]...) #value added from business
+    vw     = hcat([wf.v[s](ah) for s in 1:Nθ]...) #welfare of workers
+    vb     = hcat([bf.v[s](ah) for s in 1:Nθ]...) #welfare of business owners
+    cw     = hcat([wf.c[s](ah) for s in 1:Nθ]...) #consumption of workers
+    cb     = hcat([bf.c[s](ah) for s in 1:Nθ]...) #consumption of business owners
+    pib    =hcat([bf.π[s](ah) for s in 1:Nθ]...) #profits of business owners
+    lnwdst  = [log(OCM.w).+alθ[:,3];zeros(Ia*Nθ)] #mlog wage earnings
+    nwdst  = [exp.(alθ[:,3]);zeros(Ia*Nθ)] #
+    zdst = hcat([zeros(Ia*Nθ);exp.(alθ[:,2])]) #productivity shocks
+
+
+    nbdst  = [zeros(Ia*Nθ);nb[:]]
+    pidst  = [zeros(Ia*Nθ);pib[:]] #profits of business owners
+    kbdst  = [zeros(Ia*Nθ);kb[:]]
+    mpkdist = OCM.α_b.*zdst.*kbdst.^(OCM.α_b-1).*nbdst.^OCM.ν
+   lnmpkdist = log.(mpkdist)
+
+    ybdst  = [zeros(Ia*Nθ);yb[:]]
+    vdst   = [vw[:];vb[:]]
+    cdst   = [cw[:];cb[:]]
+    adst   = hcat([alθ[:,1];alθ[:,1]])
+    awdist= hcat([alθ[:,1];alθ[:,1].*0])
+    abdist = hcat([alθ[:,1].*0;alθ[:,1]]) 
+    indcons = hcat([(ah .< ab_col_cutoff[lθ[s,:]]) for s in 1:Nθ]...)
+    indconsdist=[zeros(Ia*Nθ);indcons[:]]
+    acons = hcat([ah.*(ah .< ab_col_cutoff[lθ[s,:]]) for s in 1:Nθ]...)
+    aconsdist=[zeros(Ia*Nθ);acons[:]]
+    kbcons = hcat([kb[:,s].*(ah .< ab_col_cutoff[lθ[s,:]]) for s in 1:Nθ]...)
+    kbconsdist=[zeros(Ia*Nθ);kbcons[:]]
+
+
+    
+    Nb     = dot(OCM.ω,nbdst) #agg labor demand from business
+    Nc     = dot(OCM.ω,nwdst)-Nb #agg labor demand from corporate sector
+    Kc     = K2Nc*Nc  #capital demand from corporate sector
+    Yc     = Θ̄*Kc^α*Nc^(1-α) #value added from corporate sector
+    Kb     = dot(OCM.ω,kbdst) #agg capital demand from business
+    Yb     = dot(OCM.ω,ybdst) #agg value added from business
+    C      = dot(OCM.ω,cdst) #agg consumption
+    Tc     = τc*C #tax on consumption
+    Tp     = τp*(Yc-w*Nc-δ*Kc) #tax on profits of corporate sector
+    Td     = τd*(Yc-w*Nc-(γ+δ)*Kc-Tp) #tax on dividends of business
+    Tn     = τw*w*(Nc+Nb) #tax on labor income
+    Tb     = τb*(Yb-(r+δ)*Kb-w*Nb) #tax on profits of business
+    tx = Tc+Tp+Td+Tn+Tb #total tax revenue
+    Frac_b =sum(reshape(OCM.ω,:,2),dims=1)[2] # fraction of borrowing agents
+    V = dot(OCM.ω,vdst) #average utility
+    A = dot(OCM.ω,adst) # average assets
+    Aw= dot(OCM.ω,awdist) # average assets of workers
+    Ab= dot(OCM.ω,abdist) # average assets of business owners
+    C      = dot(OCM.ω,cdst) # average consumption
+    K=Kb+Kc # total capital in the economy
+    Y=Yb+Yc # total output in the economy
+
+
+    # collateral constraints
+    Frac_b_cons= dot(OCM.ω,indconsdist) # fraction of constrained agents
+
+    Acons= dot(OCM.ω,aconsdist) # average assets of constrained agents
+
+    Kbcons= dot(OCM.ω,kbconsdist) # average capital of constrained agents
+
+    Bb=Kbcons-Acons # external debt of business owners
+
+    Bb_by_Kb = Bb/Kb # external debt to capital ratio of business owners
+
+
+
+
+    #distribuitional moments
+    # std of log wageearnings
+
+    mean_log_wageearnings = dot(OCM.ω,lnwdst)
+    std_log_wageearnings = sqrt(dot(OCM.ω,((lnwdst .- mean_log_wageearnings).^2)))
+    sel=.!isnan.(lnmpkdist)
+    mean_mpkdist = dot(OCM.ω[sel],lnmpkdist[sel]) 
+    std_mpkdist = sqrt(dot(OCM.ω[sel],((lnmpkdist[sel] .- mean_mpkdist).^2)))
+    piybdst =pidst./ybdst
+    sel=.!isnan.(piybdst) # select non-NaN values
+    mean_piybdst = dot(OCM.ω[sel],piybdst[sel]) # mean profit share
+    std_piybdst = sqrt(dot(OCM.ω[sel],((piybdst[sel] .- mean_piybdst).^2))) # std profit share  
+
+
+
+
+# Create 2-column matrix explicitly
+moments = [
+    "tax on biz profits (Tb)"     τb;
+    "tax on labor income (Tn)"    τw;
+    "collateral constraint (χ)"  χ;
+    "interest rate (r)"           r;
+    "govt transfer (tr)"          tr;
+    "wage (w)"                w;
+    "Nb (pvt biz labor demand)"       Nb;
+    "Nc (corp labor demand)"      Nc;
+    "Kc (corp capital demand)"    Kc;
+    "Yc (corp value added)"       Yc;
+    "Kb (pvt biz capital demand)"     Kb;
+    "Yb (pvt biz value added)"        Yb;
+    "C (consumption)"             C;
+    "K (total capital)"          K;
+    "Y (total output)"           Y;
+    "Tc (tax on cons.)"           Tc;
+    "Tp (tax on profits corp)"    Tp;
+    "Tn (labor income tax)"       Tn;
+    "Tb (tax on profits pvt biz)"     Tb;
+    "Total tax revenue"           tx;
+    "Fraction of biz owners"       Frac_b;
+    "total. utility (V)"            V;
+    "total. assets (A)"             A;
+    "total. assets (workers)"       Aw;
+    "total. assets (owners)"        Ab;
+    "total. consumption (C)"        C;
+    "Fraction constrained"        Frac_b_cons;
+    "Assets constrained"          Acons;
+    "Capital constrained"         Kbcons;
+    "External debt (Bb)"          Bb;
+    "Bb/Kb (debt to capital ratio)" Bb_by_Kb;
+    "mean log wage earnings"      mean_log_wageearnings;
+    "std log wage earnings"       std_log_wageearnings;
+    "mean log MPK"                mean_mpkdist;
+    "std log MPK"                 std_mpkdist;
+    "mean profit share"           mean_piybdst;
+    "std profit share"            std_piybdst;
+];
+
+# Print it as a table
+pretty_table(moments; header=["Moment", "Value"], formatters=ft_printf("%.4f"))
+
+open("moments_table.tex", "w") do io
+    pretty_table(
+        io, moments;
+        header = ["Moment", "Value"],
+        backend = Val(:latex),
+        tf = tf_latex_booktabs,
+        formatters = ft_printf("%.4f")
+    )
+end
+
+   
+    return moments
+end
+
+function compare_moments(OCM_old::OCModel, OCM_new::OCModel)
+
+    moments1=getMoments(OCM_old)
+    moments2=getMoments(OCM_new)
+    # Ensure both matrices have the same number of rows
+    if size(moments1, 1) != size(moments2, 1)
+        error("The number of moments in the two models do not match.")
+    end
+    
+    # Extract labels and values from each matrix
+    labels = moments1[:, 1]               # keep the first column of either (they're same)
+    vals1 = Float64.(moments1[:, 2])      # ensure numerical type
+    vals2 = Float64.(moments2[:, 2])      # same for second run
+    
+    # Optional: % difference
+    pct_diff = 100 .* (vals2 .- vals1) ./ abs.(vals1)
+    
+    # Combine into one matrix: Moment | Run 1 | Run 2 | % Diff
+    combined = hcat(labels, vals1, vals2, pct_diff)
+    
+    # Display
+    pretty_table(combined; header=["Moment", "Run 1", "Run 2", "% Diff"], formatters=ft_printf("%.4f"))
+    
+       end
+    
 
 function assign!(OCM::OCModel,r::Float64,tr::Float64)
 
@@ -960,26 +1251,36 @@ function updatecutoffs!(OCM::OCModel)
     # for each shock, find the borrowing constraint
     for s in 1:Nθ
         indices = findall(kb[:,s] .≈ ah*χ)
-        ab_col_cutoff[lθ[s,:]] = maximum(indices)==1 ?   -Inf : ah[maximum(indices)]
+        if !isempty(indices)
+            ab_col_cutoff[lθ[s, :]] = maximum(indices) == 1 ? -Inf : ah[maximum(indices)]
+        else
+            ab_col_cutoff[lθ[s, :]] = -Inf  # or another default value
+        end
     end
-
 
 
     # borrowing constraint for owners
-    a′ =hcat([bf.a[s](ah) for s in 1:Nθ]...)
-    # for each shock, find the borrowing constraint
+    a′ = hcat([bf.a[s](ah) for s in 1:Nθ]...)
     for s in 1:Nθ
-        indices = findall(a′[:,s] .> 0)
-        ab_bor_cutoff[lθ[s,:]] = minimum(indices)==1 ?   -Inf : ah[minimum(indices)-1]
+        indices = findall(a′[:, s] .> 0)
+        if !isempty(indices)
+            ab_bor_cutoff[lθ[s, :]] = minimum(indices) == 1 ? -Inf : ah[minimum(indices) - 1]
+        else
+            ab_bor_cutoff[lθ[s, :]] = -Inf  # or another fallback value
+        end
     end
 
     # borrowing constraint for workers
-    a′ =hcat([wf.a[s](ah) for s in 1:Nθ]...)
-    # for each shock, find the borrowing constraint
+    a′ = hcat([wf.a[s](ah) for s in 1:Nθ]...)
     for s in 1:Nθ
-        indices = findall(a′[:,s] .> 0)
-        aw_bor_cutoff[lθ[s,:]] = minimum(indices)==1 ?   -Inf : ah[minimum(indices)-1]
+        indices = findall(a′[:, s] .> 0)
+        if !isempty(indices)
+            aw_bor_cutoff[lθ[s, :]] = minimum(indices) == 1 ? -Inf : ah[minimum(indices) - 1]
+        else
+            aw_bor_cutoff[lθ[s, :]] = -Inf  # or another fallback value
+        end
     end
+
 
 end
 
@@ -991,7 +1292,7 @@ Saves the policy functions in the OCModel object
 """
 
 function get_policy_functions(OCM::OCModel)
-    @unpack bf,wf,curv_a,Na,amax,a̲,curv_h,Ia,r,σ,δ,α_b,agrid,Nθ,lθ,ν,χ=OCM
+    @unpack bf,wf,curv_a,Na,amax,a̲,curv_h,Ia,r,σ,δ,α_b,agrid,Nθ,lθ,ν,χ,τb=OCM
 
 
 
@@ -1011,8 +1312,14 @@ function get_policy_functions(OCM::OCModel)
         nb .= bf.n[s](agrid)
         z   = exp.(lθ[s,1]) # productivity shock
         mpk .= α_b*z*kb.^(α_b-1).*nb.^ν
-        ζval .= cb.^(-σ).*(mpk .-r .-δ)
-        λb[s]  = Spline1D(agrid,(1+r)*cb.^(-σ)+χ*ζval,k=1)   
+        ζval .= cb.^(-σ).*(mpk .-r .-δ)*(1-τb)
+
+        if OCM.χ>100
+            λb[s]  = Spline1D(agrid,(1+r)*cb.^(-σ).*0,k=1)   
+        else
+            λb[s]  = Spline1D(agrid,(1+r)*cb.^(-σ)+χ*ζval,k=1)   
+        end
+
         λw[s]  = Spline1D(agrid,(1+r)*cw.^(-σ),k=1)
     end
 
@@ -1133,55 +1440,6 @@ end
 
 
 
-function diffegm(OCM::OCModel) 
-        @unpack Na,agrid,abasis,σ,β,Φ,Nθ,lθ,πθ,σ_ε,λ,Nit,tolegm = OCM
-
-    Vhold = OCM.Vcoefs
-
-    # Placeholders for splines
-    cf_w  = af_w = Vf_w = nothing
-    cf_b  = af_b = kf = nf = yf = πf = Vf_b = nothing
-
-    #Iterate on the value function coefficients
-    diff  = 1.
-    dchg  = 1.
-    tol   = tolegm
-    luΦ   = lu(Φ)
-    it    = 0
-      #Compute optimal consumption, asset, and value functions
-      cf_w,af_w = policyw(OCM)
-      cf_b,af_b,kf,nf,yf,πf = policyb(OCM)
-
-      #Compute values at gridpoints
-      c_w,c_b = zeros(Na,Nθ),zeros(Na,Nθ) 
-      a_w,a_b = zeros(Na,Nθ),zeros(Na,Nθ)
-      Vw,Vb   = zeros(Na,Nθ),zeros(Na,Nθ)
-      for s in 1:Nθ
-          c_w[:,s] = cf_w[s](agrid) 
-          c_b[:,s] = cf_b[s](agrid) 
-          a_w[:,s] = af_w[s](agrid) 
-          a_b[:,s] = af_b[s](agrid) 
-          EΦw      = kron(πθ[s,:]',BasisMatrix(abasis,Direct(),a_w[:,s]).vals[1])
-          EΦb      = kron(πθ[s,:]',BasisMatrix(abasis,Direct(),a_b[:,s]).vals[1])
-          Vw[:,s]  = c_w[:,s].^(1-σ)/(1-σ) + β.*EΦw*OCM.Vcoefs
-          Vb[:,s]  = c_b[:,s].^(1-σ)/(1-σ) + β.*EΦb*OCM.Vcoefs
-      end
-      p       = probw.(Vb.-Vw,σ_ε)
-      V       = p.*Vw .+ (1 .- p).*Vb
-      ptol    = 1e-8
-      ip      = ptol.< p .< 1-ptol
-      V[ip]  .= Vw[ip] .+ σ_ε.*log.(1 .+ exp.((Vb[ip].-Vw[ip])./σ_ε))
-
-      #Implied value functions
-      Vf_w    = [Spline1D(agrid,Vw[:,s],k=1) for s in 1:Nθ]
-      Vf_b    = [Spline1D(agrid,Vb[:,s],k=1) for s in 1:Nθ]
-
-      #Update the coefficients using the linear system ΦVcoefs = V
-      Vcnew   = luΦ\V[:]
-      diff    = norm(OCM.Vcoefs.-Vcnew)
-      return diff
-
-end
 
 
 function solvecase_serial!(OCM::OCModel)
@@ -1430,8 +1688,12 @@ function policy_path(OCM,rT,trT)
         OCM.w      = (1-α)*Θ̄*((rT[t]/(1-τp)+δ)/(Θ̄*α))^(α/(α-1))
 
         cf_w,af_w = policyw(OCM)
-        cf_b,af_b,kf,nf,yf,πf = policyb(OCM)
-    
+        if OCM.χ>100
+            cf_b,af_b,kf,nf,yf,πf = policybnocol(OCM)
+          else
+            cf_b,af_b,kf,nf,yf,πf = policyb(OCM)
+          end
+        
         #Compute values at gridpoints     
         c_w,c_b = zeros(Na,Nθ),zeros(Na,Nθ) 
         a_w,a_b = zeros(Na,Nθ),zeros(Na,Nθ)
@@ -1522,17 +1784,18 @@ function residual_tr!(x0,OCMold,OCMnew)
 
     end
     res  = vcat(kres,gres)
+    println("Residuals: Asset markets: %.2e, Government budget: %.2e\n", norm(kres), norm(gres))
     return res
 end
 
-function solve_tr!(OCMold::OCModel, OCMnew::OCModel)
+function solve_tr!(x0,OCMold::OCModel, OCMnew::OCModel)
 
     #Initial transition path guess and temporary struct
-    x0      = vcat(LinRange(OCMold.r,OCMnew.r,OCMold.T),
-                   LinRange(OCMold.tr,OCMnew.tr,OCMold.T))
+    #x0      = vcat(LinRange(OCMold.r,OCMnew.r,OCMold.T),
+    #               LinRange(OCMold.tr,OCMnew.tr,OCMold.T))
 
     #Residuals for asset markets and government budgets
-    f!(x)   = residual_tr!(x,OCMold,OCMNew)
+    f!(x)   = residual_tr!(x,OCMold,OCMnew)
 
     res     = nlsolve(f!,x0; method = :newton, linesearch = :bt)
     x       = res.zero
@@ -1582,3 +1845,59 @@ function print_OC_model_summary(ss, shr, case)
             shr[12] + shr[13] + shr[14] + shr[15] + shr[16],
             shr[18] + shr[19] + shr[20])
 end
+
+
+
+function plot_values!(OCM::OCModel; atrunc=5,ss=1:25)
+    @unpack Vcoefs,σ,β,γ,Nθ,lθ,a̲,EΦ_aeg,EΦeg,Na,agrid,α_b,ν,δ,χ,r,w,tr,τc,τb = OCM
+
+    #Compute value function derivative
+    EVₐ′ = reshape(EΦ_aeg*Vcoefs,:,Nθ) 
+    EV′  = reshape(EΦeg*Vcoefs,:,Nθ)
+    EVₐ′_finitediff= compute_smooth_marginal_value(EV′, agrid)
+    sel=agrid.<atrunc
+    p1=plot(agrid[sel], EV′[sel,ss],legend=false, xlabel="Assets", ylabel="Value",
+     title="Value function", label=string.(lθ), lw=2)
+    p2=plot(agrid[sel], EVₐ′[sel,ss], xlabel="Assets", ylabel="Marginal value",
+     title="Marginal value of wealth", lw=2,label="using basis matrix") 
+     p2 =plot!(agrid[sel], EVₐ′_finitediff[sel,ss], xlabel="Assets", ylabel="Marginal value",
+     title="Marginal value of wealth", lw=2,label="using finite diff") 
+
+     #side by side
+    p=plot(p1,p2, layout=(2,1),size=(800,600))
+    display(p)
+     return EVₐ′,EV′,agrid,lθ
+end
+
+
+function compute_marginal_value(EVₐ′::Matrix{Float64}, agrid::Vector{Float64})
+    n_a, n_θ = size(EVₐ′)
+    dVda = similar(EVₐ′)
+
+    for j in 1:n_θ
+        for i in 2:n_a-1
+            dVda[i, j] = (EVₐ′[i+1, j] - EVₐ′[i-1, j]) / (agrid[i+1] - agrid[i-1])  # central diff
+        end
+        # Forward diff at lower boundary
+        dVda[1, j] = (EVₐ′[2, j] - EVₐ′[1, j]) / (agrid[2] - agrid[1])
+        # Backward diff at upper boundary
+        dVda[end, j] = (EVₐ′[end, j] - EVₐ′[end-1, j]) / (agrid[end] - agrid[end-1])
+    end
+
+    return dVda
+end
+
+using Dierckx: Spline1D, derivative
+
+function compute_smooth_marginal_value(EV′::Matrix{Float64}, agrid::Vector{Float64})
+    n_a, n_θ = size(EV′)
+    dVda = similar(EV′)
+
+    for j in 1:n_θ
+        spline = Spline1D(agrid, EV′[:, j], k=3,s=.0001)
+        dVda[:, j] .= derivative(spline, agrid)  # correct method
+    end
+
+    return dVda
+end
+
