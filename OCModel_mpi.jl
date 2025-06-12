@@ -6,7 +6,7 @@ addprocs(8)  # or however many cores you want to use
 
 @everywhere begin
     include("OCModelE.jl")               # defines OCModel and solvecase
-    include("OCModelE_transition_speed.jl")
+    include("OCModelE_transition.jl")
     function setup_old_steady_state()
         OCM = OCModel()
         OCM.χ=2.0
