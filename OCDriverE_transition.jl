@@ -159,8 +159,8 @@ println("Transition analysis results:")
 Vss = Xss[inputs.Xlab.==:V] 
 println("SS value: $(Vss)")
 println("SS + transition value for rho_t = $(ρ_τ_val_fast) is $(Vinit[1])")
-df_fast=save_stuff(Xpath, Ixpath, inputs, Vss, Vinit)
-CSV.write(filenamefast, df_fast)
+df_transition_fast=save_stuff(Xpath, Ixpath, inputs, Vss, Vinit)
+CSV.write(filenamefast, df_transition_fast)
 println("Results saved to $(filenamefast)")
 
 OCM_new.ρ_τ = ρ_τ_val_slow
@@ -173,9 +173,9 @@ println("Transition analysis results:")
 Vss = Xss[inputs.Xlab.==:V] 
 println("SS value: $(Vss)")
 println("SS + transition value for rho_t = $(ρ_τ_val_slow) is $(Vinit[1])")
-df_slow=save_stuff(Xpath, Ixpath, inputs, Vss, Vinit)
+df_transition_slow=save_stuff(Xpath, Ixpath, inputs, Vss, Vinit)
 
-CSV.write(filenameslow, df_slow)
+CSV.write(filenameslow, df_transition_slow)
 println("Results saved to $(filenameslow)")
 
 # === End of run ===
@@ -186,4 +186,3 @@ println("All results saved to CSV files.")
 plot_transition_comparison_dfs(df_transition_fast,df_transition_slow, savepath=saveplotfilename)
 println("Transition comparison plot saved to $(saveplotfilename)")
 # === End of script ===
-    
