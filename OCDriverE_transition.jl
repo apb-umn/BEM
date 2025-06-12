@@ -134,6 +134,7 @@ end
 ρ_τ_val_slow = 0.95
 filenamefast = "df_transition_fast_opt.csv"
 filenameslow = "df_transition_slow_opt.csv"
+saveplotfilename = "transition_comparison_opt.pdf"
 
 
 
@@ -182,5 +183,7 @@ println("Transition analysis completed successfully.")
 println("All results saved to CSV files.")
 
 # === Plotting ===
-plot_transition_comparison_dfs(df_transition_fast,df_transition_slow)
+plot_transition_comparison_dfs(df_transition_fast,df_transition_slow, savepath=saveplotfilename)
+println("Transition comparison plot saved to $(saveplotfilename)")
 # === End of script ===
+    

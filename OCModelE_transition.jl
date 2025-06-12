@@ -290,7 +290,7 @@ function analyze_optimal_taub(file::String)
 
     # Step 4: Plot Vinit vs τb with optima marked
     default(linewidth=2)
-    plt = plot(df.τb, df.Vinit, label = "V₀", xlabel = "τb", ylabel = "Vinit",
+    plt = plot(df.τb, df.Vinit, label = "V₀", xlabel = "τb", ylabel = "V",
                title = "Value vs τb", legend = :bottomright, grid = true)
 
     vline!([best_taub_vinit], label = "Best τb", linestyle = :dash, color = :red)
