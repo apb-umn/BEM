@@ -65,3 +65,7 @@ analyze_optimal_taub("data_opt_"*filenamesuffix* "_filtered.csv",col=:VinitSO)
 df_filtered_smooth = smooth_VinitSO(df_filtered, 0.1)
 CSV.write("data_opt_"*filenamesuffix* "_smooth_filtered.csv", df_filtered_smooth)
 analyze_optimal_taub("data_opt_"* filenamesuffix *"_smooth_filtered.csv",col=:VinitSO_smooth)
+
+# Clean up workers
+rmprocs(workers())
+
