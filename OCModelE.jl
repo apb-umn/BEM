@@ -880,7 +880,7 @@ function solvess!(OCM::OCModel)
     end
 
     if ibise==1
-        @printf("      Using bisection method\n")
+        @printf("      Using bisection method to get a good guess\n")
         OCM.tr  = trlb
         ret1    = find_zero(ss1Res,(rlb,rub),Bisection(),maxevals=Neval,atol=1e-8)
         res1    = ss1Res(ret1)
@@ -900,7 +900,7 @@ function solvess!(OCM::OCModel)
     end
 
     if inewt==1
-        println("      Using newton method")
+        println("      Solve SS using newton method")
         rtr    = newton(ssRes,[OCM.r,OCM.tr],ξ,tol=ftolmk)   
         OCM.r  = rtr[1]
         OCM.tr = rtr[2]
@@ -1018,9 +1018,9 @@ function check!(OCM::OCModel)
     return chk1,chk2
 end
 
-function getMoments(OCM::OCModel)
+function getMoments(OCM::OCModel;savepath::String="moments_table.tex")
      @unpack τp,τd,τb,τc,τw,δ,Θ̄,α,b,γ,g,iprint,r,tr,bf,wf,Ia,Nθ,alθ,ab_col_cutoff,lθ,χ = OCM
-
+    updatecutoffs!(OCM)
     rc     = r/(1-τp)
     K2Nc   = ((rc+δ)/(Θ̄*α))^(1/(α-1))
     w = (1-α)*Θ̄*K2Nc^α
@@ -1105,7 +1105,7 @@ function getMoments(OCM::OCModel)
     sel=.!isnan.(lnmpkdist)
     mean_mpkdist = dot(OCM.ω[sel],lnmpkdist[sel]) 
     std_mpkdist = sqrt(dot(OCM.ω[sel],((lnmpkdist[sel] .- mean_mpkdist).^2)))
-    piybdst =pidst./ybdst
+    piybdst =pidst./(ybdst .+ .001)
     sel=.!isnan.(piybdst) # select non-NaN values
     mean_piybdst = dot(OCM.ω[sel],piybdst[sel]) # mean profit share
     std_piybdst = sqrt(dot(OCM.ω[sel],((piybdst[sel] .- mean_piybdst).^2))) # std profit share  
@@ -1157,7 +1157,7 @@ moments = [
 # Print it as a table
 pretty_table(moments; header=["Moment", "Value"], formatters=ft_printf("%.4f"))
 
-open("moments_table.tex", "w") do io
+open(savepath, "w") do io
     pretty_table(
         io, moments;
         header = ["Moment", "Value"],
@@ -1735,13 +1735,13 @@ function residual_tr!(x0,OCMold,OCMnew)
     rT      = x0[1:T]
     trT     = x0[T+1:2*T]
     ωT      = zeros(Nh,T+1)
-    ωT[:,1] = OCMold.ω
     OCMtmp  = deepcopy(OCMnew)
     kres    = zeros(T)
     gres    = zeros(T)
 
     #Backward: compute policies
     wfT,bfT = policy_path(OCMtmp,rT,trT)
+    ωT[:,1]=reshape_ω0(OCMtmp, OCMold.ω,wfT[1],bfT[1])
 
     #Forward: update distribution over time 
     ah      = alθ[1:Ia,1] 
@@ -1763,16 +1763,16 @@ function residual_tr!(x0,OCMold,OCMnew)
         ybdst   = [zeros(Ia*Nθ);yb[:]]
         vdst    = [vw[:];vb[:]]
         cdst    = [cw[:];cb[:]]
-        A       = dot(ωT[:,t+1],adst)
-        Nb      = dot(ωT[:,t+1],nbdst)
-        Nc      = dot(ωT[:,t+1],nwdst)-Nb
+        A       = dot(ωT[:,t],adst)
+        Nb      = dot(ωT[:,t],nbdst)
+        Nc      = dot(ωT[:,t],nwdst)-Nb
         K2Nc    = ((rT[t]/(1-τp)+δ)/(Θ̄*α))^(1/(α-1))
         Kc      = K2Nc*Nc
         w       = (1-α)*Θ̄*K2Nc^α
         Yc      = Θ̄*Kc^α*Nc^(1-α)
-        Kb      = dot(ωT[:,t+1],kbdst)
-        Yb      = dot(ωT[:,t+1],ybdst)
-        C       = dot(ωT[:,t+1],cdst)
+        Kb      = dot(ωT[:,t],kbdst)
+        Yb      = dot(ωT[:,t],ybdst)
+        C       = dot(ωT[:,t],cdst)
         Tc      = τc*C
         Tp      = τp*(Yc-w*Nc-δ*Kc)
         Td      = τd*(Yc-w*Nc-(γ+δ)*Kc-Tp)
@@ -1870,6 +1870,48 @@ function plot_values!(OCM::OCModel; atrunc=5,ss=1:25)
 end
 
 
+function plot_x!(OCM::OCModel; atrunc=5,ss=1:25)
+    @unpack Vcoefs,σ,β,γ,Nθ,lθ,a̲,EΦ_aeg,EΦeg,Na,agrid,α_b,ν,δ,χ,r,w,tr,τc,τb = OCM
+
+    af=OCM.bf.a
+    avec=LinRange(0,1,100)
+    plot(avec, af[s](avec), lw=2, label="s=$s")
+
+    for s in ss
+     end
+     title!("Policy function for business owners")
+     xlabel!("Assets")
+     ylabel!("Policy function value")
+     legend!()
+     #plot the worker policy function
+     af=OCM.wf.a
+    plot(agrid, af[s](agrid), lw=2)
+
+
+     return 
+end
+
+
+
+function reshape_ω0(OCM,ω0,wf,bf)
+    @unpack Nθ,πθ,lθ,Ia,alθ,δ,Θ̄,α,τp,τc,τb,τw,γ,σ_ε = OCM     
+    ω0_reshaped=  reshape(ω0,:,2)
+    ω0_aθ = sum(ω0_reshaped, dims=2)
+    ah     = alθ[1:Ia,1] 
+    Vw     = hcat([wf.v[s](ah) for s in 1:Nθ]...)
+    Vb     = hcat([bf.v[s](ah) for s in 1:Nθ]...)
+    p      = probw.(Vb.-Vw,σ_ε)
+
+    B = Basis(SplineParams(ah, 0, 1))
+    Pw = spdiagm(p[:])                          # Diagonal matrix for worker choice probabilities
+    Pb = spdiagm(1.0 .- p[:])           # Diagonal matrix for business owner choice probabilities
+    P = vcat(Pw, Pb)  # Combin
+
+    ω_0_new= P*ω0_aθ
+    return ω_0_new
+end
+ 
+
 function compute_marginal_value(EVₐ′::Matrix{Float64}, agrid::Vector{Float64})
     n_a, n_θ = size(EVₐ′)
     dVda = similar(EVₐ′)
@@ -1887,7 +1929,6 @@ function compute_marginal_value(EVₐ′::Matrix{Float64}, agrid::Vector{Float64
     return dVda
 end
 
-using Dierckx: Spline1D, derivative
 
 function compute_smooth_marginal_value(EV′::Matrix{Float64}, agrid::Vector{Float64})
     n_a, n_θ = size(EV′)
@@ -1900,4 +1941,3 @@ function compute_smooth_marginal_value(EV′::Matrix{Float64}, agrid::Vector{Flo
 
     return dVda
 end
-

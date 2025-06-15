@@ -242,7 +242,7 @@ function compute_Lemma4!(FO)
     end
 
     #Next the L operator
-    κ̄_a = reshape((pκ*x̄)*Δ*Φₐ,:)
+    κ̄_a = reshape((pκ*x̄_a)*Δ*Φ,:)
     dlΓκ̄_a = (dlΓ'.*reshape(κ̄_a,n.a,:))[:]
     FO.L = kron(Λ,ones(1,n.a)).*dlΓκ̄_a' #initialize L operator
 
@@ -268,7 +268,7 @@ function compute_Lemma4!(FO)
     FO.I  = x̄*Φ #aggregate changes in density
     dlΓκ̄_a_mat = kron(sparse(I,n.Ω,n.Ω),ones(1,n.a)).*dlΓκ̄_a'
  
-    FO.Ia = x̄*Φₐ .+ (x̄*Φ)*dlΓκ̄_a_mat   #aggregate changes in state 
+    FO.Ia = x̄_a*Φ .+ (x̄*Φ)*dlΓκ̄_a_mat   #aggregate changes in state 
 end
 
 """
@@ -418,6 +418,18 @@ function compute_x̂t_ω̂t!(FO::FirstOrderApproximation)
         κ̂t_t = κ̂t[t-1]
         @views ω̂at[:,t] = La*ω̂at[:,t-1] .+ Ma*ât_t 
         @views ω̂t[:,t] = Λ*ω̂t[:,t-1] .+ L*ω̂at[:,t-1]  .+ M*κ̂t_t
+    end
+end
+
+function compute_p̂t!(FO::FirstOrderApproximation)
+    @unpack ZO,T,x,κ,X̂t,L,M,La,Ma,Δ_0 = FO
+    @unpack Q,Φ,ω̄,p,pκ,Δ,Δ⁺,Δ⁻,n,Λ,df,Φ̃,dΓ̃ = ZO
+    luΦ̃ = lu(Φ̃)
+    
+    p̂t = FO.p̂t = zeros(n.sp,T)
+    for t in 1:T
+        κ̂t_t = κ̂t[t]*Φ̃
+        p̂t[:,t] .= dΓ̃.*κ̂t_t
     end
 end
 

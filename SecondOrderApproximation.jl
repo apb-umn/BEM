@@ -19,8 +19,11 @@ given Model.  Will assume F_x(M::Model,z) etc. exists.
     #compenents of the derivative with respect to second state
     X_02::Vector{Float64} = zeros(1) #initial predetermined for second derivative
     Θ_02::Vector{Float64} = zeros(1) #initial exogenous states
-    Ω̂k::Matrix{Float64} =  zeros(1,1)
+    ω̂k::Matrix{Float64} =  zeros(1,1)
+    ω̂ak::Matrix{Float64} =  zeros(1,1)
     x̂k::Vector{Matrix{Float64}} =  Vector{Matrix{Float64}}(undef,1)
+    ŷk::Vector{Matrix{Float64}} =  Vector{Matrix{Float64}}(undef,1)
+    κ̂k::Vector{Vector{Float64}} =  Vector{Vector{Float64}}(undef,1)
     X̂k::Matrix{Float64} = zeros(1,1)
 
 
@@ -30,27 +33,32 @@ given Model.  Will assume F_x(M::Model,z) etc. exists.
     ##Lemma 3 terms
     xσσ::Matrix{Float64} = zeros(0,0)
     x∞::Vector{Array{Float64,3}} = Vector{Array{Float64,3}}(undef,1)
+    ŷtk::Array{Float64,3} = zeros(0,0,0)
     xtk::Array{Float64,3} = zeros(0,0,0)
     Ixtkδ::Array{Float64,3} = zeros(0,0,0)
     
     #Precomputed components of xtk
     Fxk::Matrix{Matrix{Float64}} = zeros(0,0)
     FXk::Matrix{Matrix{Float64}} = zeros(0,0)
-    Fx′k::Matrix{Matrix{Float64}} = zeros(0,0)
+    Fyᵉk::Matrix{Matrix{Float64}} = zeros(0,0)
     FxkΘ::Vector{Matrix{Matrix{Float64}}} = zeros(0)
     FXkΘ::Vector{Matrix{Matrix{Float64}}} = zeros(0)
-    Fx′kΘ::Vector{Matrix{Matrix{Float64}}} = zeros(0)
+    FyᵉkΘ::Vector{Matrix{Matrix{Float64}}} = zeros(0)
     #delta function components
     
     ##Lemma 4 terms
+    atk::Matrix{Float64} = zeros(1,1)
     btk::Matrix{Float64} = zeros(1,1) 
     ctk::Matrix{Float64} = zeros(1,1)
 
     #Corollary 2 terms
-    Laa1::SparseMatrixCSC{Float64,Int64} = spzeros(1,1)
-    Laa2::SparseMatrixCSC{Float64,Int64} = spzeros(1,1)
-    Btk::Matrix{Float64} = zeros(1,1) 
-    Ctk::Matrix{Float64} = zeros(1,1)
+    Lᵃₐₐ::SparseMatrixCSC{Float64,Int64} = spzeros(1,1)
+    Lᵃᵃ::SparseMatrixCSC{Float64,Int64} = spzeros(1,1)
+    Lₐₐ::SparseMatrixCSC{Float64,Int64} = spzeros(1,1)
+
+    ω̃tkᵃᵃ::Matrix{Float64} = zeros(1,1) 
+    ω̃tkᵃ::Matrix{Float64} = zeros(1,1) 
+    ω̃tk::Matrix{Float64} = zeros(1,1) 
     IBσσ::Matrix{Float64} = zeros(1,1)
 
     #Proposition 1 terms
@@ -98,20 +106,21 @@ end
 Computes the GΘΘtk terms
 """
 function compute_Lemma2_ZZ!(SO::SecondOrderApproximation)
-    @unpack FO,Ω̂k,x̂k,X̂k,Θ_02 = SO
-    @unpack Ω̂t,x̂t,X̂t,Θ_0,ZO = FO
-    @unpack x̄,Φ,Φₐ,ω̄,dG,ρ_Θ,P,Q,p,n = ZO
+    @unpack FO,ω̂k,ω̂ak,x̂k,κ̂k,X̂k,Θ_02 = SO
+    @unpack ω̂t,ω̂at,x̂t,κ̂t,X̂t,Θ_0,ZO = FO
+    @unpack x̄,Φ,Φₐ,ω̄,dlΓ,dG,ρ_Θ,P,Q,p,n = ZO
     T = length(x̂k)
 
     #Compute RFOT
     GΘΘtk = SO.GΘΘtk = zeros(n.X,T)
-    IntΦ̃ = Φ * ω̄ #integration operator
+    IntΦ̃ = Φ * ω̄ #operator to integrate splines over ergodic
+    xvec = x̄*Φ
+    IntΦ̃κ =(xvec.*ω̄'.*dlΓ')*Φ' #operator to integrate κ[s] over ergodic
     for t in 1:T
         X̂t_t = X̂t[:,t]
-        IntΦ̃Ω_Z,IntΦ̃Ω_Z2 = Φₐ*view(Ω̂t,:,t),Φₐ*view(Ω̂k,:,t)
-        x̂It = x̂t[t]*IntΦ̃ + x̄*IntΦ̃Ω_Z
+        x̂It = x̂t[t]*IntΦ̃ + IntΦ̃κ*κ̂t[t] + FO.I*ω̂t[:,t] + FO.Ia*ω̂at[:,t]
         X̂k_t = X̂k[:,t]
-        x̂Ik = x̂k[t]*IntΦ̃ + x̄*IntΦ̃Ω_Z2
+        x̂Ik = x̂k[t]*IntΦ̃ + IntΦ̃κ*κ̂k[t] + FO.I*ω̂k[:,t] + FO.Ia*ω̂ak[:,t]
         if t == 1
             X̂t_t_ = FO.X_0
             X̂k_t_ = SO.X_02
@@ -135,7 +144,6 @@ function compute_Lemma2_ZZ!(SO::SecondOrderApproximation)
                 .+ dG.XXᵉ⋅(X̂t_t,X̂k_tᵉ) .+ dG.XXᵉ⋅(X̂k_t,X̂t_tᵉ) .+ dG.XΘ⋅(X̂t_t,θk) .+ dG.XΘ⋅(X̂k_t,θt)
                 .+ dG.XᵉXᵉ⋅(X̂t_tᵉ,X̂k_tᵉ) .+ dG.XᵉΘ⋅(X̂t_tᵉ,θk) .+ dG.XᵉΘ⋅(X̂k_tᵉ,θt) .+ dG.ΘΘ⋅(θt,θk))
 
-        GΘΘtk[:,t] .+= dG.x*(x̂t[t]*IntΦ̃Ω_Z .+ x̂k[t]*IntΦ̃Ω_Z2)
     end
     
 end
@@ -149,30 +157,56 @@ computation of the E matrices.
 """
 function compute_lemma3_components!(SO::SecondOrderApproximation)
     @unpack FO,T = SO
-    @unpack ZO,X̂t,x̂t = FO
+    @unpack ZO,X̂t,x̂t,ŷt,ȳ_a = FO
     @unpack x̄,Φ̃ᵉₐ,Φ̃,Φ̃ᵉ,p,Q,dF,n = ZO
 
     Fxk = SO.Fxk = Matrix{Matrix{Float64}}(undef,n.sp,T)
     FXk = SO.FXk = Matrix{Matrix{Float64}}(undef,n.sp,T)
-    Fx′k= SO.Fx′k = Matrix{Matrix{Float64}}(undef,n.sp,T)
+    Fyᵉk= SO.Fyᵉk = Matrix{Matrix{Float64}}(undef,n.sp,T)
 
-    Ex̄_a = x̄*Φ̃ᵉₐ
+    Eȳ_a = ȳ_a*Φ̃ᵉ
     for k in 1:T
         X̂t_k = Q*view(X̂t,:,k)
         x̂t_k = x̂t[k]*Φ̃
         ât_k = (p*x̂t_k)[:]
         if k < T
-            Ex̂t_k = x̂t[k+1]*Φ̃ᵉ 
+            Eŷt_k = ŷt[k+1]*Φ̃ᵉ 
         else
-            Ex̂t_k = zeros(n.x,n.sp)
+            Eŷt_k = zeros(n.y,n.sp)
         end
         for j in 1:n.sp
-            Ex̄′t_k = @views Ex̄_a[:,j].* ât_k[j] .+ Ex̂t_k[:,j]#t==T ? (x̄_a*Φ̃ᵉj)*ât_t : (x̄_a*Φ̃ᵉj)*ât_t + x̄_Z[t+1]*Φ̃ᵉj
+            Eȳ′t_k = @views Eȳ_a[:,j].* ât_k[j] .+ Eŷt_k[:,j]#t==T ? (x̄_a*Φ̃ᵉj)*ât_t : (x̄_a*Φ̃ᵉj)*ât_t + x̄_Z[t+1]*Φ̃ᵉj
             x̂t_kj = @views x̂t_k[:,j]
-            @tensor Fxk[j,k][i,l] := dF.xx[j][i,l,o]*x̂t_kj[o] + dF.xX[j][i,l,o]*X̂t_k[o] + dF.xx′[j][i,l,o]*Ex̄′t_k[o]
-            @tensor FXk[j,k][i,l] := dF.Xx[j][i,l,o]*x̂t_kj[o] + dF.XX[j][i,l,o]*X̂t_k[o] + dF.Xx′[j][i,l,o]*Ex̄′t_k[o]
-            @tensor Fx′k[j,k][i,l] := dF.x′x[j][i,l,o]*x̂t_kj[o] + dF.x′X[j][i,l,o]*X̂t_k[o] + dF.x′x′[j][i,l,o]*Ex̄′t_k[o]
+            @tensor Fxk[j,k][i,l] := dF.xx[j][i,l,o]*x̂t_kj[o] + dF.xX[j][i,l,o]*X̂t_k[o] + dF.xyᵉ[j][i,l,o]*Eȳ′t_k[o]
+            @tensor FXk[j,k][i,l] := dF.Xx[j][i,l,o]*x̂t_kj[o] + dF.XX[j][i,l,o]*X̂t_k[o] + dF.Xyᵉ[j][i,l,o]*Eȳ′t_k[o]
+            @tensor Fyᵉk[j,k][i,l] := dF.yᵉx[j][i,l,o]*x̂t_kj[o] + dF.yᵉX[j][i,l,o]*X̂t_k[o] + dF.yᵉyᵉ[j][i,l,o]*Eȳ′t_k[o]
         end
+    end
+end
+
+"""
+    compute_ŷtk!(SO)
+
+Computes the ŷtk terms for a given k
+"""
+function compute_ŷtk!(SO::SecondOrderApproximation)
+    @unpack FO,Fxk,FXk,Fyᵉk,X̂k,x̂k,ŷk = SO
+    @unpack ZO,f,X̂t,x̂t,ŷt,ȳ_a,T = FO
+    @unpack x̄,Φ̃ᵉₐ,Φ̃,Φ̃ᵉ,Φ̃ᵉₐ,p,Q,n,df,Δ⁺,Δ⁻ = ZO
+    luΦ̃ = lu(Φ̃)
+
+    ŷtk = SO.ŷtk = zeros(n.y,n.sp,T)
+    ytktemp = zeros(n.y,n.sp)
+    for s in 1:T
+        x̂t⁺_s = x̂t[s]*Φ̃*Δ⁺
+        x̂t⁻_s = x̂t[s]*Φ̃*Δ⁻
+        x̂k⁺_s = x̂k[s]*Φ̃*Δ⁺
+        x̂k⁻_s = x̂k[s]*Φ̃*Δ⁻
+
+        for j in 1:n.sp
+             ytktemp[:,j] .= df.x⁺x⁺[j]⋅(x̂t⁺_s[:,j],x̂k⁺_s[:,j]) .+ df.x⁺x⁻[j]⋅(x̂t⁺_s[:,j],x̂k⁻_s[:,j]) .+ df.x⁻x⁺[j]⋅(x̂t⁻_s[:,j],x̂k⁺_s[:,j]) .+ df.x⁻x⁻[j]⋅(x̂t⁻_s[:,j],x̂k⁻_s[:,j])
+        end
+        ŷtk[:,:,s] = ytktemp/luΦ̃
     end
 end
 
@@ -182,16 +216,17 @@ end
 Computes the xtk terms for a given k
 """
 function compute_lemma3_ZZ!(SO::SecondOrderApproximation)
-    @unpack FO,Fxk,FXk,Fx′k,X̂k,x̂k,x̄_aa,Ixaaδ = SO
-    @unpack ZO,f,X̂t,x̂t,x̄_a = FO
-    @unpack x̄,Φ̃ᵉₐ,Φ̃,Φ̃ᵉ,Φ̃ᵉₐ,p,Q,n,dF = ZO
+    @unpack FO,Fxk,FXk,Fyᵉk,X̂k,x̂k,ŷk,ŷtk = SO
+    @unpack ZO,f,X̂t,x̂t,ŷt,ȳ_a = FO
+    @unpack x̄,Φ̃ᵉₐ,Φ̃,Φ̃ᵉ,Φ̃ᵉₐ,p,Q,n,dF,Δ⁺,Δ⁻,df = ZO
     T = length(x̂k) #allow for x̄_Z2 to have a shorter truncation
     luΦ̃ = lu(Φ̃)
 
     xtk_temp = zeros(n.x,n.sp)
+    ytk_temp = zeros(n.y,n.sp)
     xtk = SO.xtk = zeros(n.x,n.sp,T)
-    Ex̄_aa = x̄_a*Φ̃ᵉₐ
-    Ex̄_a = x̄*Φ̃ᵉₐ
+    Eȳ_aa = ȳ_a*Φ̃ᵉₐ
+    Eȳ_a = ȳ_a*Φ̃ᵉ
     for s in reverse(1:T)
         X̂t_s = @views Q*X̂t[:,s]
         X̂k_s = @views Q*X̂k[:,s]
@@ -200,26 +235,36 @@ function compute_lemma3_ZZ!(SO::SecondOrderApproximation)
         x̂k_s = x̂k[s]*Φ̃
         âk_s = (p*x̂k_s)[:]
         if s < T
-            Ex̂t_a_s = x̂t[s+1]*Φ̃ᵉₐ
-            Ex̂k_a_s = x̂k[s+1]*Φ̃ᵉₐ
-            Ex̂k_s  =  x̂k[s+1]*Φ̃ᵉ
-            Extk = xtk[:,:,s+1]*Φ̃ᵉ
+            Eŷt_a_s = ŷt[s+1]*Φ̃ᵉₐ
+            Eŷk_a_s = ŷk[s+1]*Φ̃ᵉₐ
+            Eŷk_s  =  ŷk[s+1]*Φ̃ᵉ
+            Eŷtk_s = ŷtk[:,:,s+1]*Φ̃ᵉ
+            Eytk_s = ytk_temp*Φ̃ᵉ
         else
-            Ex̂t_a_s = zeros(n.x,n.sp)
-            Ex̂k_a_s = zeros(n.x,n.sp)
-            Ex̂k_s  =  zeros(n.x,n.sp)
-            Extk = zeros(n.x,n.sp)
+            Eŷt_a_s = zeros(n.y,n.sp)
+            Eŷk_a_s = zeros(n.y,n.sp)
+            Eŷk_s  =  zeros(n.y,n.sp)
+            Eŷtk_s = zeros(n.y,n.sp)
+            Eytk_s = zeros(n.y,n.sp)
         end
         
         for j in 1:n.sp
-            Ex̄′k_s = view(Ex̄_a,:,j)*âk_s[j] .+ view(Ex̂k_s,:,j)
+            Eȳ′k_s = view(Eȳ_a,:,j)*âk_s[j] .+ view(Eŷk_s,:,j)
 
-            xtk_temp[:,j]  .= dF.x′[j]*(view(Ex̄_aa,:,j)*ât_s[j]*âk_s[j].+ view(Ex̂k_a_s,:,j)*ât_s[j] .+ view(Ex̂t_a_s,:,j)*âk_s[j])
-            xtk_temp[:,j] .+= Fxk[j,s]*view(x̂k_s,:,j) .+ FXk[j,s]*X̂k_s .+ Fx′k[j,s]*Ex̄′k_s
-            xtk_temp[:,j] .+= dF.x′[j]*view(Extk,:,j)
+            xtk_temp[:,j]  .= dF.yᵉ[j]*(view(Eȳ_aa,:,j)*ât_s[j]*âk_s[j].+ view(Eŷk_a_s,:,j)*ât_s[j] .+ view(Eŷt_a_s,:,j)*âk_s[j])
+            xtk_temp[:,j] .+= Fxk[j,s]*view(x̂k_s,:,j) .+ FXk[j,s]*X̂k_s .+ Fyᵉk[j,s]*Eȳ′k_s
+            xtk_temp[:,j] .+= dF.yᵉ[j]*(view(Eytk_s,:,j)+view(Eŷtk_s,:,j))
             xtk_temp[:,j] = f[j]*view(xtk_temp,:,j)
         end
-        xtk[:,:,s] = (luΦ̃'\xtk_temp')'  
+        xtk[:,:,s] = xtk_temp/luΦ̃  
+
+        #compute effect on y terms
+        xtk_temp⁺ = xtk_temp*Δ⁺
+        xtk_temp⁻ = xtk_temp*Δ⁻
+        for j in 1:n.sp
+            ytk_temp[:,j] .= df.x⁺[j]*xtk_temp⁺[:,j] .+ df.x⁻[j]*xtk_temp⁻[:,j]
+        end
+        ytk_temp = ytk_temp[:,:]/luΦ̃
     end
 end
 
@@ -227,9 +272,13 @@ end
 function compute_lemma3_ZZ_kink!(SO)
     @unpack FO,x̂k = SO
     @unpack ZO,x̂t,x̄_a = FO
-    @unpack x̄,Φ̃,p,Q,n,ℵ,aθ_sp = ZO
+    @unpack x̄,Φ̃,p,Q,n,ℵ,aθc_sp = ZO
     nℵ = length(ℵ)
     T = length(x̂k)
+    SO.Ixtkδ =  zeros(n.x,n.sp,T)
+    #TODO: FIX THIS
+    return
+    
     
     Φ̃m = Φ̃[:,ℵ]
     Φ̃p = Φ̃[:,ℵ.+1]
@@ -264,63 +313,152 @@ end
 Computes the a and b elements from Lemma 4
 """
 function compute_Lemma4_ZZ!(SO)
-    @unpack FO,Ω̂k,x̂k,X̂k = SO
-    @unpack ZO,Ω̂t,x̂t,X̂t,L = FO
-    @unpack n,Φ,Φₐ,p,ω̄,Λ,Q,x̄ = ZO
+    @unpack FO,ω̂k,ω̂ak,x̂k,X̂k,κ̂k,xtk,Ixtkδ = SO
+    @unpack ZO,ω̂t,ω̂at,x̂t,κ̂t,X̂t,L,x̄_a = FO
+    @unpack n,Φ,Φₐ,p,pκ,Δ,ω̄,Λ,Q,x̄,dlΓ,d2lΓ = ZO
     #Construct kink terms
 
     T = length(x̂k)
+    atk= SO.atk = zeros(n.Ω,T)
     btk= SO.btk = zeros(n.Ω,T)
     ctk= SO.ctk = zeros(n.Ω,T)
+    a_a = ((p*x̄_a)*Φ)[:]
+    κ_a = ((pκ*x̄_a*Δ)*Φ)[:]
+    p_a = dlΓ.*κ_a
     for t in 2:T 
+        #TODO:CHECK TIMING!
         ât = ((p*x̂t[t-1])*Φ)[:]
+        κ̂t_t = (κ̂t[t-1]'*Φ)[:]
+        κ̂t_t_a = (κ̂t[t-1]'*Φₐ)[:]
         âk = ((p*x̂k[t-1])*Φ)[:]
+        κ̂k_t = (κ̂k[t-1]'*Φ)[:]
+        κ̂k_t_a = (κ̂k[t-1]'*Φₐ)[:]
         ât_a = ((p*x̂t[t-1])*Φₐ)[:]
         âk_a = ((p*x̂k[t-1])*Φₐ)[:]
-        #âk = ((p*x̂k[t-1])*Φ̃ā)[:]
+
+        atk_t = ((p*xtk[:,:,t-1])*Φ)[:] .+ ((p*Ixtkδ[:,:,t-1])*Φₐ)[:]
+        κtk_t = ((pκ*xtk[:,:,t-1])*Δ*Φ)[:] .+ ((pκ*Ixtkδ[:,:,t-1])*Δ*Φₐ)[:]
         
-        @views btk[:,t] .= Λ*(ât_a.*Ω̂k[:,t-1] .+ âk_a.*Ω̂t[:,t-1] )
-        @views ctk[:,t] .= Λ*(ât.*âk.*ω̄) .+ L*(ât.*Ω̂k[:,t-1] .+ âk.*Ω̂t[:,t-1] ) 
+
+        p̂t_t = dlΓ.*κ̂t_t
+        p̂k_t = dlΓ.*κ̂k_t
+        p̂tk_t = dlΓ.*κtk_t .+ d2lΓ.*κ̂t_t.*κ̂k_t
+        p̂t_t_a = dlΓ.*κ̂t_t_a .+ d2lΓ.*κ̂t_t.*κ_a
+        p̂k_t_a = dlΓ.*κ̂k_t_a .+ d2lΓ.*κ̂k_t.*κ_a
+
+    
+        #âk = ((p*x̂k[t-1])*Φ̃ā)[:]
+        @views atk[:,t] = Λ*(a_a.*ω̂at[:,t-1].*âk .+ a_a.*ω̂ak[:,t-1].*ât .+ ât.*âk.*ω̄)  ##(aa) level
+        @views btk[:,t] .= Λ*( 
+            (ât.*p̂k_t .+ âk.*p̂t_t).*ω̄ .+ âk.*ω̂t[:,t-1] .+ ât.*ω̂k[:,t-1] .+
+            (p_a.*âk .+ a_a.*p̂k_t .+ âk_a).*ω̂at[:,t-1] .+
+            (p_a.*ât .+ a_a.*p̂t_t .+ ât_a).*ω̂ak[:,t-1] .+
+            (atk_t).*ω̄ 
+        )
+
+        @views ctk[:,t] = Λ*(
+            p̂tk_t.*ω̄  .+ p̂k_t.*ω̂t[:,t-1] .+ p̂t_t.*ω̂k[:,t-1] .+
+            p̂t_t_a.*ω̂ak[:,t-1] .+ p̂k_t_a.*ω̂at[:,t-1]
+        )
+
     end
 end
 
 function construct_Laa!(SO)
     @unpack FO = SO
-    @unpack ZO,Ω̂t,x̂t,X̂t,x̄_a = FO
-    @unpack Φ,Φₐ,p,ω̄,Λ,Q,x̄,n = ZO
+    @unpack ZO,x̂t,X̂t,x̄_a = FO
+    @unpack Φ,Φₐ,p,pκ,Δ,ω̄,Λ,Q,x̄,n,dlΓ,d2lΓ = ZO
 
-    ā_a = ((p*x̄)*Φₐ)[:]  #1xI array should work with broadcasting
+    #ā_a = ((p*x̄)*Φₐ)[:]  #1xI array should work with broadcasting
+    ā_a = clamp.(((p*x̄_a)*Φ)[:],-2,2)  #1xI array should work with broadcasting
+    #ā_a = ((p*x̄_a)*Φ)[:]  #1xI array should work with broadcasting
     ā_aa = ((p*x̄_a)*Φₐ)[:]#((p*x̄_zz)*Φ)[:]#  #1xI array should work with broadcasting
+    κ_a = ((pκ*x̄_a*Δ)*Φ)[:]
+    κ_aa = ((pκ*x̄_a*Δ)*Φₐ)[:]
+    p_a = dlΓ.*κ_a
+    p_aa = d2lΓ.*κ_a.*κ_a .+ dlΓ.*κ_aa
     #This code stops the creation of a large dense matrix
-    Laa1 = SO.Laa1 = copy(Λ)
-    Laa2 = SO.Laa2 = copy(Λ)
+    Lᵃᵃ = SO.Lᵃᵃ =copy(Λ)
+    Lᵃₐₐ = SO.Lᵃₐₐ =copy(Λ)
+    Lₐₐ = SO.Lₐₐ =copy(Λ)
     for j in 1:n.Ω
-        for i in nzrange(Laa1,j)
-            @inbounds Laa1.nzval[i] *= ā_aa[j]
+        for i in nzrange(Lᵃₐₐ,j)
+            @inbounds Lᵃₐₐ.nzval[i] *= ā_aa[j] + 2*ā_a[j]*p_a[j]
         end
-        for i in nzrange(Laa2,j)
-            @inbounds Laa2.nzval[i] *= ā_a[j]*ā_a[j]
+        for i in nzrange(Lᵃᵃ,j)
+            @inbounds Lᵃᵃ.nzval[i] *= ā_a[j]*ā_a[j] 
+        end
+        for i in nzrange(Lₐₐ,j)
+            @inbounds Lₐₐ.nzval[i] *= p_aa[j]
         end
     end
 end
 
 
 function compute_Corollary2_ZZ!(SO)
-    @unpack FO,xtk,Ixtkδ,Laa1,Laa2,btk,ctk = SO
-    @unpack ZO,L,M = FO
+    @unpack FO,Lᵃᵃ,Lᵃₐₐ,Lₐₐ,atk,btk,ctk = SO
+    @unpack ZO,La,Ma,L,M = FO
     @unpack ω̄,p,n,Φₐ,Λ = ZO
-    Mda =  Λ*(Φₐ'.*ω̄)
-    atk = (p*xtk)[1,:,:]
-    Iatkδ = (p*Ixtkδ)[1,:,:]
     #apply iteration
     #Iz = length(ω̄)
     T = size(btk)[2] #use possibly shorter horizon
-    Btk = SO.Btk = zeros(n.Ω,T)
-    Ctk = SO.Ctk = zeros(n.Ω,T)
+    ω̃tkᵃᵃ = SO.ω̃tkᵃᵃ = zeros(n.Ω,T)
+    ω̃tkᵃ = SO.ω̃tkᵃ = zeros(n.Ω,T)
+    ω̃tk = SO.ω̃tk = zeros(n.Ω,T)
+
     for t in 2:T
-        @views Btk[:,t] .= L*Btk[:,t-1] .+ Laa1*Ctk[:,t-1] .+ btk[:,t] .+ M*atk[:,t-1] .+ Mda*Iatkδ[:,t-1]
-        @views Ctk[:,t] .= Laa2*Ctk[:,t-1] .+ ctk[:,t]
+        @views ω̃tkᵃᵃ[:,t] .= Lᵃᵃ * ω̃tkᵃᵃ[:,t-1] .+ atk[:,t]
+        @views ω̃tkᵃ[:,t]  .= La * ω̃tkᵃ[:,t-1] .+ Lᵃₐₐ * ω̃tkᵃᵃ[:,t-1] .+ btk[:,t]
+        @views ω̃tk[:,t]   .= Λ * ω̃tk[:,t-1] .+ L * ω̃tkᵃ[:,t-1] .+ Lₐₐ *ω̃tkᵃᵃ[:,t-1]  .+ ctk[:,t]
     end
+end
+
+
+function compute_Intxtk(SO)
+    @unpack FO,ω̂k,ω̂ak,x̂k,X̂k,κ̂k,xtk,Ixtkδ,ω̃tkᵃᵃ,ω̃tkᵃ,ω̃tk = SO
+    @unpack ZO,ω̂t,ω̂at,x̂t,κ̂t,X̂t,L,x̄_a,T = FO
+    @unpack n,Φ,Φₐ,p,pκ,Δ,ω̄,Λ,Q,x̄,dlΓ,d2lΓ = ZO
+    
+    Intxtk = zeros(n.x,T)
+    κ_a = ((pκ*x̄_a*Δ)*Φ)[:]
+    κ_aa = ((pκ*x̄_a*Δ)*Φₐ)[:]
+    p_a = dlΓ.*κ_a
+    p_aa = d2lΓ.*κ_a.*κ_a .+ dlΓ.*κ_aa
+    xΦ = x̄*Φ
+    x_a = x̄_a*Φ
+    x_aa = x̄_a*Φₐ
+
+    for t in 1:T
+        x̂t_t = x̂t[t]*Φ
+        κ̂t_t = (κ̂t[t]'*Φ)[:]
+        κ̂t_t_a = (κ̂t[t]'*Φₐ)[:]
+        x̂k_t = x̂k[t]*Φ
+        κ̂k_t = (κ̂k[t]'*Φ)[:]
+        κ̂k_t_a = (κ̂k[t]'*Φₐ)[:]
+        x̂t_t_a = x̂t[t]*Φₐ
+        x̂k_t_a = x̂k[t]*Φₐ
+
+        xtk_t = xtk[:,:,t]*Φ .+ Ixtkδ[:,:,t]*Φₐ
+        κtk_t = ((pκ*xtk[:,:,t])*Δ*Φ)[:] .+ ((pκ*Ixtkδ[:,:,t])*Δ*Φₐ)[:]
+
+        p̂t_t = dlΓ.*κ̂t_t
+        p̂k_t = dlΓ.*κ̂k_t
+        p̂tk_t = dlΓ.*κtk_t .+ d2lΓ.*κ̂t_t.*κ̂k_t
+        p̂t_t_a = dlΓ.*κ̂t_t_a .+ d2lΓ.*κ̂t_t.*κ_a
+        p̂k_t_a = dlΓ.*κ̂k_t_a .+ d2lΓ.*κ̂k_t.*κ_a
+
+
+        @views Intxtk[:,t] = (
+            (xtk_t .+ x̂t_t.*p̂k_t' .+ x̂k_t.*p̂t_t' .+ xΦ.*p̂tk_t')*ω̄ .+
+            (x̂t_t .+ xΦ.*p̂t_t')*ω̂k[:,t] .+
+            (x̂t_t_a .+ x̂t_t.*p_a' .+ x_a.*p̂t_t' .+ xΦ.*p̂t_t_a')*ω̂ak[:,t] .+
+            (x̂k_t .+ xΦ.*p̂k_t')*ω̂t[:,t] .+
+            (x̂k_t_a .+ x̂k_t.*p_a' .+ x_a.*p̂k_t' .+ xΦ.*p̂k_t_a')*ω̂at[:,t] .+
+            FO.I*ω̃tk[:,t] .+ FO.Ia*ω̃tkᵃ[:,t] .+
+            (x_aa .+ 2*x_a.*p_a' .+ p_aa')*ω̃tkᵃᵃ[:,t]
+        )
+    end
+    return Intxtk
 end
 
 """
@@ -329,23 +467,20 @@ end
 Computes the path of the second order derivatives X_ZZ
 """
 function compute_XZZ!(SO::SecondOrderApproximation)
-    @unpack FO,x̂k,GΘΘtk,Btk,Ctk,xtk,Ixtkδ = SO
+    @unpack FO,x̂k,GΘΘtk,xtk,Ixtkδ = SO
     @unpack ZO,X̂t,luBB,x̄_a = FO
-    @unpack x̄,aθ_Ω,Φ,Φₐ,ω̄,dG,P,Q,p,n,ρ_Θ = ZO
+    @unpack x̄,Φ,Φₐ,ω̄,dG,P,Q,p,n = ZO
     T = size(FO.X̂t,2)
     T2 = length(x̂k)
-
+    Intxtk = compute_Intxtk(SO)
     #Compute RFOT
     AA = zeros(n.X,T)
-    for t in 1:T2
-        IB = @views x̄*(Φₐ*Btk[:,t])
-        IaaC = @views x̄_a*(Φₐ*Ctk[:,t])#x̄_zz*(Φ*Ctk[:,t])#
-        Intxtk = @views xtk[:,:,t]*(Φ*ω̄) .+ Ixtkδ[:,:,t]*(Φₐ*ω̄)
-        @views AA[:,t] .= dG.x*( IB .+ IaaC .+ Intxtk) .+ GΘΘtk[:,t] #Htk+GΘΘtk
+    for t in 1:T
+        @views AA[:,t] .= dG.x*Intxtk[:,t] .+ GΘΘtk[:,t] #Htk+GΘΘtk
     end
 
     #SO.X̂tk = reshape(-BB[1:n.X*T,1:n.X*T]\AA[:],n.X,T)
-    SO.X̂tk = reshape(-(luBB\AA[:])[1:n.X*T2],n.X,T2)
+    SO.X̂tk = reshape(-(luBB\AA[:])[1:n.X*T],n.X,T)
 end
 
 """

@@ -64,6 +64,8 @@
 
 
 include("OCModelE.jl")
+momfilename="baseline_moments.tex"
+
 OCM=OCModel()
 
 setup!(OCM)
@@ -73,6 +75,9 @@ if ichk==1
     chk1,chk2=check!(OCM)
 else
     ss,lev,shr,res = solvess!(OCM)
+    updatecutoffs!(OCM)
+    moments=getMoments(OCM,savepath=momfilename)
+
 
 
     if OCM.iagg==1

@@ -1,7 +1,7 @@
 
 
 include("OCModelE.jl")
-include("FirstOrderApproximation.jl")
+include("SecondOrderApproximation.jl")
  
 
 """
@@ -162,21 +162,24 @@ Returns expected marginal utility and expected value.
 """
 function ff(para::OCModel, x⁻, x⁺)
     @unpack σ_ε = para
-    _,_,_,_,_,_,_,_,λ⁻,v⁻ = x⁻
-    _,_,_,_,_,_,_,_,λ⁺,v⁺ = x⁺
 
-    p = 1 / (1 + exp((v⁺ - v⁻)/σ_ε))
+    λ⁻ = x⁻[9]; v⁻ = x⁻[10]
+    λ⁺ = x⁺[9]; v⁺ = x⁺[10]
 
-    if p < 1e-9
-        return [λ⁺, v⁺]
-    elseif p > 1 - 1e-9
-        return [λ⁻, v⁻]
+    Δv = (v⁺ - v⁻) / σ_ε
+    T = promote_type(typeof(λ⁻), typeof(λ⁺), typeof(σ_ε), typeof(Δv))
+    oneT = one(T)
+    p = oneT / (oneT + exp(Δv))
+
+    if p < T(1e-9)
+        return T[λ⁺, v⁺]  # Ensure return type is Vector{T}
+    elseif p > T(1 - 1e-9)
+        return T[λ⁻, v⁻]
     else
-        Ev = v⁻ + σ_ε * log(1 + exp((v⁺ - v⁻)/σ_ε))
-        return [λ⁻*p + λ⁺*(1-p), Ev]
+        Ev = v⁻ + σ_ε * log1p(exp(Δv))
+        return T[λ⁻ * p + λ⁺ * (1 - p), Ev]
     end
 end
-
 
 """
     construct_inputs(OCM)
@@ -220,7 +223,172 @@ function construct_inputs(OCM)
 end
 
 
-using Plots, DataFrames
+
+
+function setup_old_steady_state!(OCM)
+    OCM.ibise = 0 
+    OCM.iprint = 0
+    solvess!(OCM)
+    updatecutoffs!(OCM)
+    inputs_0 = construct_inputs(OCM)
+    X̄_0 = [getX(OCM); OCM.τb]
+    A_0 = X̄_0[inputs_0.Xlab .== :A][1]
+    Taub_0 = X̄_0[inputs_0.Xlab .== :Taub][1]
+    ω̄_0_base = sum(reshape(OCM.ω, :, 2), dims=2)
+    ZO_0 = ZerothOrderApproximation(inputs_0)
+    Ix̄_0 = ZO_0.x̄*ZO_0.Φ*ZO_0.ω̄
+    return inputs_0, X̄_0, Ix̄_0,A_0, Taub_0, ω̄_0_base
+end
+
+function setup_new_steady_state(τb, τw, OCM_old)
+    OCM = deepcopy(OCM_old)
+    OCM.τb = τb
+    OCM.τw = τw
+    OCM.iprint = 0
+    OCM.ibise = 1
+    assign!(OCM, OCM_old.r, OCM_old.tr)
+    ss, lev, shr, res = solvess!(OCM)
+    updatecutoffs!(OCM)
+    Xss = [getX(OCM); OCM.τb]
+    return OCM, Xss
+end
+
+function perform_transition_analysis(X̄_0,Ix̄_0,A_0, Taub_0, ω̄_0_base, OCM_new)
+    println("→ Constructing inputs...")
+    inputs = construct_inputs(OCM_new)
+    println("...done")
+
+    println("→ Zeroth-order approximation...")
+    ZO = ZerothOrderApproximation(inputs)
+    println("...done")
+
+    println("→ Computing derivatives...")
+    computeDerivativesF!(ZO, inputs)
+    computeDerivativesG!(ZO, inputs)
+    println("...done")
+
+    println("→ Setting up first-order approximation object...")
+    FO = FirstOrderApproximation(ZO, OCM_new.T)
+    println("...done")
+
+    println("→ Computing x,M,L,Js components ( bulk of the calclations )...")
+    compute_f_matrices!(FO)
+    compute_Lemma3!(FO)
+    compute_Lemma4!(FO)
+    compute_Corollary2!(FO)
+    compute_Proposition1!(FO)
+    compute_BB!(FO)
+    println("...done")
+
+    println("→ Constructing initial ω̄ vector...")
+    ω̄ = reshape(OCM_new.ω, :, 2)
+    p̄ = ω̄ ./ sum(ω̄, dims=2)
+    p̄[isnan.(p̄[:, 1]), 1] .= 1.0
+    p̄[isnan.(p̄[:, 2]), 2] .= 0.0
+    ω̄_0 = (p̄ .* ω̄_0_base)[:]
+    println("...done")
+
+    println("→ Setting initial conditions...")
+    FO.X_0 = [A_0; Taub_0] - ZO.P * ZO.X̄
+    FO.Θ_0 = [0.0]
+    FO.Δ_0 = ω̄_0 - ZO.ω̄
+    println("...done")
+
+    println("→ Solving transition path...")
+    solve_Xt!(FO)
+    println("...done")
+
+
+
+    println("→ Constructing FO Ix paths...")
+    compute_x̂t_ω̂t!(FO)
+    IX̂=compute_Ixt(FO)
+    Ix̄ = ZO.x̄*ZO.Φ*ZO.ω̄
+    IxpathFO=[Ix̄_0 Ix̄.+IX̂]
+    println("...done")
+
+
+    # === Compute SO Transition Path ===
+    println("→computing SO transition path (bulk of the calclations)...")
+    SO = SecondOrderApproximation(FO=FO)
+    SO.X_02 = FO.X_0
+    SO.Θ_02 = FO.Θ_0
+    SO.ω̂k =  FO.ω̂t
+    SO.ω̂ak =  FO.ω̂at
+    SO.x̂k =  FO.x̂t
+    SO.ŷk =  FO.ŷt
+    SO.κ̂k =  FO.κ̂t
+    SO.X̂k =  FO.X̂t
+    compute_Lemma2_ZZ!(SO)
+    compute_lemma3_components!(SO)
+    compute_ŷtk!(SO)
+    compute_lemma3_ZZ!(SO)
+    compute_lemma3_ZZ_kink!(SO)
+    compute_Lemma4_ZZ!(SO)
+    construct_Laa!(SO)
+    compute_Corollary2_ZZ!(SO)
+    compute_XZZ!(SO)
+    println("....done")
+    
+    # === Collect Results ===
+    println("→ Constructing X paths and value function...")
+    XpathFO = [X̄_0 ZO.X̄ .+ FO.X̂t]
+    XpathSO = [X̄_0 ZO.X̄ .+ FO.X̂t .+ 0.5*SO.X̂tk]
+    VinitFO = XpathFO[inputs.Xlab .== :V,2][1] #ZO.X̄[inputs.Xlab .== :V] + FO.X̂t[inputs.Xlab .== :V, 1]
+    VinitSO = XpathSO[inputs.Xlab .== :V,2][1]
+
+    println("...done ✅")
+
+
+    
+    return XpathSO, IxpathFO,inputs, VinitSO
+end
+
+function getResiduals!(df,OCM_old, OCM_new)
+    T = size(df, 1) - 1
+    rT = df.R[2:T+1] .- 1
+    trT = df.Tr[2:T+1]
+    x0 = vcat(rT, trT)
+    OCM_old.T = T
+    OCM_new.T = T
+    res = residual_tr!(x0, OCM_old, OCM_new)
+    assetmarketres= reshape(res,(T,2))[:,1]
+    gbcres= reshape(res,(T,2))[:,2]
+    df[!,:AssetMarketResidual] = vcat(0.0, assetmarketres)
+    df[!,:GBCResidual] = vcat(0.0, gbcres)
+    println("Asset Market Residual: ", norm(assetmarketres))
+    println("Government Budget Constraint Residual: ", norm(gbcres))
+    return res
+end
+
+function save_stuff(Xpath, Ixpath, inputs, Vss, Vinit)
+    println("SS value: $(Vss)")
+    println("SS + transition value: $(Vinit[1])")
+
+    df = DataFrame(Xpath', inputs.Xlab)
+    df.t = 0:(size(Xpath, 2) - 1)
+
+    df=hcat(df, DataFrame(Ixpath', map(x -> Symbol("I", String(x)), inputs.xlab)))
+
+    # default(linewidth = 2)
+    # p1 = plot(df.t, df.A, ylabel = "Capital", label = "")
+    # p2 = plot(df.t, df.Frac_b, ylabel = "Fraction Self Employed", label = "")
+    # display(plot(p1, p2, layout = (2, 1), size = (800, 600), legend = :topright))
+
+    # p3 = plot(df.t, df.W, ylabel = "Wage", label = "")
+    # display(p3)
+
+    # p4 = plot(df.t, df.C, ylabel = "Consumption", label = "")
+    # display(p4)
+
+    # p5 = plot(df.t, df.R, ylabel = "R", label = "")
+    # p6 = plot(df.t, df.Tr, ylabel = "Tr", label = "")
+    # display(plot(p5, p6, layout = (2, 1), size = (800, 600), legend = :topright))
+
+    return df
+end
+
+
 
 function plot_transition_comparison_dfs(df_slow::DataFrame, df_fast::DataFrame; savepath::String="transition_comparison.pdf")
     # Add time column if not present
@@ -235,7 +403,7 @@ function plot_transition_comparison_dfs(df_slow::DataFrame, df_fast::DataFrame; 
     variables = [:A, :C, :Frac_b, :Tr, :W, :Taub]
     titles = [
         "Capital (A)", "Consumption (C)", "Fraction Borrowers (Frac_b)",
-        "Transfers (Tr)", "Wage (W)", "Capital Tax (Taub)"
+        "Transfers (Tr)", "Wage (W)", "Business Tax (Taub)"
     ]
 
     # Create the plot layout
@@ -255,23 +423,23 @@ end
 
 
 
-function analyze_optimal_taub(file::String)
+function analyze_optimal_taub(file::String; col::Symbol = :VinitSO)
     # Step 1: Read the data
     df = CSV.read(file, DataFrame)
 
-    # Step 2: Find the best τb using Vinit and Vss
-    idx_vinit = argmax(df.Vinit)
-    idx_vss   = argmax(df.Vss)
+    # Step 2: Find the best τb using col and Vss
+    idx_col = argmax(df[!, col])
+    idx_vss = argmax(df.Vss)
 
-    best_taub_vinit = df.τb[idx_vinit]
-    best_taub_vss   = df.τb[idx_vss]
+    best_taub_col = df.τb[idx_col]
+    best_taub_vss = df.τb[idx_vss]
 
     # Step 3: Construct summary table
     summary = DataFrame(
-        Criterion = ["Best by Vss+Transition", "Best by Vss"],
-        τb = [best_taub_vinit, best_taub_vss],
-        Vinit = [df.Vinit[idx_vinit], df.Vinit[idx_vss]],
-        Vss = [df.Vss[idx_vinit], df.Vss[idx_vss]]
+        Criterion = ["Best by $(col)", "Best by Vss"],
+        τb = [best_taub_col, best_taub_vss],
+        Vinit = [df[idx_col, col], df[idx_vss, col]],
+        Vss = [df.Vss[idx_col], df.Vss[idx_vss]]
     )
 
     println("\nSummary Table:")
@@ -283,21 +451,131 @@ function analyze_optimal_taub(file::String)
             io, summary;
             header = names(summary),
             backend = Val(:latex),
-            tf = tf_latex_booktabs,   # <- FIXED: no parentheses
+            tf = tf_latex_booktabs,
             formatters = ft_printf("%.4f")
         )
     end
 
-    # Step 4: Plot Vinit vs τb with optima marked
+    # Step 4: Plot smoothed column vs τb with optima marked
+    smooth_col_name = Symbol("smooth_", col)
+    if hasproperty(df, smooth_col_name)
+        smooth_vals = df[!, smooth_col_name]
+    else
+        # If no smooth version exists, fall back to raw column
+        smooth_vals = df[!, col]
+    end
+
     default(linewidth=2)
-    plt = plot(df.τb, df.Vinit, label = "V₀", xlabel = "τb", ylabel = "V",
+    plt = plot(df.τb, smooth_vals, label = "Value", xlabel = "τb", ylabel = "V",
                title = "Value vs τb", legend = :bottomright, grid = true)
 
-    vline!([best_taub_vinit], label = "Best τb", linestyle = :dash, color = :red)
+    vline!([best_taub_col], label = "Best τb", linestyle = :dash, color = :red)
 
     # Save the plot as PDF
     savefig(plt, "vinit_vs_taub.pdf")
     display(plt)
 
     return summary
+end
+
+
+function smooth_VinitSO(df::DataFrame, s::Float64=0.1)
+    # Sort by τb to ensure smooth input to spline
+    sort!(df, :τb)
+
+    # Extract variables
+    τb_vals = df.τb
+    VinitSO_vals = df.VinitSO
+
+    # Fit a smooth cubic spline with specified smoothing factor
+    spline = Spline1D(τb_vals, VinitSO_vals; k=3, s=s)
+
+    # Save smoothed spline values into a new column
+    df.VinitSO_smooth = spline.(τb_vals)
+
+    # Plot the original points and the fitted spline
+    τb_fine = range(minimum(τb_vals), stop=maximum(τb_vals), length=200)
+    plot(τb_vals, VinitSO_vals, seriestype=:scatter, label="Data", legend=:bottomright)
+    plot!(τb_fine, spline.(τb_fine), label="Cubic Spline", lw=2, xlabel="τb", ylabel="VinitSO")
+
+    return df
+end
+
+
+
+"""
+    run_transition_analysis(τb_val, ρ_τ_val_fast, ρ_τ_val_slow, filenamefast, filenameslow, saveplotfilename)
+
+Run and compare two transition analyses — one with a fast adjustment and one with a slow adjustment of the capital income tax `τb`.
+
+# Arguments
+- `τb_val::Float64`: The value of τb (capital tax) in the new steady state.
+- `ρ_τ_val_fast::Float64`: Transition speed for the fast reform (ρ_τ close to 0).
+- `ρ_τ_val_slow::Float64`: Transition speed for the slow reform (ρ_τ close to 1).
+- `filenamefast::String`: Filename to save the transition path for the fast adjustment.
+- `filenameslow::String`: Filename to save the transition path for the slow adjustment.
+- `saveplotfilename::String`: Filename to save the comparison plot of transition paths.
+
+# Returns
+- `df_transition_fast::DataFrame`: Transition path data for the fast adjustment.
+- `df_transition_slow::DataFrame`: Transition path data for the slow adjustment.
+
+# Workflow
+1. Constructs the old steady state using baseline values.
+2. Solves the new steady state under `τb_val`.
+3. Simulates transition dynamics for both fast and slow reforms.
+4. Saves the transition paths (`df_transition_fast` and `df_transition_slow`) to CSV.
+5. Plots key variables comparing fast vs. slow reform paths and saves the plot.
+
+"""
+function run_transition_analysis(τb_val, ρ_τ_val_fast, ρ_τ_val_slow, filenamefast, filenameslow, saveplotfilename)
+    println("Setting up old steady state (takes a few minutes)...")
+    OCM_old = OCModel()
+    setup!(OCM_old)
+    OCM_old.r = 0.041760472228065636 # baseline
+    OCM_old.tr = 0.652573199821719   # baseline
+    inputs_old, X̄_old, Ix̄_old, A_old, Taub_old, ω̄_0_old = setup_old_steady_state!(OCM_old)
+    println("Old steady state setup complete.")
+
+    println("Setting up new steady state with τb = $τb_val (takes a few minutes)...")
+    OCM_new, Xss = setup_new_steady_state(τb_val, OCM_old.τw, OCM_old)
+    println("New steady state setup complete.")
+
+    # --- FAST TRANSITION ---
+    OCM_new.ρ_τ = ρ_τ_val_fast
+    println("Performing transition analysis with ρ_τ = $ρ_τ_val_fast...")
+    Xpath, Ixpath, inputs, Vinit_fast = perform_transition_analysis(X̄_old, Ix̄_old, A_old, Taub_old, ω̄_0_old, OCM_new)
+    println("Transition analysis complete.")
+
+    Vss = Xss[inputs.Xlab .== :V]
+    println("Transition analysis results (FAST):")
+    println("SS value: $Vss")
+    println("SS + transition value for ρ_τ = $ρ_τ_val_fast is $(Vinit_fast[1])")
+
+    df_transition_fast = save_stuff(Xpath, Ixpath, inputs, Vss, Vinit_fast)
+    CSV.write(filenamefast, df_transition_fast)
+    println("Results saved to $(filenamefast)")
+
+    # --- SLOW TRANSITION ---
+    OCM_new.ρ_τ = ρ_τ_val_slow
+    println("Performing transition analysis with ρ_τ = $ρ_τ_val_slow...")
+    Xpath, Ixpath, inputs, Vinit_slow = perform_transition_analysis(X̄_old, Ix̄_old, A_old, Taub_old, ω̄_0_old, OCM_new)
+    df_transition_slow = save_stuff(Xpath, Ixpath, inputs, Vss, Vinit_slow)
+    CSV.write(filenameslow, df_transition_slow)
+    println("Results saved to $(filenameslow)")
+
+
+#    Vss = Xss[inputs.Xlab .== :V]
+#    println("Transition analysis results (SLOW):")
+#    println("SS value: $Vss")
+#    println("SS + transition value for ρ_τ = $ρ_τ_val_slow is $(Vinit_slow[1])")
+
+ 
+    # --- Plotting ---
+    plot_transition_comparison_dfs(df_transition_fast, df_transition_slow, savepath=saveplotfilename)
+    println("Transition comparison plot saved to $(saveplotfilename)")
+
+    println("Transition analysis completed successfully.")
+
+    return df_transition_fast, df_transition_slow
 end
