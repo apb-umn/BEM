@@ -361,9 +361,7 @@ function getResiduals!(df,OCM_old, OCM_new)
     return res
 end
 
-function save_stuff(Xpath, Ixpath, inputs, Vss, Vinit)
-    println("SS value: $(Vss)")
-    println("SS + transition value: $(Vinit[1])")
+function save_stuff(Xpath, Ixpath, inputs)
 
     df = DataFrame(Xpath', inputs.Xlab)
     df.t = 0:(size(Xpath, 2) - 1)
@@ -534,18 +532,18 @@ function run_transition_analysis(τb_val, ρ_τ_val_fast, ρ_τ_val_slow, filena
     setup!(OCM_old)
     OCM_old.r = 0.041760472228065636 # baseline
     OCM_old.tr = 0.652573199821719   # baseline
-    inputs_old, X̄_old, Ix̄_old, A_old, Taub_old, ω̄_0_old = setup_old_steady_state!(OCM_old)
+    _, X̄_old, Ix̄_old, A_old, Taub_old, ω̄_0_old = setup_old_steady_state!(OCM_old)
     println("Old steady state setup complete.")
 
     println("Setting up new steady state with τb = $τb_val (takes a few minutes)...")
-    OCM_new, Xss = setup_new_steady_state(τb_val, OCM_old.τw, OCM_old)
+    OCM_new, _ = setup_new_steady_state(τb_val, OCM_old.τw, OCM_old)
     println("New steady state setup complete.")
 
     # --- FAST TRANSITION ---
     OCM_new.ρ_τ = ρ_τ_val_fast
     println("Performing transition analysis with ρ_τ = $ρ_τ_val_fast...")
-    Xpath, Ixpath, inputs, Vinit_fast = perform_transition_analysis(X̄_old, Ix̄_old, A_old, Taub_old, ω̄_0_old, OCM_new)
-    df_transition_fast = save_stuff(Xpath, Ixpath, inputs, Vss, Vinit_fast)
+    Xpath, Ixpath, inputs, _ = perform_transition_analysis(X̄_old, Ix̄_old, A_old, Taub_old, ω̄_0_old, OCM_new)
+    df_transition_fast = save_stuff(Xpath, Ixpath, inputs)
     CSV.write(filenamefast, df_transition_fast)
     println("Results saved to $(filenamefast)")
     println("Transition analysis complete.")
@@ -558,8 +556,8 @@ function run_transition_analysis(τb_val, ρ_τ_val_fast, ρ_τ_val_slow, filena
     # --- SLOW TRANSITION ---
     OCM_new.ρ_τ = ρ_τ_val_slow
     println("Performing transition analysis with ρ_τ = $ρ_τ_val_slow...")
-    Xpath, Ixpath, inputs, Vinit_slow = perform_transition_analysis(X̄_old, Ix̄_old, A_old, Taub_old, ω̄_0_old, OCM_new)
-    df_transition_slow = save_stuff(Xpath, Ixpath, inputs, Vss, Vinit_slow)
+    Xpath, Ixpath, inputs, _ = perform_transition_analysis(X̄_old, Ix̄_old, A_old, Taub_old, ω̄_0_old, OCM_new)
+    df_transition_slow = save_stuff(Xpath, Ixpath, inputs)
     CSV.write(filenameslow, df_transition_slow)
     println("Results saved to $(filenameslow)")
 
