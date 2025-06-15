@@ -530,8 +530,8 @@ function run_transition_analysis(τb_val, ρ_τ_val_fast, ρ_τ_val_slow, filena
     println("Setting up old steady state (takes a few minutes)...")
     OCM_old = OCModel()
     setup!(OCM_old)
-    OCM_old.r = 0.041760472228065636 # baseline
-    OCM_old.tr = 0.652573199821719   # baseline
+    OCM_old.r = 0.04002596643327971 # baseline
+    OCM_old.tr = 0.6854515190083939  # baseline
     _, X̄_old, Ix̄_old, A_old, Taub_old, ω̄_0_old = setup_old_steady_state!(OCM_old)
     println("Old steady state setup complete.")
 
@@ -569,7 +569,7 @@ function run_transition_analysis(τb_val, ρ_τ_val_fast, ρ_τ_val_slow, filena
 
  
     # --- Plotting ---
-    plot_transition_comparison_dfs(df_transition_fast, df_transition_slow, savepath=saveplotfilename)
+    plot_transition_comparison_dfs(df_transition_slow, df_transition_fast, savepath=saveplotfilename)
     println("Transition comparison plot saved to $(saveplotfilename)")
 
     println("Transition analysis completed successfully.")

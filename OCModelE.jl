@@ -74,7 +74,7 @@ Parameters of the Occupation Choice Model (Lucas Version)
 
     #Preferences
     σ::Float64   = 1.5                  #Risk Aversion
-    βo::Float64  = 1.00776              #Discount Factor (original)
+    βo::Float64  = 1.0095465            #Discount Factor (original)
     γ::Float64   = 0.02                 #Economy growth rate
     β::Float64   = 0.99978311           #Discount Factor (with growth) 
     σ_ε::Float64 = 0.05                 #St.Dev. of taste shock ε

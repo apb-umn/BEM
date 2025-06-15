@@ -4,14 +4,15 @@ using Distributed, CSV, DataFrames
 cd("/Users/bhandari/Dropbox/optimal_business_taxation/noncompliance/Approximation Code/anm_git/")
 
 # Add workers
-addprocs(6)
+addprocs(8)
 
 # Load all worker-side logic
 include("OCModel_mpi.jl")
 
 
 #
-filenamesuffix="base"
+filenamesuffix="highchi"
+χval=2.5
 
 # Define your parameter grid
 τb_vals = collect(range(0.21, stop=0.7, length=36))
@@ -20,6 +21,7 @@ filenamesuffix="base"
 println("Setting up old steady state (takes a few minutes) on master node...")
 OCM_old = OCModel()
 setup!(OCM_old)
+OCM_old.χ = χval
 OCM_old.r = 0.041760472228065636 # baseline
 OCM_old.tr = 0.652573199821719   # baseline
 inputs_old, X̄_old, Ix̄_old, A_old, Taub_old, ω̄_0_old = setup_old_steady_state!(OCM_old)
@@ -68,4 +70,3 @@ analyze_optimal_taub("data_opt_"* filenamesuffix *"_smooth_filtered.csv",col=:Vi
 
 # Clean up workers
 rmprocs(workers())
-
