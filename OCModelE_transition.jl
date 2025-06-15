@@ -545,16 +545,15 @@ function run_transition_analysis(τb_val, ρ_τ_val_fast, ρ_τ_val_slow, filena
     OCM_new.ρ_τ = ρ_τ_val_fast
     println("Performing transition analysis with ρ_τ = $ρ_τ_val_fast...")
     Xpath, Ixpath, inputs, Vinit_fast = perform_transition_analysis(X̄_old, Ix̄_old, A_old, Taub_old, ω̄_0_old, OCM_new)
-    println("Transition analysis complete.")
-
-    Vss = Xss[inputs.Xlab .== :V]
-    println("Transition analysis results (FAST):")
-    println("SS value: $Vss")
-    println("SS + transition value for ρ_τ = $ρ_τ_val_fast is $(Vinit_fast[1])")
-
     df_transition_fast = save_stuff(Xpath, Ixpath, inputs, Vss, Vinit_fast)
     CSV.write(filenamefast, df_transition_fast)
     println("Results saved to $(filenamefast)")
+    println("Transition analysis complete.")
+
+    # Vss = Xss[inputs.Xlab .== :V]
+    # println("Transition analysis results (FAST):")
+    # println("SS value: $Vss")
+    # println("SS + transition value for ρ_τ = $ρ_τ_val_fast is $(Vinit_fast[1])")
 
     # --- SLOW TRANSITION ---
     OCM_new.ρ_τ = ρ_τ_val_slow

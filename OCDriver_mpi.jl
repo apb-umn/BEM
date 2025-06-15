@@ -6,21 +6,37 @@ cd("/Users/bhandari/Dropbox/optimal_business_taxation/noncompliance/Approximatio
 # Add workers
 addprocs(6)
 
-#
-filenamesuffix="lowchi"
-
 # Load all worker-side logic
 include("OCModel_mpi.jl")
+
+
+#
+filenamesuffix="base"
 
 # Define your parameter grid
 τb_vals = collect(range(0.21, stop=0.7, length=36))
 ρ_τ_vals = [0.0]
 
-# Run steady state once on main process
-OCM_old, inputs_old, X̄_old, A_old, Taub_old, ω̄_old = setup_old_steady_state()
+println("Setting up old steady state (takes a few minutes) on master node...")
+OCM_old = OCModel()
+setup!(OCM_old)
+OCM_old.r = 0.041760472228065636 # baseline
+OCM_old.tr = 0.652573199821719   # baseline
+inputs_old, X̄_old, Ix̄_old, A_old, Taub_old, ω̄_0_old = setup_old_steady_state!(OCM_old)
+println("Old steady state setup complete..")
+
+state = SharedState(OCM_old, inputs_old, X̄_old, A_old, Taub_old, ω̄_0_old, ρ_τ_vals)
+
+for p in workers()
+    Distributed.remotecall_eval(Main, p, quote
+        global state = deepcopy($state)
+    end)
+end
+
 
 # Closure for parallel run
-run_closure = τb_val -> run_grid_point(τb_val, ρ_τ_vals, OCM_old, inputs_old, X̄_old, A_old, Taub_old, ω̄_old)
+run_closure = τb_val -> run_grid_point(τb_val, state)
+results_all = pmap(run_closure, τb_vals)
 
 # Run in parallel
 results_all = pmap(run_closure, τb_vals)
