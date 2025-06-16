@@ -29,7 +29,7 @@ function Fw(OCM::OCModel, lθ, a_, x, X, yᵉ)
         R*a_ + (1 - τw)*W*ϵ + Tr - (1 + τc)*c - (1 + γ)*a,    # (1) Budget constraint
         λ - R*u_c,                                            # (2) Envelope condition: ∂V/∂a
         β*λᵉ - u_c,                                           # (3) Euler equation
-        u + β*vᵉ - v,                                         # (4) Bellman equation
+        u + (1+γ)*β*vᵉ - v,                                         # (4) Bellman equation
         n + ϵ,                                                # (5) Labor supply condition (ϵ = disutility shock)
         k, yb, nb, profit, b                                  # (6–10) unused in worker case
     ]
@@ -76,7 +76,7 @@ function Fb(OCM::OCModel, lθ, a_, x, X, yᵉ)
         R*a_ + (1 - Taub)*profit + Tr - (1 + τc)*c - (1 + γ)*a,            # (1) Budget constraint
         λ - R*u_c - u_c*χ*(mpk - r - δ)*(1-Taub),                          # (2) Marginal value of wealth
         β*λᵉ - u_c,                                                        # (3) Euler equation
-        u + β*vᵉ - v,                                                      # (4) Value function
+        u + (1+γ)*β*vᵉ - v,                                                      # (4) Value function
         mpn - W,                                                           # (5) Labor FOC
         nb - n,                                                            # (6) Consistency: hired labor = choice
         mpk - r - δ,                                                       # (7) Capital FOC

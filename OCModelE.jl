@@ -74,7 +74,7 @@ Parameters of the Occupation Choice Model (Lucas Version)
 
     #Preferences
     σ::Float64   = 1.5                  #Risk Aversion
-    βo::Float64  = 1.0095465            #Discount Factor (original)
+    βo::Float64  = 0.99            #Discount Factor (original)
     γ::Float64   = 0.02                 #Economy growth rate
     β::Float64   = 0.99978311           #Discount Factor (with growth) 
     σ_ε::Float64 = 0.05                 #St.Dev. of taste shock ε
@@ -623,7 +623,7 @@ Outputs: V coefficients (Vcoefs), wf,bf (policies)
 """
 function solve_eg!(OCM::OCModel)
  
-    @unpack Na,agrid,abasis,σ,β,Φ,Nθ,lθ,πθ,σ_ε,λ,Nit,tolegm,Nhoward,iprint = OCM
+    @unpack Na,agrid,abasis,σ,β,Φ,Nθ,lθ,πθ,σ_ε,λ,Nit,tolegm,Nhoward,iprint,γ = OCM
 
 
     # Placeholders for splines
@@ -660,8 +660,8 @@ function solve_eg!(OCM::OCModel)
             a_b[:,s] = af_b[s](agrid) 
             EΦw      = kron(πθ[s,:]',BasisMatrix(abasis,Direct(),a_w[:,s]).vals[1])
             EΦb      = kron(πθ[s,:]',BasisMatrix(abasis,Direct(),a_b[:,s]).vals[1])
-            Vw[:,s]  = c_w[:,s].^(1-σ)/(1-σ) + β.*EΦw*OCM.Vcoefs
-            Vb[:,s]  = c_b[:,s].^(1-σ)/(1-σ) + β.*EΦb*OCM.Vcoefs 
+            Vw[:,s]  = c_w[:,s].^(1-σ)/(1-σ) + (1+γ)*β.*EΦw*OCM.Vcoefs
+            Vb[:,s]  = c_b[:,s].^(1-σ)/(1-σ) + (1+γ)*β.*EΦb*OCM.Vcoefs 
         end
         p       = probw.(Vb.-Vw,σ_ε)
         V       = p.*Vw .+ (1 .- p).*Vb
@@ -677,7 +677,7 @@ function solve_eg!(OCM::OCModel)
         Vcnew   = luΦ\V[:]
         OCM.Vcoefs = λ .* Vcnew + (1-λ) .* Vhold
     end 
-    diff    = norm(OCM.Vcoefs.-Vhold)
+    diff    = norm(OCM.Vcoefs.-Vhold,Inf)
     OCM.diffv= diff
 
       it     += 1
@@ -1705,8 +1705,8 @@ function policy_path(OCM,rT,trT)
             a_b[:,s] = af_b[s](agrid)     
             EΦw      = kron(πθ[s,:]',BasisMatrix(abasis,Direct(),a_w[:,s]).vals[1])
             EΦb      = kron(πθ[s,:]',BasisMatrix(abasis,Direct(),a_b[:,s]).vals[1])
-            Vw[:,s]  = c_w[:,s].^(1-σ)/(1-σ) + β.*EΦw*Vhold
-            Vb[:,s]  = c_b[:,s].^(1-σ)/(1-σ) + β.*EΦb*Vhold
+            Vw[:,s]  = c_w[:,s].^(1-σ)/(1-σ) + (1+γ)*β.*EΦw*Vhold
+            Vb[:,s]  = c_b[:,s].^(1-σ)/(1-σ) + (1+γ)*β.*EΦb*Vhold
         end
         p       = probw.(Vb.-Vw,σ_ε)      
         V       = p.*Vw .+ (1 .- p).*Vb
