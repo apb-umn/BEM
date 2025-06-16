@@ -1,5 +1,5 @@
 @everywhere begin
-    include("OCModelE.jl")
+    include("OCModelEGM.jl")
     include("OCModelE_transition.jl")
 
     # --- Define struct first ---

@@ -1,7 +1,7 @@
 using Distributed, CSV, DataFrames
 
 # Set working directory
-cd("/Users/bhandari/Dropbox/optimal_business_taxation/noncompliance/Approximation Code/anm_git/")
+cd("/Users/apb/Dropbox/optimal_business_taxation/noncompliance/Approximation Code/anm_git/")
 
 # Add workers
 addprocs(8)
@@ -22,8 +22,8 @@ println("Setting up old steady state (takes a few minutes) on master node...")
 OCM_old = OCModel()
 setup!(OCM_old)
 OCM_old.χ = χval
-OCM_old.r = 0.041760472228065636 # baseline
-OCM_old.tr = 0.652573199821719   # baseline
+OCM_old.r = 0.038374261709122705
+OCM_old.tr = 0.6713394785619925
 inputs_old, X̄_old, Ix̄_old, A_old, Taub_old, ω̄_0_old = setup_old_steady_state!(OCM_old)
 println("Old steady state setup complete..")
 

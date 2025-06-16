@@ -63,11 +63,10 @@
 #   Revised, ERM, 5/25/2025
 
 
-include("OCModelE.jl")
+include("OCModelEGM.jl")
 momfilename="baseline_moments.tex"
 
 OCM=OCModel()
-
 setup!(OCM)
 ichk = 0
 

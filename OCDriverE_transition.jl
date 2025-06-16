@@ -3,9 +3,9 @@
 include("OCModelE_transition.jl") # has the F,G,ff and several helper functions
 
 # Define parameters
-τb_val = 0.406
+τb_val = 0.4
 ρ_τ_val_fast = 0.0
-ρ_τ_val_slow = 0.95
+ρ_τ_val_slow = 0.9
 
 # Create output filenames using interpolation
 filenamefast = "df_transition_fast_$(round(τb_val, digits=2)).csv"

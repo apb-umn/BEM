@@ -1,6 +1,6 @@
 
 
-include("OCModelE.jl")
+include("OCModelEGM.jl")
 include("SecondOrderApproximation.jl")
  
 
@@ -13,7 +13,7 @@ savings, labor, and value function conditions.
 
 """
 function Fw(OCM::OCModel, lθ, a_, x, X, yᵉ)
-    @unpack aw_bor_cutoff, β, σ, a̲, τc, τw, γ = OCM
+    @unpack aw_bor_cutoff, βEE, βV, σ, a̲, τc, τw, γ = OCM
     a_ = a_[1]
     a, n, k, yb, nb, c, profit, b, λ, v = x
     λᵉ, vᵉ = yᵉ
@@ -28,8 +28,8 @@ function Fw(OCM::OCModel, lθ, a_, x, X, yᵉ)
     ret = [
         R*a_ + (1 - τw)*W*ϵ + Tr - (1 + τc)*c - (1 + γ)*a,    # (1) Budget constraint
         λ - R*u_c,                                            # (2) Envelope condition: ∂V/∂a
-        β*λᵉ - u_c,                                           # (3) Euler equation
-        u + (1+γ)*β*vᵉ - v,                                         # (4) Bellman equation
+        βEE*λᵉ - u_c,                                           # (3) Euler equation
+        u + βV*vᵉ - v,                                         # (4) Bellman equation
         n + ϵ,                                                # (5) Labor supply condition (ϵ = disutility shock)
         k, yb, nb, profit, b                                  # (6–10) unused in worker case
     ]
@@ -52,7 +52,7 @@ Equilibrium conditions for a business owner. Includes budget constraint,
 first-order conditions for inputs, and collateral/borrowing constraints.
 """
 function Fb(OCM::OCModel, lθ, a_, x, X, yᵉ)
-    @unpack ab_bor_cutoff, ab_col_cutoff, τb,β, σ, α_b, ν, χ, a̲, δ , τc, τw, γ = OCM
+    @unpack ab_bor_cutoff, ab_col_cutoff, τb,βEE, βV,σ, α_b, ν, χ, a̲, δ , τc, τw, γ, k_min = OCM
     a_ = a_[1]
     a, n, k, yb, nb, c, profit, b, λ, v = x
     λᵉ, vᵉ = yᵉ
@@ -75,8 +75,8 @@ function Fb(OCM::OCModel, lθ, a_, x, X, yᵉ)
     ret = [
         R*a_ + (1 - Taub)*profit + Tr - (1 + τc)*c - (1 + γ)*a,            # (1) Budget constraint
         λ - R*u_c - u_c*χ*(mpk - r - δ)*(1-Taub),                          # (2) Marginal value of wealth
-        β*λᵉ - u_c,                                                        # (3) Euler equation
-        u + (1+γ)*β*vᵉ - v,                                                      # (4) Value function
+        βEE*λᵉ - u_c,                                                        # (3) Euler equation
+        u + βV*vᵉ - v,                                                      # (4) Value function
         mpn - W,                                                           # (5) Labor FOC
         nb - n,                                                            # (6) Consistency: hired labor = choice
         mpk - r - δ,                                                       # (7) Capital FOC
@@ -87,19 +87,11 @@ function Fb(OCM::OCModel, lθ, a_, x, X, yᵉ)
 
     if a_ <= ab_bor_cutoff[lθ]
         ret[3] = a̲ - a
-        ret[7] = k - χ*a_
+        ret[7] = k - (χ*a_ + k_min)
     elseif (a_ <= ab_col_cutoff[lθ]) && (a_ > 0)
-        ret[7] = k - χ*a_
+        ret[7] = k - (χ*a_ + k_min)
     end
 
-    if a_ == 0
-        ret[2] = λ- R*u_c - u_c*χ*( α_b * z * (max(k,1e-4))^(α_b - 1) * (max(n,1e-4))^ν - r - δ)  # Marginal value of wealth at zero assets
-        ret[5] = n
-        ret[6] = nb
-        ret[7] = k
-        ret[8] = yb
-        ret[9] = profit
-    end
 
     return ret
 end
@@ -348,10 +340,11 @@ function getResiduals!(df,OCM_old, OCM_new)
     T = size(df, 1) - 1
     rT = df.R[2:T+1] .- 1
     trT = df.Tr[2:T+1]
+    τbT = df.Taub[2:T+1]
     x0 = vcat(rT, trT)
     OCM_old.T = T
     OCM_new.T = T
-    res = residual_tr!(x0, OCM_old, OCM_new)
+    res = residual_tr!(x0, OCM_old, OCM_new,τbT)
     assetmarketres= reshape(res,(T,2))[:,1]
     gbcres= reshape(res,(T,2))[:,2]
     df[!,:AssetMarketResidual] = vcat(0.0, assetmarketres)
@@ -530,8 +523,8 @@ function run_transition_analysis(τb_val, ρ_τ_val_fast, ρ_τ_val_slow, filena
     println("Setting up old steady state (takes a few minutes)...")
     OCM_old = OCModel()
     setup!(OCM_old)
-    OCM_old.r = 0.04002596643327971 # baseline
-    OCM_old.tr = 0.6854515190083939  # baseline
+    OCM_old.r = 0.038374261709122705
+    OCM_old.tr = 0.6713394785619925
     _, X̄_old, Ix̄_old, A_old, Taub_old, ω̄_0_old = setup_old_steady_state!(OCM_old)
     println("Old steady state setup complete.")
 
