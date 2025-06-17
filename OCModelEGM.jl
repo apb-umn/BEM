@@ -1311,7 +1311,7 @@ end
 
 function updatecutoffs!(OCM::OCModel)
 
-    @unpack alθ,Ia,Nθ,lθ, χ,agrid,  a̲, Na,Ia, ab_col_cutoff,ab_bor_cutoff, aw_bor_cutoff, bf,wf = OCM
+    @unpack alθ,Ia,Nθ,lθ, χ,agrid,  a̲, Na,Ia, ab_col_cutoff,ab_bor_cutoff, aw_bor_cutoff, bf,wf, k_min = OCM
     
     # where do constraints bind?
     ah  = agrid #grids are all the same for all shocks
@@ -1320,7 +1320,7 @@ function updatecutoffs!(OCM::OCModel)
 
     # for each shock, find the borrowing constraint
     for s in 1:Nθ
-        indices = findall(kb[:,s] .≈ ah*χ)
+        indices = findall(kb[:,s] .≈ ah*χ .+ k_min)
         if !isempty(indices)
             ab_col_cutoff[lθ[s, :]] = maximum(indices) == 1 ? -Inf : ah[maximum(indices)]
         else
@@ -1878,48 +1878,41 @@ function solve_tr!(x0,OCMold::OCModel, OCMnew::OCModel,τbT::Vector{Float64})
     trT     = x[T+1:2*T]
 end
 
-function print_OC_model_summary(ss, shr, case)
+function print_OCM_summary(ss, shr)
     println("                    OC Model Results")
     println("                    ================")
     println()
-    
-    println("      Case Parameters")
-    println("    -------------------------------------------")
-    @printf("      τᵇ (Capital tax)         %6.2f\n", case.τb)
-    @printf("      τʷ (Labor tax)           %6.2f\n", case.τw)
-    @printf("      χ  (max leverage parameter) %6.2f\n", case.χ)
-    println()
-
     println("      Equilibrium values and residuals")
     println("    -------------------------------------------")
-    @printf("      Interest rate           %6.2f%%\n", ss[1])
-    @printf("      Government transfer     %6.2f\n", ss[2])
-    @printf("      Asset market residual   %10.2e\n", ss[3])
-    @printf("      Government budget       %10.2e\n", ss[4])
+    @printf("      Interest rate           %6.2f%%\n", ss.InterestRate)
+    @printf("      Government transfer     %6.2f\n",   ss.GovernmentTransfer)
+    @printf("      Asset market residual   %10.2e\n",  ss.AssetMarketResidual)
+    @printf("      Government budget       %10.2e\n",  ss.BudgetResidual)
     println()
     println()
+
     println("      Incomes (%GDP)            Products             ")
     println("    -------------------------------------------------")
-    @printf("      Sweat          %6.1f  |  Consumption    %6.1f\n", shr[6], shr[1])
-    @printf("      Compensation   %6.1f  |  Investment     %6.1f\n", shr[7], shr[2] + shr[3])
-    @printf("      Capital income %6.1f  |  Defense        %6.1f\n", 100 - shr[6] - shr[7], shr[4])
+    @printf("      Sweat          %6.1f  |  Consumption    %6.1f\n", shr.Sweat_Income, shr.Consumption)
+    @printf("      Compensation   %6.1f  |  Investment     %6.1f\n", shr.Compensation, shr.Inv_Private + shr.Inv_Public)
+    @printf("      Capital income %6.1f  |  Defense        %6.1f\n", 100 - shr.Sweat_Income - shr.Compensation, shr.Defense)
     println("    -------------------------------------------------")
-    println("      Adj GDP         100.0                     100.0  ")
+    println("      Adj GDP         100.0                     100.0")
     println()
     println()
+
     println("      Tax receipts (%GDP)      Expenditures          ")
     println("    -------------------------------------------------")
-    @printf("      Sweat income   %6.1f  |  Transfers      %6.1f\n", shr[12], shr[20])
-    @printf("      Employee wages %6.1f  |  Defense        %6.1f\n", shr[13], shr[18])
-    @printf("      Profits        %6.1f  |  Net interest   %6.1f\n", shr[14], shr[19])
-    @printf("      Dividends      %6.1f  |                      \n", shr[15])
-    @printf("      Consumption    %6.1f  |                      \n", shr[16])
+    @printf("      Sweat income   %6.1f  |  Transfers      %6.1f\n", shr.Tax_Sweat, shr.Gov_Transfers)
+    @printf("      Employee wages %6.1f  |  Defense        %6.1f\n", shr.Tax_Wages,  shr.Gov_Defense)
+    @printf("      Profits        %6.1f  |  Net interest   %6.1f\n", shr.Tax_Profits, shr.Gov_IntPayment)
+    @printf("      Dividends      %6.1f  |                      \n", shr.Tax_Dividends)
+    @printf("      Consumption    %6.1f  |                      \n", shr.Tax_Consumption)
     println("    -------------------------------------------------")
     @printf("      Total          %6.1f                    %6.1f\n",
-            shr[12] + shr[13] + shr[14] + shr[15] + shr[16],
-            shr[18] + shr[19] + shr[20])
+        shr.Tax_Sweat + shr.Tax_Wages + shr.Tax_Profits + shr.Tax_Dividends + shr.Tax_Consumption,
+        shr.Gov_Transfers + shr.Gov_Defense + shr.Gov_IntPayment)
 end
-
 
 
 function plot_values!(OCM::OCModel; atrunc=5,ss=1:25)
@@ -2014,4 +2007,80 @@ function compute_smooth_marginal_value(EV′::Matrix{Float64}, agrid::Vector{Flo
     end
 
     return dVda
+end
+
+function compute_shr(OCM)
+        @unpack Θ̄,α,δ,γ,g,b,τc,τd,τp,τw,τb,trlb,trub,rlb,rub,Neval,iagg,ibise,iprint,ftolmk,xtolxmk,ξ,maxitermk,inewt = OCM
+
+    rc    = OCM.r / (1 - τp)
+    K2Nc  = ((rc + δ) / (Θ̄ * α))^(1 / (α - 1))
+    w     = (1 - α) * Θ̄ * K2Nc^α
+
+    cdst, adst, vdst, ybdst, kbdst, nbdst, nwdst = dist!(OCM)
+
+    Nb = dot(OCM.ω, nbdst)
+    Nc = dot(OCM.ω, nwdst) - Nb
+    Kc = K2Nc * Nc
+    Yc = Θ̄ * Kc^α * Nc^(1 - α)
+    Kb = dot(OCM.ω, kbdst)
+    Yb = dot(OCM.ω, ybdst)
+    C  = dot(OCM.ω, cdst)
+
+    Tc = τc * C
+    Tp = τp * (Yc - w * Nc - δ * Kc)
+    Td = τd * (Yc - w * Nc - (γ + δ) * Kc - Tp)
+    Tn = τw * w * (Nc + Nb)
+    Tb = τb * (Yb - (OCM.r + δ) * Kb - w * Nb)
+    Tx = Tc + Tp + Td + Tn + Tb
+
+    g = OCM.g
+    b = OCM.b
+
+    lev = [
+        C, (γ + δ) * Kb, (γ + δ) * Kc, g, Yc + Yb,
+        Yb - (OCM.r + δ) * Kb - w * Nb, w * (Nc + Nb),
+        Yc - w * Nc - δ * Kc, OCM.r * Kb, δ * (Kc + Kb), Yc + Yb,
+        Tb, Tn, Tp, Td, Tc, Tx,
+        g, (OCM.r - γ) * b, OCM.tr, g + (OCM.r - γ) * b + OCM.tr,
+        w * Nc, rc * Kc, δ * Kc, Yc, Kc,
+        w * Nb, OCM.r * Kb, δ * Kb, Yb - (OCM.r + δ) * Kb - w * Nb, Yb, Kb
+    ]
+
+    den = hcat(fill(Yc + Yb, 21), fill(Yc, 5), fill(Yb, 6))
+    shr_vec = (lev[:] ./ den[:]) .* 100.0
+
+    return (; 
+        Consumption     = shr_vec[1],
+        Inv_Private     = shr_vec[2],
+        Inv_Public      = shr_vec[3],
+        Defense         = shr_vec[4],
+        GDP             = shr_vec[5],
+        Sweat_Income    = shr_vec[6],
+        Compensation    = shr_vec[7],
+        Profits         = shr_vec[8],
+        Interest_Kb     = shr_vec[9],
+        Depreciation    = shr_vec[10],
+        Output          = shr_vec[11],
+        Tax_Sweat       = shr_vec[12],
+        Tax_Wages       = shr_vec[13],
+        Tax_Profits     = shr_vec[14],
+        Tax_Dividends   = shr_vec[15],
+        Tax_Consumption = shr_vec[16],
+        Total_Tax       = shr_vec[17],
+        Gov_Defense     = shr_vec[18],
+        Gov_IntPayment  = shr_vec[19],
+        Gov_Transfers   = shr_vec[20],
+        Gov_Spending    = shr_vec[21],
+        Wages_Corp      = shr_vec[22],
+        Payments_Corp   = shr_vec[23],
+        Dep_Corp        = shr_vec[24],
+        Output_Corp     = shr_vec[25],
+        K_Corp          = shr_vec[26],
+        Wages_Biz       = shr_vec[27],
+        Payments_Biz    = shr_vec[28],
+        Dep_Biz         = shr_vec[29],
+        Residual_Biz    = shr_vec[30],
+        Output_Biz      = shr_vec[31],
+        K_Biz           = shr_vec[32]
+    )
 end
