@@ -141,7 +141,7 @@ Parameters of the Occupation Choice Model (Lucas Version)
     maxitermk::Int = 500         #Maximum iterations for market clearing
     ibise::Int = 1              #Bisection method for initial guess of r/tr
     iprint::Int   = 1                   #Turn on=1/off=0 intermediate printing
-    T::Int        = 300                 #Number of periods in solve_tr!
+    T::Int        = 500                 #Number of periods in solve_tr!
     ξ::Float64    = 1.                 #Newton relaxation parameter
     inewt::Int    = 1                   #Use simple Newton in solvess
     diffv::Float64 = 1.              #Difference for egm 
@@ -1633,9 +1633,9 @@ end
 
 
 
-function forward_alt!(OCM,ω,ωn,r,tr,wf,bf)
+function forward_alt!(OCM,ω,ωn,r,tr,τb, wf,bf)
 
-    @unpack Nθ,πθ,lθ,Ia,alθ,δ,Θ̄,α,τp,τc,τb,τw,γ,σ_ε = OCM
+    @unpack Nθ,πθ,lθ,Ia,alθ,δ,Θ̄,α,τp,τc,τw,γ,σ_ε = OCM
 
     K2Nc   = ((r/(1-τp)+δ)/(Θ̄*α))^(1/(α-1))
     w      = (1-α)*Θ̄*K2Nc^α
@@ -1689,9 +1689,9 @@ function update_density!(ωn, Λtemp, p, ω,Ia, Nθ,v)
     return nothing
 end
 
-function forward2!(OCM,ω,ωn,r,tr,wf,bf)
+function forward2!(OCM,ω,ωn,r,tr,τb,wf,bf)
 
-    @unpack Nθ,πθ,lθ,Ia,alθ,δ,Θ̄,α,τp,τc,τb,τw,γ,σ_ε = OCM
+    @unpack Nθ,πθ,lθ,Ia,alθ,δ,Θ̄,α,τp,τc,τw,γ,σ_ε = OCM
 
     K2Nc   = ((r/(1-τp)+δ)/(Θ̄*α))^(1/(α-1))
     w      = (1-α)*Θ̄*K2Nc^α
@@ -1721,7 +1721,7 @@ end
     
 function policy_path(OCM,rT,trT,τbT)
 
-    @unpack Na,agrid,abasis,σ,β,Φ,Nθ,lθ,πθ,σ_ε,α,Θ̄,τp,δ = OCM
+    @unpack Na,agrid,abasis,σ,βEE,βV,Φ,Nθ,lθ,πθ,σ_ε,α,Θ̄,τp,δ = OCM
 
     T       = length(rT)
     wfT     = [(c = Vector{Spline1D}(undef,Nθ),
@@ -1755,6 +1755,7 @@ function policy_path(OCM,rT,trT,τbT)
     for t in reverse(1:T)
 
         OCM.Vcoefs = Vhold
+        OCM.λcoefs = λhold
         OCM.r      = rT[t]
         OCM.tr     = trT[t]
         OCM.w      = (1-α)*Θ̄*((rT[t]/(1-τp)+δ)/(Θ̄*α))^(α/(α-1))
@@ -1804,7 +1805,7 @@ end
 
 function residual_tr!(x0,OCMold,OCMnew,τbT)
 
-    @unpack T,Nh,alθ,Ia,Nθ,τc,τp,τd,τw,τb,δ,Θ̄,α,γ,g,b = OCMnew
+    @unpack T,Nh,alθ,Ia,Nθ,τc,τp,τd,τw,δ,Θ̄,α,γ,g,b = OCMnew
 
     #Initialize paths
     rT      = x0[1:T]
@@ -1823,7 +1824,7 @@ function residual_tr!(x0,OCMold,OCMnew,τbT)
     adst    = hcat([alθ[:,1];alθ[:,1]])
     for t in 1:T
 
-        @views forward_alt!(OCMnew,ωT[:,t],ωT[:,t+1],rT[t],trT[t],wfT[t],bfT[t])
+        @views forward_alt!(OCMnew,ωT[:,t],ωT[:,t+1],rT[t],trT[t],τbT[t],wfT[t],bfT[t])
 
         nb      = hcat([bfT[t].n[s](ah) for s in 1:Nθ]...)
         kb      = hcat([bfT[t].k[s](ah) for s in 1:Nθ]...)
@@ -1852,7 +1853,7 @@ function residual_tr!(x0,OCMold,OCMnew,τbT)
         Tp      = τp*(Yc-w*Nc-δ*Kc)
         Td      = τd*(Yc-w*Nc-(γ+δ)*Kc-Tp)
         Tw      = τw*w*(Nc+Nb)
-        Tb      = τb*(Yb-(rT[t]+δ)*Kb-w*Nb)
+        Tb      = τbT[t]*(Yb-(rT[t]+δ)*Kb-w*Nb)
         tx      = Tc+Tp+Td+Tw+Tb
         kres[t] = 1-((1-τd)*Kc+Kb+b)/A
         gres[t] = 1-(tx-trT[t]-(rT[t]-γ)*b)/g
