@@ -1,7 +1,7 @@
 using Distributed, CSV, DataFrames
 
 # Set working directory
-cd("/Users/apb/Dropbox/optimal_business_taxation/noncompliance/Approximation Code/anm_git/")
+#cd("/Users/apb/Dropbox/optimal_business_taxation/noncompliance/Approximation Code/anm_git/")
 
 # Add workers
 addprocs(8)
