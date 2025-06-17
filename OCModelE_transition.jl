@@ -537,6 +537,10 @@ function run_transition_analysis(τb_val, ρ_τ_val_fast, ρ_τ_val_slow, filena
     println("Performing transition analysis with ρ_τ = $ρ_τ_val_fast...")
     Xpath, Ixpath, inputs, _ = perform_transition_analysis(X̄_old, Ix̄_old, A_old, Taub_old, ω̄_0_old, OCM_new)
     df_transition_fast = save_stuff(Xpath, Ixpath, inputs)
+    println("Add residuals to DataFrame...")
+    getResiduals!(df_transition_fast, OCM_old, OCM_new)
+
+
     CSV.write(filenamefast, df_transition_fast)
     println("Results saved to $(filenamefast)")
     println("Transition analysis complete.")

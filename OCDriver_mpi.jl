@@ -11,8 +11,8 @@ include("OCModel_mpi.jl")
 
 
 #
-filenamesuffix="lowchi"
-χval=1.5
+filenamesuffix="highchi"
+χval=2.5
 
 # Define your parameter grid
 τb_vals = collect(range(0.21, stop=0.7, length=36))
