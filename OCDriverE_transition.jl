@@ -3,7 +3,7 @@
 include("OCModelE_transition.jl") # has the F,G,ff and several helper functions
 
 # Define parameters
-τb_val = 0.4
+τb_val = 0.5180
 ρ_τ_val_fast = 0.0
 ρ_τ_val_slow = 0.9
 

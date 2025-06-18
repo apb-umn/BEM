@@ -1038,6 +1038,7 @@ function getMoments(OCM::OCModel;savepath::String="moments_table.tex")
     Bb=Kbcons-Acons # external debt of business owners
 
     Bb_by_Kb = Bb/Kb # external debt to capital ratio of business owners
+    Bb_by_Y = Bb/Y # external debt of private to agg. gdp of business owners
 
 
 
@@ -1091,6 +1092,7 @@ moments = [
     "Capital constrained"         Kbcons;
     "External debt (Bb)"          Bb;
     "Bb/Kb (debt to capital ratio)" Bb_by_Kb;
+    "Bb/Y (debt to output ratio)" Bb_by_Y;
     "mean log wage earnings"      mean_log_wageearnings;
     "std log wage earnings"       std_log_wageearnings;
     "mean log MPK"                mean_mpkdist;
