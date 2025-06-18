@@ -66,7 +66,7 @@ function summarize_optimal_taub_all(cases::Vector{Tuple{String, String}})
 
     return summary
 end
-casenames = ["base", "lowchi", "highchi", "NoCol","sameinctax", "noinctax", "tauw20","tauw30","tauw60"]
+casenames = ["base", "lowchi", "highchi", "NoCol","sameinctax", "noinctax", "tauw10","tauw20","tauw30","tauw60"]
 cases = Vector{Tuple{String, String}}()
 
 for casename in casenames
