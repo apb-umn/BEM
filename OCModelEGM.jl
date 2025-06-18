@@ -82,7 +82,7 @@ Parameters of the Occupation Choice Model (Lucas Version)
 
     #Corporate parameters
     α::Float64   = 0.5                  #Corporate capital share
-    Θ̄::Float64   = 0.73                  #Corporate TFP
+    Θ̄::Float64   = 0.655                  #Corporate TFP
     δ::Float64   = 0.041                #Depreciation rate
 
     #Entrepreneur parameters
@@ -114,13 +114,13 @@ Parameters of the Occupation Choice Model (Lucas Version)
     curv_h::Float64 = 3.0               #Controls spacing for histogram
 
     #Fiscal policy
-    g::Float64    = 0.15                #Government spending on G&S
+    g::Float64    = 0.11                #Government spending on G&S
     b::Float64    = 3.0                 #Debt
-    τb::Float64   = 0.2                 #Tax on private business
-    τw::Float64   = 0.4                 #Tax on wages
-    τp::Float64   = 0.36 +.133*(1.0-0.36)               #Tax on corporate profits
+    τb::Float64   = 0.20                 #Tax on private business
+    τw::Float64   = 0.37                 #Tax on wages
+    τp::Float64   = .20               #Tax on corporate profits
     τd::Float64   = 0.0               #Tax on dividend
-    τc::Float64   = 0.065               #Tax on consumption
+    τc::Float64   = 0.06               #Tax on consumption
     tx::Float64   = 0.0                 #Total tax
     ρ_τ::Float64  = 0.9
     #Numerical parameters
