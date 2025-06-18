@@ -88,7 +88,7 @@ Parameters of the Occupation Choice Model (Lucas Version)
     #Entrepreneur parameters
     α_b::Float64 = 0.33                 #Private capital share
     ν::Float64   = 0.33                 #Private labor share 
-    χ::Float64   = 2.0                  #Collateral constraint. Use 1.5 for comparative stats
+    χ::Float64   = 100.0                  #Collateral constraint. Use 1.5 for comparative stats
     k_min::Float64 = 1e-2                #Minimum capital (not subject to collateral constraint)
 
 
@@ -389,7 +389,7 @@ Outputs: policy rules (cf,af,kf,nf,yf,πf,ζf,λf)
 
 """
 function policyb(OCM::OCModel)
-    @unpack Vcoefs,λcoefs,σ,βEE,γ,Nθ,lθ,a̲,EΦeg,Na,agrid,α_b,ν,δ,χ,r,w,tr,τc,τb,k_min = OCM
+    @unpack Vcoefs,λcoefs,σ,βEE,γ,Nθ,lθ,a̲,EΦeg,Na,agrid,α_b,ν,δ,r,w,tr,τc,τb,k_min = OCM
 
     lθb = lθ[:,1]
     θb  = exp.(lθb)
@@ -435,38 +435,19 @@ function policyb(OCM::OCModel)
 
     
 
-
-    for s in 1:Nθ
-        ic   = χ.*Implieda[:,s] .+ k_min .< kvec[s] 
-        
-        if sum(ic) > 0
-            Implieda[ic,s] = OCM.egi[s](argEGMinv[ic,s])
-            k[ic,s]  = max.(χ.*Implieda[ic,s].+k_min,k_min)
-            n[ic,s]  = (w./(ν.*θb[s].*k[ic,s].^α_b)).^(1/(ν-1))
-            y[ic,s]  = θb[s].*k[ic,s].^α_b.*n[ic,s].^ν
-            πb[ic,s] = y[ic,s] - w.*n[ic,s] - (r+δ).*k[ic,s]
-
-            mpkc_wedge = α_b*θb[s].*k[ic,s].^(α_b-1).*n[ic,s].^ν .- (r+δ)
-            λ[ic,s] = (1+r).*cEE[ic,s].^(-σ) .+ χ.*cEE[ic,s].^(-σ).* mpkc_wedge.*(1-τb)
-        end
-        kminmask = k[:,s] .<= k_min
-        Implieda[kminmask,s] =  (argEGMinv[kminmask,s] .- (1-τb).*πbmin[s]) ./ (1+r)
-    end
-
     #Update where borrowing constraint binding and interpolate
     numa = 10
     for s in 1:Nθ
         min_a=minimum(Implieda[:,s])
         if min_a > a̲ 
             acon  = LinRange(a̲,min_a,numa+1)[1:end-1]#unique([agrid[agrid .<= min_a];min_a])#
-            kcon  = min.(χ.*acon .+ k_min,kvec[s])
+            kcon  = kvec[s]*ones(length(acon))
             ncon  = (w./(ν.*θb[s].*kcon.^α_b)).^(1/(ν-1))
             ycon  = θb[s].*kcon.^α_b.*ncon.^ν
             πcon  = ycon - w.*ncon - (r+δ).*kcon
             ancon = a̲.*ones(length(acon))
             ccon  = ((1+r).*acon .+ (1-τb).*πcon .+ tr .- (1+γ)*a̲) ./(1+τc)
-            mpkc_wedge = α_b*θb[s].*kcon.^(α_b-1).*ncon.^ν .- (r+δ)
-            λcon  = (1+r).*ccon.^(-σ) .+ χ.*ccon.^(-σ).* mpkc_wedge.*(1-τb)
+            λcon  = (1+r).*ccon.^(-σ) 
         end
 
         if issorted(Implieda[:,s])
@@ -515,40 +496,6 @@ function policyb(OCM::OCModel)
 end
 
 
-
-
-"""
-egi[s] = setup_egi!(OCM)
-
-Computes the spline inverse in the EG algorithm
-Inputs: parameters (OCM)
-Outputs: eg inverse for each shock s
-"""
-function setup_egi!(OCM::OCModel)
-
-    @unpack Nθ,lθ,α_b,ν,χ,r,w,δ,τb,k_min = OCM
-
-    #Compute unconstrained capital
-    lθb  = lθ[:,1]
-    θb   = exp.(lθb)
-    nbyk = ν*(r+δ)/(α_b*w) 
-    kvec = @. (w/(ν*θb*nbyk^(ν-1)))^(1/(α_b+ν-1))
-
-    #Compute EG inverse spline
-    numk = 100
-    curv = 3.
-    for s in 1:Nθ
-        a_max = (kvec[s]-k_min)/χ
-        ahold    = LinRange(0,1,numk).^curv .* a_max
-        #ahold    = LinRange(0.,kvec[s]/χ,numk) 
-        khold    = ahold.*χ .+ k_min
-        nhold    = (w./(ν.*θb[s].*khold.^α_b)).^(1/(ν-1))
-        yhold    = θb[s].*khold.^α_b.*nhold.^ν
-        πbhold   = yhold - w.*nhold - (r+δ).*khold
-        aret     = (1+r).*ahold .+ (1 .- τb).*πbhold
-        OCM.egi[s] = Spline1D(aret,ahold,k=2)
-    end
-end 
 
 
 
@@ -766,7 +713,6 @@ function solvess!(OCM::OCModel)
         K2Nc   = ((rc+δ)/(Θ̄*α))^(1/(α-1))
         OCM.w  = w = (1-α)*Θ̄*K2Nc^α
 
-        setup_egi!(OCM)
         solve_eg!(OCM)
         cdst,adst,vdst,ybdst,kbdst,nbdst,nwdst = dist!(OCM)
         A      = dot(OCM.ω,adst)
@@ -793,7 +739,6 @@ function solvess!(OCM::OCModel)
         K2Nc   = ((rc+δ)/(Θ̄*α))^(1/(α-1))
         OCM.w  = w = (1-α)*Θ̄*K2Nc^α
 
-        setup_egi!(OCM)
         #setup!(OCM)
         solve_eg!(OCM)
         cdst,adst,vdst,ybdst,kbdst,nbdst,nwdst = dist!(OCM)
@@ -926,7 +871,6 @@ function check!(OCM::OCModel)
         K2Nc   = ((rc+δ)/(Θ̄*α))^(1/(α-1))
         OCM.w  = w = (1-α)*Θ̄*K2Nc^α
 
-        setup_egi!(OCM)
         solve_eg!(OCM)
         cdst,adst,vdst,ybdst,kbdst,nbdst,nwdst = dist!(OCM)
 
@@ -1154,7 +1098,6 @@ function assign!(OCM::OCModel,r::Float64,tr::Float64)
     K2Nc   = ((rc+δ)/(Θ̄*α))^(1/(α-1))
     OCM.w  = w = (1-α)*Θ̄*K2Nc^α
 
-    setup_egi!(OCM)
     solve_eg!(OCM)
     updatecutoffs!(OCM)
     cdst,adst,vdst,ybdst,kbdst,nbdst,nwdst = dist!(OCM)
@@ -1186,7 +1129,7 @@ end
 
 function updatecutoffs!(OCM::OCModel)
 
-    @unpack alθ,Ia,Nθ,lθ, χ,agrid,  a̲, Na,Ia, ab_col_cutoff,ab_bor_cutoff, aw_bor_cutoff, bf,wf, k_min = OCM
+    @unpack alθ,Ia,Nθ,lθ,agrid,  a̲, Na,Ia, ab_col_cutoff,ab_bor_cutoff, aw_bor_cutoff, bf,wf, k_min = OCM
     
     # where do constraints bind?
     ah  = agrid #grids are all the same for all shocks
@@ -1195,7 +1138,7 @@ function updatecutoffs!(OCM::OCModel)
 
     # for each shock, find the borrowing constraint
     for s in 1:Nθ
-        indices = findall(kb[:,s] .≈ ah*χ .+ k_min)
+        indices = findall(kb[:,s] .≈ 0.)
         if !isempty(indices)
             ab_col_cutoff[lθ[s, :]] = maximum(indices) == 1 ? -Inf : ah[maximum(indices)]
         else
@@ -1237,7 +1180,7 @@ Saves the policy functions in the OCModel object
 """
 
 function get_policy_functions(OCM::OCModel)
-    @unpack bf,wf,curv_a,Na,amax,a̲,curv_h,Ia,r,σ,δ,α_b,agrid,Nθ,lθ,ν,χ,τb=OCM
+    @unpack bf,wf,curv_a,Na,amax,a̲,curv_h,Ia,r,σ,δ,α_b,agrid,Nθ,lθ,ν,τb=OCM
 
 
 
@@ -1294,7 +1237,7 @@ Saves the policy functions in the OCModel object
 """
 
 function get_policy_functions_with_â(OCM::OCModel)
-@unpack bf,wf,curv_a,Na,amax,a̲,curv_h,Ia,r,σ,δ,α_b,agrid,Nθ,lθ,ν,χ=OCM
+@unpack bf,wf,curv_a,Na,amax,a̲,curv_h,Ia,r,σ,δ,α_b,agrid,Nθ,lθ,ν=OCM
 
 
 
@@ -1383,77 +1326,6 @@ function getX(OCM::OCModel)
    return X̄ 
 end
 
-
-
-
-
-function solvecase_serial!(OCM::OCModel)
-    diff_v = Inf
-    res = zeros(2)
-    try
-        # Recreate a fresh copy of OCM for each worker
-        OCM.τb = τb
-        OCM.τw = τw
-        ss, lev, shr, res = solvess!(OCM)
-        diff_v = OCM.diffv
-        Xss = getX(OCM)  # [R, W, Tr, Frac_b, V, A, C]
-        R, W, Tr, Frac_b, V, A, C = Xss
-
-        return NamedTuple{
-            (:τb, :τw, :r, :tr, :diffv, :diffasset, :diffgbc, :Rss, :Wss, :Trss, :Frac_bss, :Vss, :Ass, :Css)
-        }((τb, τw, OCM.r, OCM.tr, diff_v, res[1], res[2], R, W, Tr, Frac_b, V, A, C))
-
-    catch e
-        @warn "Solver failed at τb = $τb, τw = $τw" exception=(e, catch_backtrace())
-        return NamedTuple{
-            (:τb, :τw, :r, :tr, :diffv, :diffasset, :diffgbc, :Rss, :Wss, :Trss, :Frac_bss, :Vss, :Ass, :Css)
-        }((τb, τw, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN))
-    end
-
-
-end
-
-function solvecase_mpi(τb, τw, r_guess, tr_guess,ibiseval,iprintval)
-    diff_v = Inf
-    res = zeros(2)
-    try
-        # Recreate a fresh copy of OCM for each worker
-        OCM = OCModel()
-        OCM.τb = τb
-        OCM.τw = τw
-        OCM.iprint=iprintval
-        assign!(OCM, r_guess, tr_guess)
-        OCM.ibise = ibiseval
-        ss, lev, shr, res = solvess!(OCM)
-        diff_v = OCM.diffv
-        Xss = getX(OCM)  # [R, W, Tr, Frac_b, V, A, C]
-        R, W, Tr, Frac_b, V, A, C = Xss
-
-        return NamedTuple{
-            (:τb, :τw, :r, :tr, :diffv, :diffasset, :diffgbc, :Rss, :Wss, :Trss, :Frac_bss, :Vss, :Ass, :Css)
-        }((τb, τw, OCM.r, OCM.tr, diff_v, res[1], res[2], R, W, Tr, Frac_b, V, A, C))
-
-    catch e
-        @warn "Solver failed at τb = $τb, τw = $τw" exception=(e, catch_backtrace())
-        return NamedTuple{
-            (:τb, :τw, :r, :tr, :diffv, :diffasset, :diffgbc, :Rss, :Wss, :Trss, :Frac_bss, :Vss, :Ass, :Css)
-        }((τb, τw, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN))
-    end
-end
-
-function guess_from_csv(τb, τw, df)
-    row = df[(df.τb .≈ τb) .& (df.τw .≈ τw), :]
-    if nrow(row) == 1 && !isnan(row.r[1]) && !isnan(row.tr[1])
-        return row.r[1], row.tr[1]
-    else
-        # Prepare data: each column is a point in 2D
-        pts = permutedims(hcat(df.τb, df.τw))  # 2×N matrix
-        query = reshape([τb, τw], 2, 1)        # 2×1 matrix
-        dists = pairwise(Euclidean(), pts, query)  # (N×1 matrix)
-        idx = argmin(dists)
-        return df.r[idx], df.tr[idx]
-    end
-end
 
 
 
@@ -1791,7 +1663,7 @@ end
 
 
 function plot_values!(OCM::OCModel; atrunc=5,ss=1:25)
-    @unpack Vcoefs,σ,β,γ,Nθ,lθ,a̲,EΦ_aeg,EΦeg,Na,agrid,α_b,ν,δ,χ,r,w,tr,τc,τb = OCM
+    @unpack Vcoefs,σ,β,γ,Nθ,lθ,a̲,EΦ_aeg,EΦeg,Na,agrid,α_b,ν,δ,r,w,tr,τc,τb = OCM
 
     #Compute value function derivative
     EVₐ′ = reshape(EΦ_aeg*Vcoefs,:,Nθ) 
@@ -1813,7 +1685,7 @@ end
 
 
 function plot_x!(OCM::OCModel; atrunc=5,ss=1:25)
-    @unpack Vcoefs,σ,β,γ,Nθ,lθ,a̲,EΦ_aeg,EΦeg,Na,agrid,α_b,ν,δ,χ,r,w,tr,τc,τb = OCM
+    @unpack Vcoefs,σ,β,γ,Nθ,lθ,a̲,EΦ_aeg,EΦeg,Na,agrid,α_b,ν,δ,r,w,tr,τc,τb = OCM
 
     af=OCM.bf.a
     avec=LinRange(0,1,100)

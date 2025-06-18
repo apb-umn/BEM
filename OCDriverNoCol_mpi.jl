@@ -7,12 +7,11 @@ using Distributed, CSV, DataFrames
 addprocs(8)
 
 # Load all worker-side logic
-include("OCModel_mpi.jl")
+include("OCModelNoCol_mpi.jl")
 
 
 #
-filenamesuffix="highchi"
-χval=2.5
+filenamesuffix="NoCol"
 
 # Define your parameter grid
 τb_vals = collect(range(0.21, stop=0.7, length=36))
@@ -21,9 +20,8 @@ filenamesuffix="highchi"
 println("Setting up old steady state (takes a few minutes) on master node...")
 OCM_old = OCModel()
 setup!(OCM_old)
-OCM_old.χ = χval
-OCM_old.r = 0.038374261709122705
-OCM_old.tr = 0.6713394785619925
+OCM_old.r = 0.039433274175068575
+OCM_old.tr =0.6456514142564836
 inputs_old, X̄_old, Ix̄_old, A_old, Taub_old, ω̄_0_old = setup_old_steady_state!(OCM_old)
 println("Old steady state setup complete..")
 

@@ -52,7 +52,7 @@ Equilibrium conditions for a business owner. Includes budget constraint,
 first-order conditions for inputs, and collateral/borrowing constraints.
 """
 function Fb(OCM::OCModel, lθ, a_, x, X, yᵉ)
-    @unpack ab_bor_cutoff, ab_col_cutoff, τb,βEE, βV,σ, α_b, ν, χ, a̲, δ , τc, τw, γ, k_min = OCM
+    @unpack ab_bor_cutoff, ab_col_cutoff, τb,βEE, βV,σ, α_b, ν, a̲, δ , τc, τw, γ, k_min = OCM
     a_ = a_[1]
     a, n, k, yb, nb, c, profit, b, λ, v = x
     λᵉ, vᵉ = yᵉ
@@ -74,7 +74,7 @@ function Fb(OCM::OCModel, lθ, a_, x, X, yᵉ)
     # System of residuals
     ret = [
         R*a_ + (1 - Taub)*profit + Tr - (1 + τc)*c - (1 + γ)*a,            # (1) Budget constraint
-        λ - R*u_c - u_c*χ*(mpk - r - δ)*(1-Taub),                          # (2) Marginal value of wealth
+        λ - R*u_c,                          # (2) Marginal value of wealth
         βEE*λᵉ - u_c,                                                        # (3) Euler equation
         u + βV*vᵉ - v,                                                      # (4) Value function
         mpn - W,                                                           # (5) Labor FOC
@@ -87,9 +87,6 @@ function Fb(OCM::OCModel, lθ, a_, x, X, yᵉ)
 
     if a_ <= ab_bor_cutoff[lθ]
         ret[3] = a̲ - a
-        ret[7] = k - (χ*a_ + k_min)
-    elseif (a_ <= ab_col_cutoff[lθ]) && (a_ > 0)
-        ret[7] = k - (χ*a_ + k_min)
     end
 
 
