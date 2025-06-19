@@ -74,7 +74,7 @@ Parameters of the Occupation Choice Model (Lucas Version)
 
     #Preferences
     σ::Float64   = 1.5                  #Risk Aversion
-    βo::Float64  = 0.99            #Discount Factor (original)
+    βo::Float64  = 0.98            #Discount Factor (original)
     γ::Float64   = 0.02                 #Economy growth rate
     βEE::Float64 = 0.99978311           #Discount Factor (with growth) 
     βV::Float64 = 0.99978311           #Discount Factor (with growth) 
@@ -82,13 +82,13 @@ Parameters of the Occupation Choice Model (Lucas Version)
 
     #Corporate parameters
     α::Float64   = 0.5                  #Corporate capital share
-    Θ̄::Float64   = 0.655                  #Corporate TFP
+    Θ̄::Float64   = 0.81                  #Corporate TFP
     δ::Float64   = 0.041                #Depreciation rate
 
     #Entrepreneur parameters
     α_b::Float64 = 0.33                 #Private capital share
     ν::Float64   = 0.33                 #Private labor share 
-    χ::Float64   = 2.0                  #Collateral constraint. Use 1.5 for comparative stats
+    χ::Float64   = 2.0                 #Collateral constraint. Use 1.5 for comparative stats
     k_min::Float64 = 1e-2                #Minimum capital (not subject to collateral constraint)
 
 
@@ -103,6 +103,7 @@ Parameters of the Occupation Choice Model (Lucas Version)
     ρ_θw::Float64 = 0.966               #Persistence of θw
     σ_θw::Float64 = 0.13                #St.Dev. of θw
     bm_θw::Int    = 1                   #Use estimates from BM (2021)
+    risk_adjust::Float64 = 1.75         #Risk adjustment for worker productivity shocks
 
     #Asset grids
     a̲::Float64    = 0                 #Borrowing constraint
@@ -115,9 +116,9 @@ Parameters of the Occupation Choice Model (Lucas Version)
 
     #Fiscal policy
     g::Float64    = 0.11                #Government spending on G&S
-    b::Float64    = 3.0                 #Debt
+    b::Float64    = 4.75                 #Debt
     τb::Float64   = 0.20                 #Tax on private business
-    τw::Float64   = 0.37                 #Tax on wages
+    τw::Float64   = 0.35                 #Tax on wages
     τp::Float64   = .20               #Tax on corporate profits
     τd::Float64   = 0.0               #Tax on dividend
     τc::Float64   = 0.06               #Tax on consumption
@@ -125,11 +126,11 @@ Parameters of the Occupation Choice Model (Lucas Version)
     ρ_τ::Float64  = 0.9
     #Numerical parameters
     Nhoward::Int = 1               #Number of iterations in Howard's method
-    trlb::Float64 = 0.4                 #Transfers lower bound
-    trub::Float64 = 0.7                 #Transfers upper bound
+    trlb::Float64 = 1.0644988685385797*.8                 #Transfers lower bound
+    trub::Float64 = 1.0644988685385797*1.2                #Transfers upper bound
     Ntr::Int      = 1                   #Number of transfer evaluations
-    rlb::Float64  = 0.030               #Rate lower bound 
-    rub::Float64  = 0.050               #Rate upper bound 
+    rlb::Float64  = 0.04451827886790881*.8               #Rate lower bound 
+    rub::Float64  = 0.04451827886790881*1.2              #Rate upper bound 
     Nr::Int       = 3                   #Number of rate evaluations (in check!)
     Neval::Int    = 2                   #Number of bisection evaluations
     iagg::Int     = 1                   #Show aggregate data for each r/tr combo
@@ -213,7 +214,7 @@ Outputs: agrid,alθ,πθ,lθ,Φ,EΦeg,EΦ_aeg,ω,Λ,r,w,tr,Vcoefs
 function setup!(OCM::OCModel)
 
     @unpack a̲,Na,N_θb,N_θw,ρ_θw,σ_θw,bm_θw,ρ_θb,σ_θb,bm_θb,Nθ,
-            βo,γ,σ,Ia,amax,so,curv_a,curv_h,trlb,trub,rlb,rub = OCM
+            βo,γ,σ,Ia,amax,so,curv_a,curv_h,trlb,trub,rlb,rub,risk_adjust = OCM
 
     #Productivity shocks of workers
     if bm_θw==0
@@ -223,7 +224,7 @@ function setup!(OCM::OCModel)
     else
         mc = tauchen(5,.70446,.1598256,0,3)
         πθw = mc.p
-        θwgrid = exp.(mc.state_values)
+        θwgrid = exp.(mc.state_values*risk_adjust)
     end
     
     #Productivity shocks of entrepreneurs
@@ -243,6 +244,7 @@ function setup!(OCM::OCModel)
                   1.4436917636105182,
                   2.1974279939666546]
         θbgrid = θbgrid./θbgrid[3]
+        θbgrid=θbgrid.^risk_adjust
     end
 
     #Combined processes in one Markov chain
@@ -964,161 +966,162 @@ function check!(OCM::OCModel)
     return chk1,chk2
 end
 
+
 function getMoments(OCM::OCModel;savepath::String="moments_table.tex")
-     @unpack τp,τd,τb,τc,τw,δ,Θ̄,α,b,γ,g,iprint,r,tr,bf,wf,Ia,Nθ,alθ,ab_col_cutoff,lθ,χ = OCM
-    updatecutoffs!(OCM)
-    rc     = r/(1-τp)
-    K2Nc   = ((rc+δ)/(Θ̄*α))^(1/(α-1))
-    w = (1-α)*Θ̄*K2Nc^α
-    ah  = alθ[1:Ia,1] #grids are all the same for all shocks
+    @unpack τp,τd,τb,τc,τw,δ,Θ̄,α,b,γ,g,iprint,r,tr,bf,wf,Ia,Nθ,alθ,ab_col_cutoff,lθ,χ = OCM
+   updatecutoffs!(OCM)
+   rc     = r/(1-τp)
+   K2Nc   = ((rc+δ)/(Θ̄*α))^(1/(α-1))
+   w = (1-α)*Θ̄*K2Nc^α
+   ah  = alθ[1:Ia,1] #grids are all the same for all shocks
 
-    nb     = hcat([bf.n[s](ah) for s in 1:Nθ]...) #labor demand from business
-    kb     = hcat([bf.k[s](ah) for s in 1:Nθ]...)  #capital demand from business
-    yb     = hcat([bf.y[s](ah) for s in 1:Nθ]...) #value added from business
-    vw     = hcat([wf.v[s](ah) for s in 1:Nθ]...) #welfare of workers
-    vb     = hcat([bf.v[s](ah) for s in 1:Nθ]...) #welfare of business owners
-    cw     = hcat([wf.c[s](ah) for s in 1:Nθ]...) #consumption of workers
-    cb     = hcat([bf.c[s](ah) for s in 1:Nθ]...) #consumption of business owners
-    pib    =hcat([bf.π[s](ah) for s in 1:Nθ]...) #profits of business owners
-    lnwdst  = [log(OCM.w).+alθ[:,3];zeros(Ia*Nθ)] #mlog wage earnings
-    nwdst  = [exp.(alθ[:,3]);zeros(Ia*Nθ)] #
-    zdst = hcat([zeros(Ia*Nθ);exp.(alθ[:,2])]) #productivity shocks
-
-
-    nbdst  = [zeros(Ia*Nθ);nb[:]]
-    pidst  = [zeros(Ia*Nθ);pib[:]] #profits of business owners
-    kbdst  = [zeros(Ia*Nθ);kb[:]]
-    mpkdist = OCM.α_b.*zdst.*kbdst.^(OCM.α_b-1).*nbdst.^OCM.ν
-   lnmpkdist = log.(mpkdist)
-
-    ybdst  = [zeros(Ia*Nθ);yb[:]]
-    vdst   = [vw[:];vb[:]]
-    cdst   = [cw[:];cb[:]]
-    adst   = hcat([alθ[:,1];alθ[:,1]])
-    awdist= hcat([alθ[:,1];alθ[:,1].*0])
-    abdist = hcat([alθ[:,1].*0;alθ[:,1]]) 
-    indcons = hcat([(ah .< ab_col_cutoff[lθ[s,:]]) for s in 1:Nθ]...)
-    indconsdist=[zeros(Ia*Nθ);indcons[:]]
-    acons = hcat([ah.*(ah .< ab_col_cutoff[lθ[s,:]]) for s in 1:Nθ]...)
-    aconsdist=[zeros(Ia*Nθ);acons[:]]
-    kbcons = hcat([kb[:,s].*(ah .< ab_col_cutoff[lθ[s,:]]) for s in 1:Nθ]...)
-    kbconsdist=[zeros(Ia*Nθ);kbcons[:]]
+   nb     = hcat([bf.n[s](ah) for s in 1:Nθ]...) #labor demand from business
+   kb     = hcat([bf.k[s](ah) for s in 1:Nθ]...)  #capital demand from business
+   yb     = hcat([bf.y[s](ah) for s in 1:Nθ]...) #value added from business
+   vw     = hcat([wf.v[s](ah) for s in 1:Nθ]...) #welfare of workers
+   vb     = hcat([bf.v[s](ah) for s in 1:Nθ]...) #welfare of business owners
+   cw     = hcat([wf.c[s](ah) for s in 1:Nθ]...) #consumption of workers
+   cb     = hcat([bf.c[s](ah) for s in 1:Nθ]...) #consumption of business owners
+   pib    =hcat([bf.π[s](ah) for s in 1:Nθ]...) #profits of business owners
+   lnwdst  = [log(OCM.w).+alθ[:,3];zeros(Ia*Nθ)] #mlog wage earnings
+   nwdst  = [exp.(alθ[:,3]);zeros(Ia*Nθ)] #
+   zdst = hcat([zeros(Ia*Nθ);exp.(alθ[:,2])]) #productivity shocks
 
 
-    
-    Nb     = dot(OCM.ω,nbdst) #agg labor demand from business
-    Nc     = dot(OCM.ω,nwdst)-Nb #agg labor demand from corporate sector
-    Kc     = K2Nc*Nc  #capital demand from corporate sector
-    Yc     = Θ̄*Kc^α*Nc^(1-α) #value added from corporate sector
-    Kb     = dot(OCM.ω,kbdst) #agg capital demand from business
-    Yb     = dot(OCM.ω,ybdst) #agg value added from business
-    C      = dot(OCM.ω,cdst) #agg consumption
-    Tc     = τc*C #tax on consumption
-    Tp     = τp*(Yc-w*Nc-δ*Kc) #tax on profits of corporate sector
-    Td     = τd*(Yc-w*Nc-(γ+δ)*Kc-Tp) #tax on dividends of business
-    Tn     = τw*w*(Nc+Nb) #tax on labor income
-    Tb     = τb*(Yb-(r+δ)*Kb-w*Nb) #tax on profits of business
-    tx = Tc+Tp+Td+Tn+Tb #total tax revenue
-    Frac_b =sum(reshape(OCM.ω,:,2),dims=1)[2] # fraction of borrowing agents
-    V = dot(OCM.ω,vdst) #average utility
-    A = dot(OCM.ω,adst) # average assets
-    Aw= dot(OCM.ω,awdist) # average assets of workers
-    Ab= dot(OCM.ω,abdist) # average assets of business owners
-    C      = dot(OCM.ω,cdst) # average consumption
-    K=Kb+Kc # total capital in the economy
-    Y=Yb+Yc # total output in the economy
+   nbdst  = [zeros(Ia*Nθ);nb[:]]
+   pidst  = [zeros(Ia*Nθ);pib[:]] #profits of business owners
+   kbdst  = [zeros(Ia*Nθ);kb[:]]
+   mpkdist = OCM.α_b.*zdst.*kbdst.^(OCM.α_b-1).*nbdst.^OCM.ν
+  lnmpkdist = log.(mpkdist)
+
+   ybdst  = [zeros(Ia*Nθ);yb[:]]
+   vdst   = [vw[:];vb[:]]
+   cdst   = [cw[:];cb[:]]
+   adst   = hcat([alθ[:,1];alθ[:,1]])
+   awdist= hcat([alθ[:,1];alθ[:,1].*0])
+   abdist = hcat([alθ[:,1].*0;alθ[:,1]]) 
+   indcons = hcat([(ah .< ab_col_cutoff[lθ[s,:]]) for s in 1:Nθ]...)
+   indconsdist=[zeros(Ia*Nθ);indcons[:]]
+   acons = hcat([ah.*(ah .< ab_col_cutoff[lθ[s,:]]) for s in 1:Nθ]...)
+   aconsdist=[zeros(Ia*Nθ);acons[:]]
+   kbcons = hcat([kb[:,s].*(ah .< ab_col_cutoff[lθ[s,:]]) for s in 1:Nθ]...)
+   kbconsdist=[zeros(Ia*Nθ);kbcons[:]]
 
 
-    # collateral constraints
-    Frac_b_cons= dot(OCM.ω,indconsdist) # fraction of constrained agents
+   
+   Nb     = dot(OCM.ω,nbdst) #agg labor demand from business
+   Nc     = dot(OCM.ω,nwdst)-Nb #agg labor demand from corporate sector
+   Kc     = K2Nc*Nc  #capital demand from corporate sector
+   Yc     = Θ̄*Kc^α*Nc^(1-α) #value added from corporate sector
+   Kb     = dot(OCM.ω,kbdst) #agg capital demand from business
+   Yb     = dot(OCM.ω,ybdst) #agg value added from business
+   C      = dot(OCM.ω,cdst) #agg consumption
+   Tc     = τc*C #tax on consumption
+   Tp     = τp*(Yc-w*Nc-δ*Kc) #tax on profits of corporate sector
+   Td     = τd*(Yc-w*Nc-(γ+δ)*Kc-Tp) #tax on dividends of business
+   Tn     = τw*w*(Nc+Nb) #tax on labor income
+   Tb     = τb*(Yb-(r+δ)*Kb-w*Nb) #tax on profits of business
+   tx = Tc+Tp+Td+Tn+Tb #total tax revenue
+   Frac_b =sum(reshape(OCM.ω,:,2),dims=1)[2] # fraction of borrowing agents
+   V = dot(OCM.ω,vdst) #average utility
+   A = dot(OCM.ω,adst) # average assets
+   Aw= dot(OCM.ω,awdist) # average assets of workers
+   Ab= dot(OCM.ω,abdist) # average assets of business owners
+   C      = dot(OCM.ω,cdst) # average consumption
+   K=Kb+Kc # total capital in the economy
+   Y=Yb+Yc # total output in the economy
 
-    Acons= dot(OCM.ω,aconsdist) # average assets of constrained agents
 
-    Kbcons= dot(OCM.ω,kbconsdist) # average capital of constrained agents
+   # collateral constraints
+   Frac_b_cons= dot(OCM.ω,indconsdist) # fraction of constrained agents
 
-    Bb=Kbcons-Acons # external debt of business owners
+   Acons= dot(OCM.ω,aconsdist) # average assets of constrained agents
 
-    Bb_by_Kb = Bb/Kb # external debt to capital ratio of business owners
-    Bb_by_Y = Bb/Y # external debt of private to agg. gdp of business owners
+   Kbcons= dot(OCM.ω,kbconsdist) # average capital of constrained agents
+
+   Bb=Kbcons-Acons # external debt of business owners
+
+   Bb_by_Kb = Bb/Kb # external debt to capital ratio of business owners
+   Bb_by_Y = Bb/Y # external debt of private to agg. gdp of business owners
 
 
 
 
-    #distribuitional moments
-    # std of log wageearnings
-    indx_owners=Ia*Nθ+1:Ia*2*Nθ # indices for workers
-    indx_workers=1:Ia*Nθ # indices for business owners
-    workers_ω = OCM.ω[indx_workers]./sum(OCM.ω[indx_workers]) # weights for workers
-    mean_log_wageearnings = dot(workers_ω,lnwdst[indx_workers]) # mean log wage earnings
-    std_log_wageearnings = sqrt(dot(workers_ω,((lnwdst[indx_workers] .- mean_log_wageearnings).^2))) # std log wage earnings
-    q10_log_wageearnings, q25_log_wageearnings, q75_log_wageearnings, q90_log_wageearnings = weighted_quantile(lnwdst[indx_workers], workers_ω, [0.10, 0.25,0.75,0.90])
-    
+   #distribuitional moments
+   # std of log wageearnings
+   indx_owners=Ia*Nθ+1:Ia*2*Nθ # indices for workers
+   indx_workers=1:Ia*Nθ # indices for business owners
+   workers_ω = OCM.ω[indx_workers]./sum(OCM.ω[indx_workers]) # weights for workers
+   mean_log_wageearnings = dot(workers_ω,lnwdst[indx_workers]) # mean log wage earnings
+   std_log_wageearnings = sqrt(dot(workers_ω,((lnwdst[indx_workers] .- mean_log_wageearnings).^2))) # std log wage earnings
+   q10_log_wageearnings, q25_log_wageearnings, q75_log_wageearnings, q90_log_wageearnings = weighted_quantile(lnwdst[indx_workers], workers_ω, [0.10, 0.25,0.75,0.90])
+   
 
-    owners_ω = OCM.ω[indx_owners]./sum(OCM.ω[indx_owners]) # weights for business owners
-    sel=.!isnan.(lnmpkdist[indx_owners])
-    mean_mpkdist = dot(owners_ω[sel],lnmpkdist[indx_owners][sel])
-    std_mpkdist = sqrt(dot(owners_ω[sel],((lnmpkdist[indx_owners][sel] .- mean_mpkdist).^2))) # std log MPK 
-    piybdst =pidst[indx_owners]./(ybdst[indx_owners] .+ .0001)
-    mean_piybdst = dot(owners_ω,piybdst) # mean profit share
-    std_piybdst = sqrt(dot(owners_ω,((piybdst .- mean_piybdst).^2))) # std profit share
-    pidst_plus1 = max.(pidst[indx_owners], 0.0001) # avoid division by zero
-    lnpidst= log.(pidst_plus1) # log profit share
-    q10_lnpi, q25_lnpi, q75_lnpi, q90_lnpi = weighted_quantile(lnpidst, owners_ω, [0.10, 0.25,0.75,0.90])
-    mean_lnpi=dot(owners_ω,lnpidst) # mean profit share
-    std_lnpi = sqrt(dot(owners_ω,((lnpidst .- mean_lnpi).^2))) # std log profit share
+   owners_ω = OCM.ω[indx_owners]./sum(OCM.ω[indx_owners]) # weights for business owners
+   sel=.!isnan.(lnmpkdist[indx_owners])
+   mean_mpkdist = dot(owners_ω[sel],lnmpkdist[indx_owners][sel])
+   std_mpkdist = sqrt(dot(owners_ω[sel],((lnmpkdist[indx_owners][sel] .- mean_mpkdist).^2))) # std log MPK 
+   piybdst =pidst[indx_owners]./(ybdst[indx_owners] .+ .0001)
+   mean_piybdst = dot(owners_ω,piybdst) # mean profit share
+   std_piybdst = sqrt(dot(owners_ω,((piybdst .- mean_piybdst).^2))) # std profit share
+   pidst_plus1 = max.(pidst[indx_owners], 0.0001) # avoid division by zero
+   lnpidst= log.(pidst_plus1) # log profit share
+   q10_lnpi, q25_lnpi, q75_lnpi, q90_lnpi = weighted_quantile(lnpidst, owners_ω, [0.10, 0.25,0.75,0.90])
+   mean_lnpi=dot(owners_ω,lnpidst) # mean profit share
+   std_lnpi = sqrt(dot(owners_ω,((lnpidst .- mean_lnpi).^2))) # std log profit share
 
 
 
 # Create 2-column matrix explicitly
 moments = [
-    "tax on biz profits (Tb)"     τb;
-    "tax on labor income (Tn)"    τw;
-    "collateral constraint (χ)"  χ;
-    "interest rate (r)"           r;
-    "govt transfer (tr)"          tr;
-    "wage (w)"                w;
-    "Nb (pvt biz labor demand)"       Nb;
-    "Nc (corp labor demand)"      Nc;
-    "Kc (corp capital demand)"    Kc;
-    "Yc (corp value added)"       Yc;
-    "Kb (pvt biz capital demand)"     Kb;
-    "Yb (pvt biz value added)"        Yb;
-    "C (consumption)"             C;
-    "K (total capital)"          K;
-    "Y (total output)"           Y;
-    "Tc (tax on cons.)"           Tc;
-    "Tp (tax on profits corp)"    Tp;
-    "Tn (labor income tax)"       Tn;
-    "Tb (tax on profits pvt biz)"     Tb;
-    "Total tax revenue"           tx;
-    "Fraction of biz owners"       Frac_b;
-    "total. utility (V)"            V;
-    "total. assets (A)"             A;
-    "total. assets (workers)"       Aw;
-    "total. assets (owners)"        Ab;
-    "total. consumption (C)"        C;
-    "Fraction constrained"        Frac_b_cons;
-    "Assets constrained"          Acons;
-    "Capital constrained"         Kbcons;
-    "External debt (Bb)"          Bb;
-    "Bb/Kb (debt to capital ratio)" Bb_by_Kb;
-    "Bb/Y (debt to output ratio)" Bb_by_Y;
-    "mean log wage earnings"      mean_log_wageearnings;
-    "std log wage earnings"       std_log_wageearnings;
-    "10% quantile log wage earnings" q10_log_wageearnings;
-    "25% quantile log wage earnings" q25_log_wageearnings;
-    "75% quantile log wage earnings" q75_log_wageearnings;
-    "90% quantile log wage earnings" q90_log_wageearnings;
-    "mean log MPK"                mean_mpkdist;
-    "std log MPK"                 std_mpkdist;
-    "mean profit share"           mean_piybdst;
-    "std profit share"            std_piybdst;
-    "10% quantile log profits"    q10_lnpi;
-    "25% quantile log profits"    q25_lnpi;
-    "75% quantile log profits"    q75_lnpi;
-    "90% quantile log profits"    q90_lnpi;
-    "mean log profits"            mean_lnpi;
-    "std log profits"             std_lnpi;
+   "tax on biz profits (Tb)"     τb;
+   "tax on labor income (Tn)"    τw;
+   "collateral constraint (χ)"  χ;
+   "interest rate (r)"           r;
+   "govt transfer (tr)"          tr;
+   "wage (w)"                w;
+   "Nb (pvt biz labor demand)"       Nb;
+   "Nc (corp labor demand)"      Nc;
+   "Kc (corp capital demand)"    Kc;
+   "Yc (corp value added)"       Yc;
+   "Kb (pvt biz capital demand)"     Kb;
+   "Yb (pvt biz value added)"        Yb;
+   "C (consumption)"             C;
+   "K (total capital)"          K;
+   "Y (total output)"           Y;
+   "Tc (tax on cons.)"           Tc;
+   "Tp (tax on profits corp)"    Tp;
+   "Tn (labor income tax)"       Tn;
+   "Tb (tax on profits pvt biz)"     Tb;
+   "Total tax revenue"           tx;
+   "Fraction of biz owners"       Frac_b;
+   "total. utility (V)"            V;
+   "total. assets (A)"             A;
+   "total. assets (workers)"       Aw;
+   "total. assets (owners)"        Ab;
+   "total. consumption (C)"        C;
+   "Fraction constrained"        Frac_b_cons;
+   "Assets constrained"          Acons;
+   "Capital constrained"         Kbcons;
+   "External debt (Bb)"          Bb;
+   "Bb/Kb (debt to capital ratio)" Bb_by_Kb;
+   "Bb/Y (debt to output ratio)" Bb_by_Y;
+   "mean log wage earnings"      mean_log_wageearnings;
+   "std log wage earnings"       std_log_wageearnings;
+   "10% quantile log wage earnings" q10_log_wageearnings;
+   "25% quantile log wage earnings" q25_log_wageearnings;
+   "75% quantile log wage earnings" q75_log_wageearnings;
+   "90% quantile log wage earnings" q90_log_wageearnings;
+   "mean log MPK"                mean_mpkdist;
+   "std log MPK"                 std_mpkdist;
+   "mean profit share"           mean_piybdst;
+   "std profit share"            std_piybdst;
+   "10% quantile log profits"    q10_lnpi;
+   "25% quantile log profits"    q25_lnpi;
+   "75% quantile log profits"    q75_lnpi;
+   "90% quantile log profits"    q90_lnpi;
+   "mean log profits"            mean_lnpi;
+   "std log profits"             std_lnpi;
 
 ];
 
@@ -1126,18 +1129,19 @@ moments = [
 pretty_table(moments; header=["Moment", "Value"], formatters=ft_printf("%.4f"),crop = :none)
 
 open(savepath, "w") do io
-    pretty_table(
-        io, moments;
-        header = ["Moment", "Value"],
-        backend = Val(:latex),
-        tf = tf_latex_booktabs,
-        formatters = ft_printf("%.4f")
-    )
+   pretty_table(
+       io, moments;
+       header = ["Moment", "Value"],
+       backend = Val(:latex),
+       tf = tf_latex_booktabs,
+       formatters = ft_printf("%.4f")
+   )
 end
 
-   
-    return moments
+  
+   return moments
 end
+
 
 function compare_moments(OCM_old::OCModel, OCM_new::OCModel)
 
@@ -1982,29 +1986,4 @@ function compute_shr(OCM)
         Output_Biz      = shr_vec[31],
         K_Biz           = shr_vec[32]
     )
-end
-
-"""
-    weighted_quantile(x, w, p)
-
-Compute the weighted quantile(s) of `x` with weights `w` at probability `p`.
-- `x`: data vector (e.g. lnwdst)
-- `w`: weights (e.g. OCM.ω)
-- `p`: quantile level(s), e.g. 0.10 or [0.10, 0.90]
-"""
-function weighted_quantile(x::AbstractVector, w::AbstractVector, p::Union{Real,AbstractVector})
-    idx = sortperm(x)
-    x_sorted = x[idx]
-    w_sorted = w[idx]
-    cum_weights = cumsum(w_sorted)
-    total_weight = sum(w_sorted)
-    probs = cum_weights ./ total_weight
-
-    # Helper to find value at quantile q
-    function qval(q)
-        i = findfirst(>=(q), probs)
-        return x_sorted[i]
-    end
-
-    return isa(p, Number) ? qval(p) : map(qval, p)
 end

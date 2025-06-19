@@ -1,6 +1,6 @@
 @everywhere begin
-    include("OCModelEGM.jl")
-    include("OCModelE_transition.jl")
+    include("OCModelEGMHighRisk.jl")
+    include("OCModelEHighRisk_transition.jl")
 
     # --- Define struct first ---
     struct SharedState

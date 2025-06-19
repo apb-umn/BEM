@@ -1,6 +1,6 @@
 
 
-include("OCModelEGM.jl")
+include("OCModelEGMHighRisk.jl")
 include("SecondOrderApproximation.jl")
  
 
