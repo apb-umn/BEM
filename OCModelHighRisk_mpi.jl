@@ -207,8 +207,8 @@ function analyze_optimal_taub(file::String; col::Symbol = :VinitSO)
     end
 
     default(linewidth=2)
-    plt = plot(df.τb, smooth_vals, label = "Value", xlabel = "τb", ylabel = "V",
-               title = "Value vs τb", legend = :bottomright, grid = true)
+    plt = plot(df.τb, smooth_vals, label = "CE", xlabel = "τb", ylabel = "V",
+               title = "CE welfare vs τb", legend = :bottomright, grid = true)
 
     vline!([best_taub_col], label = "Best τb", linestyle = :dash, color = :red)
 
@@ -227,17 +227,38 @@ function smooth_VinitSO(df::DataFrame, s::Float64=0.1)
     # Extract variables
     τb_vals = df.τb
     VinitSO_vals = df.VinitSO
+    CESO_vals = df.CESO
 
     # Fit a smooth cubic spline with specified smoothing factor
-    spline = Spline1D(τb_vals, VinitSO_vals; k=3, s=s)
+    splineV = Spline1D(τb_vals, VinitSO_vals; k=3, s=s)
 
     # Save smoothed spline values into a new column
-    df.VinitSO_smooth = spline.(τb_vals)
+    df.VinitSO_smooth = splineV.(τb_vals)
+
+    splineCE = Spline1D(τb_vals, CESO_vals; k=3, s=s)
+    df.CESO_smooth = splineCE.(τb_vals)
 
     # Plot the original points and the fitted spline
     τb_fine = range(minimum(τb_vals), stop=maximum(τb_vals), length=200)
     plot(τb_vals, VinitSO_vals, seriestype=:scatter, label="Data", legend=:bottomright)
-    plot!(τb_fine, spline.(τb_fine), label="Cubic Spline", lw=2, xlabel="τb", ylabel="VinitSO")
+    plot!(τb_fine, splineV.(τb_fine), label="Cubic Spline", lw=2, xlabel="τb", ylabel="CESO_vals")
+
+    # Step 2: Find the best τb using col and Vss
+    idx_col = argmax(df[!, :CESO_smooth])
+
+    best_taub_col = df.τb[idx_col]
+
+
+    # Plot the original points and the fitted spline
+    τb_fine = range(minimum(τb_vals), stop=maximum(τb_vals), length=200)
+    plt=plot(τb_vals, CESO_vals, seriestype=:scatter, label="Data", legend=:bottomright)
+    plt=plot!(τb_fine, splineCE.(τb_fine), label="Cubic Spline", lw=2, xlabel="τb", ylabel="CESO_vals")
+plt =    vline!([best_taub_col], label = "Best τb", linestyle = :dash, color = :red)
+
+    # Save the plot as PDF
+    savefig(plt, "smooth_welfare_ce.pdf")
+    display(plt)
+
 
     return df
 end
