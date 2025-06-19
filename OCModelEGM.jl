@@ -1045,19 +1045,18 @@ function getMoments(OCM::OCModel;savepath::String="moments_table.tex")
 
 
     #distribuitional moments
-    # std of log wageearnings
-    indx_owners=Ia*Nθ+1:Ia*2*Nθ # indices for workers
     indx_workers=1:Ia*Nθ # indices for business owners
     workers_ω = OCM.ω[indx_workers]./sum(OCM.ω[indx_workers]) # weights for workers
     mean_log_wageearnings = dot(workers_ω,lnwdst[indx_workers]) # mean log wage earnings
     std_log_wageearnings = sqrt(dot(workers_ω,((lnwdst[indx_workers] .- mean_log_wageearnings).^2))) # std log wage earnings
     q10_log_wageearnings, q25_log_wageearnings, q75_log_wageearnings, q90_log_wageearnings = weighted_quantile(lnwdst[indx_workers], workers_ω, [0.10, 0.25,0.75,0.90])
     
-
+    indx_owners=Ia*Nθ+1:Ia*2*Nθ # indices for workers
     owners_ω = OCM.ω[indx_owners]./sum(OCM.ω[indx_owners]) # weights for business owners
     sel=.!isnan.(lnmpkdist[indx_owners])
     mean_mpkdist = dot(owners_ω[sel],lnmpkdist[indx_owners][sel])
     std_mpkdist = sqrt(dot(owners_ω[sel],((lnmpkdist[indx_owners][sel] .- mean_mpkdist).^2))) # std log MPK 
+    q10_mpk, q25_mpk, q75_mpk, q90_mpk = weighted_quantile(lnmpkdist[indx_owners][sel], owners_ω, [0.10, 0.25,0.75,0.90])
     piybdst =pidst[indx_owners]./(ybdst[indx_owners] .+ .0001)
     mean_piybdst = dot(owners_ω,piybdst) # mean profit share
     std_piybdst = sqrt(dot(owners_ω,((piybdst .- mean_piybdst).^2))) # std profit share
