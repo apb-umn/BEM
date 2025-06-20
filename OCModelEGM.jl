@@ -1,205 +1,4 @@
-# OCModelE.jl
-#
-#   Three business sectors:
-#     -- Nonfinancial corporate sector:
-#
-#         vc(Kc) =  max {(1-τd)dc +(1+γ)/(1+r) vc(Kc')}
-#                  Nc,Xc 
-#
-#           s.t. (1+γ)Kc'=(1-δ)Kc+Xc
-#                     Yc = Θ̄ Kc^α Nc^(1-α)
-#                     dc = Yc-w*Nc-Xc-τp(Yc-w*Nc-δ*Kc)
-#
-#    -- Financial corporate sector
-#         vi(x) =  max  {di+ (1+γ)/(1+r) vi(x')} 
-#                   x'    
-#
-#           s.t. di = q*s+b+∫kb-∫a 
-#                      +(1-τd)dc*s+r*b-rp∫kb-r∫a (income)
-#                      -(1+γ)[q*s'+b'-∫a']-∫[kb'-(1-δ)kb]
-#                   = net worth+income-invetment
-#
-#        ==> r=rp-δ=(1-τd)*[q+(1-τd)dc]/q[-1]-1
-#                =(1-τp)(α*Yc/Kc-δ)
-#
-#    -- Private sector operating DRS technology 
-#
-#         vb(a,θw,θb) =  max U(c) + β E v(a',θw',θb',η')
-#                        c,a'
-#
-#           s.t. c+a' = (1+r)a + π - τb*π-τc*c
-#                π = max θb kb^α nb^ν-(r+δ)*kb-w*nb
-#
-#   Workers:
-#
-#         vw(a,θw,θb) =  max U(c) + β E v(a',θw',θb',η')
-#                       c,a'
-#
-#           s.t. c+a' = (1+r)*a + w*θw -τw*w*θw -τc*c
-#
-#   Occupation choice:
-#
-#         η = taste shock = ηw-ηb ~ logistic
-#         p = probability of being a worker
-#         v = max d*(vw+η) + (1-d)*vb
-#
-#        Ev = 0.57722*σ_η + σ_η *log(exp(vw/σ_η)+exp(vb/σ_η))
-#           = 0.57722*σ_η + vw+ σ_η*(1+exp((vb-vw)/σ_η))
-#
-#   Market clearing:
-#
-#        Kc + ∫ (1-d[i])k[i] di = ∫ a[i] di
-#        Nc + ∫ (1-d[i])n[i] di = ∫ d[i] θw[i] di
-#
-#   Government budget:
-#
-#        G+Tr+r*B =B'-B+τc*C+τw*w*(Nc+Nb)
-#                  +τp*(Yc-w*Nc-δ*Kc)
-#                  +τd*(Yc-w*Nc-Xc-τp*(Yc-w*Nc-δ*Kc))
-#                  +τb*(Yp-(r+δ)*Kp-w*Nb)
-#
-
-#   Ellen McGrattan, 5/9/2025
-#   Revised, ERM, 5/25/2025
-
-using Parameters,LinearAlgebra,BasisMatrices,SparseArrays,Arpack,Roots, 
-      KrylovKit,QuantEcon, PrettyTables,StatsBase,ForwardDiff,Dierckx,
-      Plots,NPZ,NLsolve,Printf,DataFrames,CSV,Distances, Interpolations
-
-
-"""
-Parameters of the Occupation Choice Model (Lucas Version)
-"""
-@with_kw mutable struct OCModel
-
-    #Preferences
-    σ::Float64   = 1.5                  #Risk Aversion
-    βo::Float64  = 0.99            #Discount Factor (original)
-    γ::Float64   = 0.02                 #Economy growth rate
-    βEE::Float64 = 0.99978311           #Discount Factor (with growth) 
-    βV::Float64 = 0.99978311           #Discount Factor (with growth) 
-    σ_ε::Float64 = 0.1                 #St.Dev. of taste shock ε
-
-    #Corporate parameters
-    α::Float64   = 0.5                  #Corporate capital share
-    Θ̄::Float64   = 0.655                  #Corporate TFP
-    δ::Float64   = 0.041                #Depreciation rate
-
-    #Entrepreneur parameters
-    α_b::Float64 = 0.33                 #Private capital share
-    ν::Float64   = 0.33                 #Private labor share 
-    χ::Float64   = 2.0                  #Collateral constraint. Use 1.5 for comparative stats
-    k_min::Float64 = 1e-2                #Minimum capital (not subject to collateral constraint)
-
-
-    #Entrepreneur income shocks
-    N_θb::Int     = 5                   #Number of productivity shocks θb
-    ρ_θb::Float64 = 0.966               #Persistence of θb
-    σ_θb::Float64 = 0.20                #St. Dev. of θb
-    bm_θb::Int    = 1                   #Use estimates from BM (2021)
-
-    #Worker income shocks 
-    N_θw::Int     = 5                   #Number of productivity shocks θw
-    ρ_θw::Float64 = 0.966               #Persistence of θw
-    σ_θw::Float64 = 0.13                #St.Dev. of θw
-    bm_θw::Int    = 1                   #Use estimates from BM (2021)
-
-    #Asset grids
-    a̲::Float64    = 0                 #Borrowing constraint
-    amax::Float64 = 200.             #Maximum asset grid point
-    Na::Int       = 100                  #Number of gridpoints for splines
-    so::Int       = 2                   #Spline order for asset grid
-    Ia::Int       = 1000                #Number of gridpoints for histogram
-    curv_a::Float64 = 2.0               #Controls spacing for asset grid
-    curv_h::Float64 = 3.0               #Controls spacing for histogram
-
-    #Fiscal policy
-    g::Float64    = 0.11                #Government spending on G&S
-    b::Float64    = 3.0                 #Debt
-    τb::Float64   = 0.20                 #Tax on private business
-    τw::Float64   = 0.37                 #Tax on wages
-    τp::Float64   = .20               #Tax on corporate profits
-    τd::Float64   = 0.0               #Tax on dividend
-    τc::Float64   = 0.06               #Tax on consumption
-    tx::Float64   = 0.0                 #Total tax
-    ρ_τ::Float64  = 0.9
-    #Numerical parameters
-    Nhoward::Int = 1               #Number of iterations in Howard's method
-    trlb::Float64 = 0.4                 #Transfers lower bound
-    trub::Float64 = 0.7                 #Transfers upper bound
-    Ntr::Int      = 1                   #Number of transfer evaluations
-    rlb::Float64  = 0.030               #Rate lower bound 
-    rub::Float64  = 0.050               #Rate upper bound 
-    Nr::Int       = 3                   #Number of rate evaluations (in check!)
-    Neval::Int    = 2                   #Number of bisection evaluations
-    iagg::Int     = 1                   #Show aggregate data for each r/tr combo
-    λ::Float64    = 1.0                 #Weight on Vcoefs update
-    Nit::Int      = 5000                #Number of iterations in solve_eg!
-    tolegm::Float64 = 1e-6            #Tolerance for EGM convergence
-    ftolmk::Float64 = 1e-4            #Tolerance for market clearing
-    xtolxmk::Float64 = 1e-4            #Tolerance for market clearing
-    maxitermk::Int = 500         #Maximum iterations for market clearing
-    ibise::Int = 1              #Bisection method for initial guess of r/tr
-    iprint::Int   = 1                   #Turn on=1/off=0 intermediate printing
-    T::Int        = 500                 #Number of periods in solve_tr!
-    ξ::Float64    = 1.                 #Newton relaxation parameter
-    inewt::Int    = 1                   #Use simple Newton in solvess
-    diffv::Float64 = 1.              #Difference for egm 
-
-    #Vector/matrix lengths
-    Nθ::Int       = N_θb*N_θw           #Total number of income shocks
-    Nv::Int       = Nθ*Na               #Length of V coefficients
-    Nh::Int       = Nθ*Ia*2             #Total number of histogram states
-
-    #
-    # Values to be filled in setup!
-    #   agrid = grid vector for endogenous grid
-    #   lθ = log productivity shocks [log(θb),log(θw)]
-    #   πθ = transition matrix for θ
-    #   Φ = basis matrix, ie, Φ*f = f(a,θ), for all a,θ
-    #   EΦeg = expectation on gridpoints next period, eg EΦeg*fcoefs 
-    #        = ∑ πθ(s,s′) ∑ fcoeff^j ϕ^j(a′,s′) 
-    #   EΦ_aeg = derivative of the expectation with respect to assets
-    #
-
-    agrid::Vector{Float64} = zeros(Na)  
-    abasis::Basis{1,Tuple{SplineParams{Vector{Float64}}}} =Basis(SplineParams(collect(LinRange(0,1,Na-1)),0,2))
-    πθ::Matrix{Float64} =zeros(Nθ,Nθ)   
-    lθ::Matrix{Float64} = zeros(Nθ,2)    
-    Φ::SparseMatrixCSC{Float64,Int64} = spzeros(Na,Na)
-    EΦeg::SparseMatrixCSC{Float64,Int64} = spzeros(Na,Na)  
-    EΦ_aeg::SparseMatrixCSC{Float64,Int64} = spzeros(Na,Na) 
-
-    #
-    # Equilibrium results to be initialized
-    #   alθ = gridpoints for the stationary distribution
-    #   ω = stationary distribution 
-    #   Λ = transition matrix for the stationary distribution
-    #   r = interest rate
-    #   w = wage rate
-    #   tr = government transfers
-    #   Vcoefs = coefficients of value function
-    #
-
-    alθ::Matrix{Float64} = zeros(Nθ*Ia,3) 
-    ω::Vector{Float64} = zeros(Nh)   
-    Λ::SparseMatrixCSC{Float64,Int64} = spzeros(Ia,Ia)
-    r::Float64  = 0.0  
-    w::Float64  = 0.0  
-    tr::Float64 = 0.0  
-    Vcoefs::Vector{Float64} = zeros(Nv) 
-    λcoefs::Vector{Float64} = zeros(Nv)
-    wf::NamedTuple = (c=Vector{Spline1D}(), a=Vector{Spline1D}(), v=Vector{Spline1D}())
-    bf::NamedTuple = (c=Vector{Spline1D}(), a=Vector{Spline1D}(), v=Vector{Spline1D}(),
-                      k=Vector{Spline1D}(), n=Vector{Spline1D}(), y=Vector{Spline1D}(), π=Vector{Spline1D}())
-    egi::Vector{Spline1D}=Vector{Spline1D}(undef,Nθ)
-    ab_col_cutoff::Dict{Vector{Float64},Float64} = Dict{Vector{Float64},Float64}() #Stores the points at which the borrowing constraint binds
-    ab_bor_cutoff::Dict{Vector{Float64},Float64} = Dict{Vector{Float64},Float64}() #Stores the points at which the borrowing constraint binds
-    aw_bor_cutoff::Dict{Vector{Float64},Float64} = Dict{Vector{Float64},Float64}() #Stores the points at which the borrowing constraint binds
-
-
-end
-
+# This file has functions for solving the Occupation Choice Model (OCM) using the EGM method.
 
 """
 
@@ -213,7 +12,7 @@ Outputs: agrid,alθ,πθ,lθ,Φ,EΦeg,EΦ_aeg,ω,Λ,r,w,tr,Vcoefs
 function setup!(OCM::OCModel)
 
     @unpack a̲,Na,N_θb,N_θw,ρ_θw,σ_θw,bm_θw,ρ_θb,σ_θb,bm_θb,Nθ,
-            βo,γ,σ,Ia,amax,so,curv_a,curv_h,trlb,trub,rlb,rub = OCM
+            βo,γ,σ,Ia,amax,so,curv_a,curv_h,trlb,trub,rlb,rub,Θ̄,τp,δ,α,b,g,πθbBM,θbgridBM,πθwBM,θwgridBM = OCM
 
     #Productivity shocks of workers
     if bm_θw==0
@@ -221,9 +20,8 @@ function setup!(OCM::OCModel)
         πθw = mc.p
         θwgrid = exp.(mc.state_values)
     else
-        mc = tauchen(5,.70446,.1598256,0,3)
-        πθw = mc.p
-        θwgrid = exp.(mc.state_values)
+        πθw = πθwBM
+        θwgrid =θwgridBM
     end
     
     #Productivity shocks of entrepreneurs
@@ -232,17 +30,8 @@ function setup!(OCM::OCModel)
         πθb = mc.p
         θbgrid = exp.(mc.state_values)
     else
-        πθb = [0.611519   0.170401    0.0983162  0.0645004  0.0552636;
-               0.172256   0.550903    0.187292   0.0643231  0.0252256;
-               0.0986772  0.19074     0.475423   0.190404   0.0447556;
-               0.0599203  0.0546977   0.1637     0.558095   0.163587;
-               0.0455165  0.00943903  0.0342529  0.135187   0.775604]
-        θbgrid = [0.4094057675495106,
-                  0.6231521971523873,
-                  0.948493381371056,
-                  1.4436917636105182,
-                  2.1974279939666546]
-        θbgrid = θbgrid./θbgrid[3]
+        πθb =πθbBM
+        θbgrid = θbgridBM
     end
 
     #Combined processes in one Markov chain
@@ -268,10 +57,12 @@ function setup!(OCM::OCModel)
     OCM.ω   = ones(2*Ia*Nθ)/(2*Ia*Nθ) 
 
     #Guess prices and transfers
-    OCM.r   = 0.5*(rlb+rub)
-    OCM.tr  = 0.5*(trlb+trub)
-    OCM.w   = w = 1.4110781255203524
-    OCM.tx  = 0.12728259420181093   
+    OCM.r   =r= 0.5*(rlb+rub)
+    OCM.tr  =tr= 0.5*(trlb+trub)
+    rc     = r/(1-τp)
+    K2Nc   = ((rc+δ)/(Θ̄*α))^(1/(α-1))
+    OCM.w  = w = (1-α)*Θ̄*K2Nc^α
+    OCM.tx  = tr+ g+ (r-γ)*b   
 
     #Ensure discount factor is updated properly
     OCM.βEE    = βo*(1+γ)^(-σ)
@@ -320,8 +111,7 @@ function policyw(OCM::OCModel)
     w̄    = (1-τw)*w
 
     #Compute value function derivative
-    EVₐ′ = reshape(EΦeg*λcoefs,:,Nθ)#reshape(EΦ_aeg*Vcoefs,:,Nθ) 
-    #EVₐ′ = compute_smooth_marginal_value(EVₐ′,agrid)
+    EVₐ′ = reshape(EΦeg*λcoefs,:,Nθ)
     EVₐ′ = max.(EVₐ′,1e-6)
 
     #Compute consumption today implied by Euler equation
@@ -409,8 +199,6 @@ function policyb(OCM::OCModel)
     πu   = @. θb*kvec^α_b*(nbyk*kvec)^ν-(r+δ)*kvec-w*(nbyk*kvec)
 
     #Compute value function derivative
-    #EVₐ′ = reshape(EΦ_aeg*Vcoefs,:,Nθ) 
-    #EVₐ′ = compute_smooth_marginal_value(EVₐ′,agrid)
     EVₐ′ = reshape(EΦeg*λcoefs,:,Nθ)#
     EVₐ′ = max.(EVₐ′,1e-6)
 
@@ -620,8 +408,6 @@ function solve_eg!(OCM::OCModel)
         OCM.λcoefs = OCM.λ .* λcnew + (1-OCM.λ) .* λhold
     end 
     diff    = norm(OCM.λcoefs.- λhold,Inf)
-    #println("diff: $diff")
-    #println("norm lambda: $(norm(OCM.λcoefs))")
     OCM.diffv= diff
 
       it     += 1
@@ -964,7 +750,35 @@ function check!(OCM::OCModel)
     return chk1,chk2
 end
 
-function getMoments(OCM::OCModel;savepath::String="moments_table.tex")
+
+
+"""
+    weighted_quantile(x, w, p)
+
+Compute the weighted quantile(s) of `x` with weights `w` at probability `p`.
+- `x`: data vector (e.g. lnwdst)
+- `w`: weights (e.g. OCM.ω)
+- `p`: quantile level(s), e.g. 0.10 or [0.10, 0.90]
+"""
+function weighted_quantile(x::AbstractVector, w::AbstractVector, p::Union{Real,AbstractVector})
+    idx = sortperm(x)
+    x_sorted = x[idx]
+    w_sorted = w[idx]
+    cum_weights = cumsum(w_sorted)
+    total_weight = sum(w_sorted)
+    probs = cum_weights ./ total_weight
+
+    # Helper to find value at quantile q
+    function qval(q)
+        i = findfirst(>=(q), probs)
+        return x_sorted[i]
+    end
+
+    return isa(p, Number) ? qval(p) : map(qval, p)
+end
+
+
+function getMoments(OCM::OCModel;savepath::String="macro_ratios.tex")
      @unpack τp,τd,τb,τc,τw,δ,Θ̄,α,b,γ,g,iprint,r,tr,bf,wf,Ia,Nθ,alθ,ab_col_cutoff,lθ,χ = OCM
     updatecutoffs!(OCM)
     rc     = r/(1-τp)
@@ -1008,10 +822,21 @@ function getMoments(OCM::OCModel;savepath::String="moments_table.tex")
     
     Nb     = dot(OCM.ω,nbdst) #agg labor demand from business
     Nc     = dot(OCM.ω,nwdst)-Nb #agg labor demand from corporate sector
+    wN      =w*(Nc+Nb) #agg wage bill
+    wNc    = w*Nc #wage bill from corporate sector
+    wNb    = w*Nb #wage bill from business
     Kc     = K2Nc*Nc  #capital demand from corporate sector
     Yc     = Θ̄*Kc^α*Nc^(1-α) #value added from corporate sector
     Kb     = dot(OCM.ω,kbdst) #agg capital demand from business
     Yb     = dot(OCM.ω,ybdst) #agg value added from business
+    Pib     =Yb-(r+δ)*Kb-w*Nb
+    rcKc      =Yc-w*Nc-δ*Kc
+    rKb    = r*Kb
+    dK    = δ*Kc+δ*Kb #depreciation of capital
+    dgK   =(γ+δ)*(Kc+Kb) #invest
+
+
+
     C      = dot(OCM.ω,cdst) #agg consumption
     Tc     = τc*C #tax on consumption
     Tp     = τp*(Yc-w*Nc-δ*Kc) #tax on profits of corporate sector
@@ -1019,6 +844,13 @@ function getMoments(OCM::OCModel;savepath::String="moments_table.tex")
     Tn     = τw*w*(Nc+Nb) #tax on labor income
     Tb     = τb*(Yb-(r+δ)*Kb-w*Nb) #tax on profits of business
     tx = Tc+Tp+Td+Tn+Tb #total tax revenue
+    G=g #government spending
+    T= tr #government transfers
+    iB =(r-γ)*b
+    GTiB = G+T+iB #government budget
+
+
+
     Frac_b =sum(reshape(OCM.ω,:,2),dims=1)[2] # fraction of borrowing agents
     V = dot(OCM.ω,vdst) #average utility
     A = dot(OCM.ω,adst) # average assets
@@ -1040,8 +872,6 @@ function getMoments(OCM::OCModel;savepath::String="moments_table.tex")
 
     Bb_by_Kb = Bb/Kb # external debt to capital ratio of business owners
     Bb_by_Y = Bb/Y # external debt of private to agg. gdp of business owners
-
-
 
 
     #distribuitional moments
@@ -1066,6 +896,35 @@ function getMoments(OCM::OCModel;savepath::String="moments_table.tex")
     mean_lnpi=dot(owners_ω,lnpidst) # mean profit share
     std_lnpi = sqrt(dot(owners_ω,((lnpidst .- mean_lnpi).^2))) # std log profit share
 
+# ratios
+    Y_Y = Y/Y # output to output ratio (should be 1)
+    WN_Y = wN/Y # wage bill to output ratio
+    WNc_Y = wNc/Y # wage bill to output ratio of corporate sector
+    WNb_Y = wNb/Y # wage bill to output ratio of business
+    Pib_Y = Pib/Y # profit share of business owners
+    rKb_Y = rKb/Y # interest payments to output ratio of business
+    rKc_Y = rcKc/Y # interest payments to output ratio of corporate sector
+    rK_Y = (rKb+rcKc)/Y # interest payments to output ratio of total capital
+    dK_Y = dK/Y # depreciation to output ratio
+
+    C_Y = C/Y # consumption to output ratio
+    G_Y = G/Y # government spending to output ratio
+    dgK_Y = dgK/Y # investment to output ratio
+    
+    Tax_Y = tx/Y # tax revenue to output ratio
+    Tn_Y = Tn/Y # tax on labor income to output ratio
+    Tb_Y = Tb/Y # tax on profits of business to output ratio
+    Tp_Y = Tp/Y # tax on profits of corporate sector to output ratio
+    Tc_Y = Tc/Y # tax on consumption to output ratio
+    GTiB_Y = GTiB/Y # government budget to output ratio
+    T_Y = T/Y # government transfers to output ratio
+    iB_Y = iB/Y # interest payments to output ratio of government debt
+    A_Y = A/Y # assets to output ratio
+    Ab_Y = Ab/Y # assets of business owners to output ratio
+    Aw_Y = Aw/Y # assets of workers to output ratio
+    Bb_by_Y = Bb/Y # external debt to output ratio of business owners
+    Nfc =Frac_b_cons/Frac_b
+    Kfc=Kbcons/Kb
 
 
 # Create 2-column matrix explicitly
@@ -1124,17 +983,15 @@ moments = [
 # Print it as a table
 pretty_table(moments; header=["Moment", "Value"], formatters=ft_printf("%.4f"),crop = :none)
 
-open(savepath, "w") do io
-    pretty_table(
-        io, moments;
-        header = ["Moment", "Value"],
-        backend = Val(:latex),
-        tf = tf_latex_booktabs,
-        formatters = ft_printf("%.4f")
-    )
-end
 
-   
+export_macro_ratios_unscaled(savepath; (;Y_Y, WN_Y, WNc_Y, WNb_Y, Pib_Y,
+    rK_Y, rKc_Y, rKb_Y, dK_Y,
+    C_Y, G_Y, dgK_Y,
+    Tax_Y, Tn_Y, Tb_Y, Tp_Y, Tc_Y,
+    GTiB_Y, T_Y, iB_Y,
+    A_Y, Ab_Y, Aw_Y, Bb_by_Y,
+    Nfc, Kfc)...)
+
     return moments
 end
 
@@ -1252,285 +1109,7 @@ function updatecutoffs!(OCM::OCModel)
 end
 
 
- """
-    save_policy_functions!(OCM::OCModel)
-
-Saves the policy functions in the OCModel object
-"""
-
-function get_policy_functions(OCM::OCModel)
-    @unpack bf,wf,curv_a,Na,amax,a̲,curv_h,Ia,r,σ,δ,α_b,agrid,Nθ,lθ,ν,χ,τb=OCM
-
-
-
-    
-    # λb = Vector{Spline1D}(undef,Nθ)
-    # λw = Vector{Spline1D}(undef,Nθ)
-    # cb=zeros(Na)
-    # cw=zeros(Na)
-    # kb=zeros(Na)
-    # nb=zeros(Na)
-    # mpk=zeros(Na)
-    # ζval=zeros(Na)
-    # for s in 1:Nθ
-    #     cb .= bf.c[s](agrid)
-    #     cw .= wf.c[s](agrid)
-    #     kb .= max.(bf.k[s](agrid),1e-4)
-    #     nb .= bf.n[s](agrid)
-    #     z   = exp.(lθ[s,1]) # productivity shock
-    #     mpk .= α_b*z*kb.^(α_b-1).*nb.^ν
-    #     ζval .= cb.^(-σ).*(mpk .-r .-δ)*(1-τb)
-
-    #     if OCM.χ>100
-    #         λb[s]  = Spline1D(agrid,(1+r)*cb.^(-σ).*0,k=1)   
-    #     else
-    #         λb[s]  = Spline1D(agrid,(1+r)*cb.^(-σ)+χ*ζval,k=1)   
-    #     end
-
-    #     λw[s]  = Spline1D(agrid,(1+r)*cw.^(-σ),k=1)
-    # end
-
-
-    #save the policy functions a,n,k,λ,v
-    af(lθ,a,c) = c==1 ? wf.a[[lθ].==eachrow(OCM.lθ)][1](a) : bf.a[[lθ].==eachrow(OCM.lθ)][1](a)
-    nf(lθ,a,c) = c==1 ? -exp.(lθ[2]) : bf.n[[lθ].==eachrow(OCM.lθ)][1](a)
-    kf(lθ,a,c) = c==1 ? 0 : bf.k[[lθ].==eachrow(OCM.lθ)][1](a)
-    yf(lθ,a,c) = c==1 ? 0 : bf.y[[lθ].==eachrow(OCM.lθ)][1](a)
-    nbf(lθ,a,c) = c==1 ? 0 : bf.n[[lθ].==eachrow(OCM.lθ)][1](a)
-    cf(lθ,a,c) = c==1 ? wf.c[[lθ].==eachrow(OCM.lθ)][1](a) : bf.c[[lθ].==eachrow(OCM.lθ)][1](a)
-    λf(lθ,a,c) = c==1 ? wf.λ[[lθ].==eachrow(OCM.lθ)][1](a) : bf.λ[[lθ].==eachrow(OCM.lθ)][1](a)
-    vf(lθ,a,c) = c==1 ? wf.v[[lθ].==eachrow(OCM.lθ)][1](a) : bf.v[[lθ].==eachrow(OCM.lθ)][1](a)
-    πf(lθ,a,c) = c==1 ? 0 : bf.π[[lθ].==eachrow(OCM.lθ)][1](a)
-    Ibf(lθ,a,c) = c==1 ? 0 : 1
-
-   
-    return [af,nf,kf,yf,nbf,cf,πf,Ibf,λf,vf] #return xf
-end
-
-
-
-"""
-save_policy_functions!(OCM::OCModel)
-
-Saves the policy functions in the OCModel object
-"""
-
-function get_policy_functions_with_â(OCM::OCModel)
-@unpack bf,wf,curv_a,Na,amax,a̲,curv_h,Ia,r,σ,δ,α_b,agrid,Nθ,lθ,ν,χ=OCM
-
-
-
-
-# λb = Vector{Spline1D}(undef,Nθ)
-# λw = Vector{Spline1D}(undef,Nθ)
-# cb=zeros(Na)
-# cw=zeros(Na)
-# kb=zeros(Na)
-# nb=zeros(Na)
-# mpk=zeros(Na)
-# ζval=zeros(Na)
-# for s in 1:Nθ
-#     cb .= bf.c[s](agrid)
-#     cw .= wf.c[s](agrid)
-#     kb .= max.(bf.k[s](agrid),1e-4)
-#     nb .= bf.n[s](agrid)
-#     z   = exp.(lθ[s,1]) # productivity shock
-#     mpk .= α_b*z*kb.^(α_b-1).*nb.^ν
-#     ζval .= cb.^(-σ).*(mpk .-r .-δ)
-#     λb[s]  = Spline1D(agrid,(1+r)*cb.^(-σ)+χ*ζval,k=1)   
-#     λw[s]  = Spline1D(agrid,(1+r)*cw.^(-σ),k=1)
-# end
-
-
-#save the policy functions a,n,k,λ,v
-af(lθ,a,c) = c==1 ? wf.a[[lθ].==eachrow(OCM.lθ)][1](a) : bf.a[[lθ].==eachrow(OCM.lθ)][1](a)
-nf(lθ,a,c) = c==1 ? -exp.(lθ[2]) : bf.n[[lθ].==eachrow(OCM.lθ)][1](a)
-kf(lθ,a,c) = c==1 ? 0 : bf.k[[lθ].==eachrow(OCM.lθ)][1](a)
-yf(lθ,a,c) = c==1 ? 0 : bf.y[[lθ].==eachrow(OCM.lθ)][1](a)
-nbf(lθ,a,c) = c==1 ? 0 : bf.n[[lθ].==eachrow(OCM.lθ)][1](a)
-cf(lθ,a,c) = c==1 ? wf.c[[lθ].==eachrow(OCM.lθ)][1](a) : bf.c[[lθ].==eachrow(OCM.lθ)][1](a)
-λf(lθ,a,c) = c==1 ? wf.λ[[lθ].==eachrow(OCM.lθ)][1](a) : bf.λ[[lθ].==eachrow(OCM.lθ)][1](a)
-vf(lθ,a,c) = c==1 ? wf.v[[lθ].==eachrow(OCM.lθ)][1](a) : bf.v[[lθ].==eachrow(OCM.lθ)][1](a)
-πf(lθ,a,c) = c==1 ? 0 : bf.π[[lθ].==eachrow(OCM.lθ)][1](a)
-Ibf(lθ,a,c) = c==1 ? 0 : 1
-âf(lθ,a,c) = c==1 ? a : a
-
-
-return [af,âf,nf,kf,yf,nbf,cf,πf,Ibf,λf,vf] #return xf
-end
-
-
-function get_grids(OCM)
-    @unpack bf,wf,curv_a,Na,amax,a̲,curv_h,Ia,πθ,lθ=OCM
-    xvec = LinRange(0,1,Na-1).^curv_a  #The Na -1 to adjust for the quadratic splines
-    âgrid = a̲ .+ (amax - a̲).*xvec #nonlinear grid for knot points
-    xvec = LinRange(0,1,Ia).^curv_h 
-    āgrid = a̲ .+ (amax - a̲).*xvec #nonlinear grids for distribution
-    aknots = [âgrid]
-    a_sp = nodes(SplineParams(aknots[1],0,OCM.so)) #construct gridpoints from knots
-    a_Ω = āgrid
-    nθ,nsp,nΩ = size(πθ,1),length(a_sp),length(a_Ω)
-    aθ_sp = hcat(kron(ones(nθ),a_sp),kron(lθ,ones(nsp)))
-    aθc_sp = [aθ_sp ones(size(aθ_sp,1));aθ_sp 2*ones(size(aθ_sp,1))]
-    aθ_Ω = hcat(kron(ones(nθ),a_Ω),kron(lθ,ones(nΩ)))
-    aθc_Ω = [aθ_Ω ones(size(aθ_Ω,1));aθ_Ω 2*ones(size(aθ_Ω,1))]
-
-    #next get kinks
-    ℵ = Int[]
-    #for s in 1:nθ
-    #    if OCM.a_cutoff[θ[s]] > -Inf
-    #        push!(ℵ,findlast(a_sp .< OCM.a_cutoff[θ[s]])+(s-1)*nsp)
-    #    end
-    #end 
-    mask = OCM.ω .> 1e-10
-    #println("Maximum assets: $(maximum(aθc_Ω[mask,1]))")
-
-    return aknots,OCM.so,aθc_sp,aθc_Ω,ℵ
-end
-
-
-
-function getX(OCM::OCModel)
-   @unpack r,tr,w,b = OCM 
-   cdst,adst,vdst,_,_,_,_ = dist!(OCM)
-
-   R=r+1 # gross interest rate
-   W=w # wage rate
-   T=tr # transfer
-   Frac_b =sum(reshape(OCM.ω,:,2),dims=1)[2] # fraction of borrowing agents
-   V = dot(OCM.ω,vdst) #average utility
-   A = dot(OCM.ω,adst) # average assets
-   C      = dot(OCM.ω,cdst) # average consumption
-   X̄ = [R,W,T,Frac_b,V,A,C]
-   return X̄ 
-end
-
-
-
-
-
-function solvecase_serial!(OCM::OCModel)
-    diff_v = Inf
-    res = zeros(2)
-    try
-        # Recreate a fresh copy of OCM for each worker
-        OCM.τb = τb
-        OCM.τw = τw
-        ss, lev, shr, res = solvess!(OCM)
-        diff_v = OCM.diffv
-        Xss = getX(OCM)  # [R, W, Tr, Frac_b, V, A, C]
-        R, W, Tr, Frac_b, V, A, C = Xss
-
-        return NamedTuple{
-            (:τb, :τw, :r, :tr, :diffv, :diffasset, :diffgbc, :Rss, :Wss, :Trss, :Frac_bss, :Vss, :Ass, :Css)
-        }((τb, τw, OCM.r, OCM.tr, diff_v, res[1], res[2], R, W, Tr, Frac_b, V, A, C))
-
-    catch e
-        @warn "Solver failed at τb = $τb, τw = $τw" exception=(e, catch_backtrace())
-        return NamedTuple{
-            (:τb, :τw, :r, :tr, :diffv, :diffasset, :diffgbc, :Rss, :Wss, :Trss, :Frac_bss, :Vss, :Ass, :Css)
-        }((τb, τw, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN))
-    end
-
-
-end
-
-function solvecase_mpi(τb, τw, r_guess, tr_guess,ibiseval,iprintval)
-    diff_v = Inf
-    res = zeros(2)
-    try
-        # Recreate a fresh copy of OCM for each worker
-        OCM = OCModel()
-        OCM.τb = τb
-        OCM.τw = τw
-        OCM.iprint=iprintval
-        assign!(OCM, r_guess, tr_guess)
-        OCM.ibise = ibiseval
-        ss, lev, shr, res = solvess!(OCM)
-        diff_v = OCM.diffv
-        Xss = getX(OCM)  # [R, W, Tr, Frac_b, V, A, C]
-        R, W, Tr, Frac_b, V, A, C = Xss
-
-        return NamedTuple{
-            (:τb, :τw, :r, :tr, :diffv, :diffasset, :diffgbc, :Rss, :Wss, :Trss, :Frac_bss, :Vss, :Ass, :Css)
-        }((τb, τw, OCM.r, OCM.tr, diff_v, res[1], res[2], R, W, Tr, Frac_b, V, A, C))
-
-    catch e
-        @warn "Solver failed at τb = $τb, τw = $τw" exception=(e, catch_backtrace())
-        return NamedTuple{
-            (:τb, :τw, :r, :tr, :diffv, :diffasset, :diffgbc, :Rss, :Wss, :Trss, :Frac_bss, :Vss, :Ass, :Css)
-        }((τb, τw, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN))
-    end
-end
-
-function guess_from_csv(τb, τw, df)
-    row = df[(df.τb .≈ τb) .& (df.τw .≈ τw), :]
-    if nrow(row) == 1 && !isnan(row.r[1]) && !isnan(row.tr[1])
-        return row.r[1], row.tr[1]
-    else
-        # Prepare data: each column is a point in 2D
-        pts = permutedims(hcat(df.τb, df.τw))  # 2×N matrix
-        query = reshape([τb, τw], 2, 1)        # 2×1 matrix
-        dists = pairwise(Euclidean(), pts, query)  # (N×1 matrix)
-        idx = argmin(dists)
-        return df.r[idx], df.tr[idx]
-    end
-end
-
-
-
-
-
-#
-# Functions for nonlinear transition path
-#
-
-function forward!(OCM,ω,ωn,r,tr,wf,bf)
-
-    @unpack Nθ,πθ,lθ,Ia,alθ,δ,Θ̄,α,τp,τc,τb,τw,γ,σ_ε = OCM
-
-    K2Nc   = ((r/(1-τp)+δ)/(Θ̄*α))^(1/(α-1))
-    w      = (1-α)*Θ̄*K2Nc^α
-
-    ah     = alθ[1:Ia,1] 
-    cw     = hcat([wf.c[s](ah) for s in 1:Nθ]...)
-    cb     = hcat([bf.c[s](ah) for s in 1:Nθ]...)
-    πb     = hcat([bf.π[s](ah) for s in 1:Nθ]...)
-    Vw     = hcat([wf.v[s](ah) for s in 1:Nθ]...)
-    Vb     = hcat([bf.v[s](ah) for s in 1:Nθ]...)
-    p      = probw.(Vb.-Vw,σ_ε)
-
-    anw    = ((1+r) .* ah .+ (1-τw)*w.*exp.(lθ[:,2]') .- (1+τc) .*cw .+tr) ./(1+γ)
-    anb    = ((1+r) .* ah .+ (1-τb).*πb .- (1+τc) .*cb .+tr) ./(1+γ)
-    anw    = max.(min.(anw,ah[end]),ah[1])
-    anb    = max.(min.(anb,ah[end]),ah[1])
-
-    # Qsw    = [kron(πθ[s,:],BasisMatrix(Basis(SplineParams(ah,0,1)),Direct(),@view anw[:,s]).vals[1]') for s in 1:Nθ]
-    # Qsb    = [kron(πθ[s,:],BasisMatrix(Basis(SplineParams(ah,0,1)),Direct(),@view anb[:,s]).vals[1]') for s in 1:Nθ]
-    # Λtemp  = hcat(Qsw...,Qsb...)
-    # Λ      = vcat(p[:].*Λtemp,(1 .- p[:]).*Λtemp)
-
-        # Precompute spline basis only once
-    B = Basis(SplineParams(ah, 0, 1))
-
-    # Precompute sparse Qsw and Qsb matrices
-    Qsw = [sparse(kron(πθ[s, :], BasisMatrix(B, Direct(), @view anw[:, s]).vals[1]')) for s in 1:Nθ]
-    Qsb = [sparse(kron(πθ[s, :], BasisMatrix(B, Direct(), @view anb[:, s]).vals[1]')) for s in 1:Nθ]
-
-    # Build Λtemp = hcat(Qsw..., Qsb...) (size: 25_000 × 50_000)
-    Λtemp = hcat(Qsw..., Qsb...)
-    vbuf= zeros(Ia * Nθ )  # Buffer for the result
-    # Sparse matvec multiply without building full Λ
-    #Λtempω = Λtemp * ω
-    update_density!(ωn, Λtemp, p[:], ω,Ia,Nθ,vbuf)  # **fast call**
-    # ωn    .= Λ*ω
-     ωn   ./= sum(ωn)
-
-end 
-
-
-
-function forward_alt!(OCM,ω,ωn,r,tr,τb, wf,bf)
+function forward!(OCM,ω,ωn,r,tr,τb, wf,bf)
 
     @unpack Nθ,πθ,lθ,Ia,alθ,δ,Θ̄,α,τp,τc,τw,γ,σ_ε = OCM
 
@@ -1577,43 +1156,6 @@ function forward_alt!(OCM,ω,ωn,r,tr,τb, wf,bf)
 
 end 
 
-function update_density!(ωn, Λtemp, p, ω,Ia, Nθ,v)
-    v = Λtemp * ω                 # 25 000-vector
-    @views begin
-        ωn[1:Ia*Nθ]         .= p .* v
-        ωn[Ia*Nθ+1:end]     .= (1 .- p) .* v
-    end
-    return nothing
-end
-
-function forward2!(OCM,ω,ωn,r,tr,τb,wf,bf)
-
-    @unpack Nθ,πθ,lθ,Ia,alθ,δ,Θ̄,α,τp,τc,τw,γ,σ_ε = OCM
-
-    K2Nc   = ((r/(1-τp)+δ)/(Θ̄*α))^(1/(α-1))
-    w      = (1-α)*Θ̄*K2Nc^α
-
-    ah     = alθ[1:Ia,1] 
-    cw     = hcat([wf.c[s](ah) for s in 1:Nθ]...)
-    cb     = hcat([bf.c[s](ah) for s in 1:Nθ]...)
-    πb     = hcat([bf.π[s](ah) for s in 1:Nθ]...)
-    Vw     = hcat([wf.v[s](ah) for s in 1:Nθ]...)
-    Vb     = hcat([bf.v[s](ah) for s in 1:Nθ]...)
-    p      = probw.(Vb.-Vw,σ_ε)
-
-    anw    = ((1+r) .* ah .+ (1-τw)*w.*exp.(lθ[:,2]') .- (1+τc) .*cw .+tr) ./(1+γ)
-    anb    = ((1+r) .* ah .+ (1-τb).*πb .- (1+τc) .*cb .+tr) ./(1+γ)
-    anw    = max.(min.(anw,ah[end]),ah[1])
-    anb    = max.(min.(anb,ah[end]),ah[1])
-
-    Qsw    = [kron(πθ[s,:],BasisMatrix(Basis(SplineParams(ah,0,1)),Direct(),@view anw[:,s]).vals[1]') for s in 1:Nθ]
-    Qsb    = [kron(πθ[s,:],BasisMatrix(Basis(SplineParams(ah,0,1)),Direct(),@view anb[:,s]).vals[1]') for s in 1:Nθ]
-    Λtemp  = hcat(Qsw...,Qsb...)
-    Λ      = vcat(p[:].*Λtemp,(1 .- p[:]).*Λtemp)
-    ωn    .= Λ*ω
-    ωn   ./= sum(ωn)
-
-end 
 
     
 function policy_path(OCM,rT,trT,τbT)
@@ -1721,7 +1263,7 @@ function residual_tr!(x0,OCMold,OCMnew,τbT)
     adst    = hcat([alθ[:,1];alθ[:,1]])
     for t in 1:T
 
-        @views forward_alt!(OCMnew,ωT[:,t],ωT[:,t+1],rT[t],trT[t],τbT[t],wfT[t],bfT[t])
+        @views forward!(OCMnew,ωT[:,t],ωT[:,t+1],rT[t],trT[t],τbT[t],wfT[t],bfT[t])
 
         nb      = hcat([bfT[t].n[s](ah) for s in 1:Nθ]...)
         kb      = hcat([bfT[t].k[s](ah) for s in 1:Nθ]...)
@@ -1776,86 +1318,6 @@ function solve_tr!(x0,OCMold::OCModel, OCMnew::OCModel,τbT::Vector{Float64})
     trT     = x[T+1:2*T]
 end
 
-function print_OCM_summary(ss, shr)
-    println("                    OC Model Results")
-    println("                    ================")
-    println()
-    println("      Equilibrium values and residuals")
-    println("    -------------------------------------------")
-    @printf("      Interest rate           %6.2f%%\n", ss.InterestRate)
-    @printf("      Government transfer     %6.2f\n",   ss.GovernmentTransfer)
-    @printf("      Asset market residual   %10.2e\n",  ss.AssetMarketResidual)
-    @printf("      Government budget       %10.2e\n",  ss.BudgetResidual)
-    println()
-    println()
-
-    println("      Incomes (%GDP)            Products             ")
-    println("    -------------------------------------------------")
-    @printf("      Sweat          %6.1f  |  Consumption    %6.1f\n", shr.Sweat_Income, shr.Consumption)
-    @printf("      Compensation   %6.1f  |  Investment     %6.1f\n", shr.Compensation, shr.Inv_Private + shr.Inv_Public)
-    @printf("      Capital income %6.1f  |  Defense        %6.1f\n", 100 - shr.Sweat_Income - shr.Compensation, shr.Defense)
-    println("    -------------------------------------------------")
-    println("      Adj GDP         100.0                     100.0")
-    println()
-    println()
-
-    println("      Tax receipts (%GDP)      Expenditures          ")
-    println("    -------------------------------------------------")
-    @printf("      Sweat income   %6.1f  |  Transfers      %6.1f\n", shr.Tax_Sweat, shr.Gov_Transfers)
-    @printf("      Employee wages %6.1f  |  Defense        %6.1f\n", shr.Tax_Wages,  shr.Gov_Defense)
-    @printf("      Profits        %6.1f  |  Net interest   %6.1f\n", shr.Tax_Profits, shr.Gov_IntPayment)
-    @printf("      Dividends      %6.1f  |                      \n", shr.Tax_Dividends)
-    @printf("      Consumption    %6.1f  |                      \n", shr.Tax_Consumption)
-    println("    -------------------------------------------------")
-    @printf("      Total          %6.1f                    %6.1f\n",
-        shr.Tax_Sweat + shr.Tax_Wages + shr.Tax_Profits + shr.Tax_Dividends + shr.Tax_Consumption,
-        shr.Gov_Transfers + shr.Gov_Defense + shr.Gov_IntPayment)
-end
-
-
-function plot_values!(OCM::OCModel; atrunc=5,ss=1:25)
-    @unpack Vcoefs,σ,β,γ,Nθ,lθ,a̲,EΦ_aeg,EΦeg,Na,agrid,α_b,ν,δ,χ,r,w,tr,τc,τb = OCM
-
-    #Compute value function derivative
-    EVₐ′ = reshape(EΦ_aeg*Vcoefs,:,Nθ) 
-    EV′  = reshape(EΦeg*Vcoefs,:,Nθ)
-    EVₐ′_finitediff= compute_smooth_marginal_value(EV′, agrid)
-    sel=agrid.<atrunc
-    p1=plot(agrid[sel], EV′[sel,ss],legend=false, xlabel="Assets", ylabel="Value",
-     title="Value function", label=string.(lθ), lw=2)
-    p2=plot(agrid[sel], EVₐ′[sel,ss], xlabel="Assets", ylabel="Marginal value",
-     title="Marginal value of wealth", lw=2,label="using basis matrix") 
-     p2 =plot!(agrid[sel], EVₐ′_finitediff[sel,ss], xlabel="Assets", ylabel="Marginal value",
-     title="Marginal value of wealth", lw=2,label="using finite diff") 
-
-     #side by side
-    p=plot(p1,p2, layout=(2,1),size=(800,600))
-    display(p)
-     return EVₐ′,EV′,agrid,lθ
-end
-
-
-function plot_x!(OCM::OCModel; atrunc=5,ss=1:25)
-    @unpack Vcoefs,σ,β,γ,Nθ,lθ,a̲,EΦ_aeg,EΦeg,Na,agrid,α_b,ν,δ,χ,r,w,tr,τc,τb = OCM
-
-    af=OCM.bf.a
-    avec=LinRange(0,1,100)
-    plot(avec, af[s](avec), lw=2, label="s=$s")
-
-    for s in ss
-     end
-     title!("Policy function for business owners")
-     xlabel!("Assets")
-     ylabel!("Policy function value")
-     legend!()
-     #plot the worker policy function
-     af=OCM.wf.a
-    plot(agrid, af[s](agrid), lw=2)
-
-
-     return 
-end
-
 
 
 function reshape_ω0(OCM,ω0,wf,bf)
@@ -1877,133 +1339,57 @@ function reshape_ω0(OCM,ω0,wf,bf)
 end
  
 
-function compute_marginal_value(EVₐ′::Matrix{Float64}, agrid::Vector{Float64})
-    n_a, n_θ = size(EVₐ′)
-    dVda = similar(EVₐ′)
 
-    for j in 1:n_θ
-        for i in 2:n_a-1
-            dVda[i, j] = (EVₐ′[i+1, j] - EVₐ′[i-1, j]) / (agrid[i+1] - agrid[i-1])  # central diff
-        end
-        # Forward diff at lower boundary
-        dVda[1, j] = (EVₐ′[2, j] - EVₐ′[1, j]) / (agrid[2] - agrid[1])
-        # Backward diff at upper boundary
-        dVda[end, j] = (EVₐ′[end, j] - EVₐ′[end-1, j]) / (agrid[end] - agrid[end-1])
-    end
+function export_macro_ratios_unscaled(filepath::String;
+    Y_Y::Float64,
+    WN_Y::Float64, WNc_Y::Float64, WNb_Y::Float64, Pib_Y::Float64,
+    rK_Y::Float64, rKc_Y::Float64, rKb_Y::Float64, dK_Y::Float64,
+    C_Y::Float64, G_Y::Float64, dgK_Y::Float64,
+    Tax_Y::Float64, Tn_Y::Float64, Tb_Y::Float64, Tp_Y::Float64, Tc_Y::Float64,
+    GTiB_Y::Float64, T_Y::Float64, iB_Y::Float64,
+    A_Y::Float64, Ab_Y::Float64, Aw_Y::Float64, Bb_by_Y::Float64,
+    Nfc::Float64, Kfc::Float64
+)
 
-    return dVda
-end
-
-
-function compute_smooth_marginal_value(EV′::Matrix{Float64}, agrid::Vector{Float64})
-    n_a, n_θ = size(EV′)
-    dVda = similar(EV′)
-
-    for j in 1:n_θ
-        spline = Spline1D(agrid, EV′[:, j], k=3,s=.0001)
-        dVda[:, j] .= derivative(spline, agrid)  # correct method
-    end
-
-    return dVda
-end
-
-function compute_shr(OCM)
-        @unpack Θ̄,α,δ,γ,g,b,τc,τd,τp,τw,τb,trlb,trub,rlb,rub,Neval,iagg,ibise,iprint,ftolmk,xtolxmk,ξ,maxitermk,inewt = OCM
-
-    rc    = OCM.r / (1 - τp)
-    K2Nc  = ((rc + δ) / (Θ̄ * α))^(1 / (α - 1))
-    w     = (1 - α) * Θ̄ * K2Nc^α
-
-    cdst, adst, vdst, ybdst, kbdst, nbdst, nwdst = dist!(OCM)
-
-    Nb = dot(OCM.ω, nbdst)
-    Nc = dot(OCM.ω, nwdst) - Nb
-    Kc = K2Nc * Nc
-    Yc = Θ̄ * Kc^α * Nc^(1 - α)
-    Kb = dot(OCM.ω, kbdst)
-    Yb = dot(OCM.ω, ybdst)
-    C  = dot(OCM.ω, cdst)
-
-    Tc = τc * C
-    Tp = τp * (Yc - w * Nc - δ * Kc)
-    Td = τd * (Yc - w * Nc - (γ + δ) * Kc - Tp)
-    Tn = τw * w * (Nc + Nb)
-    Tb = τb * (Yb - (OCM.r + δ) * Kb - w * Nb)
-    Tx = Tc + Tp + Td + Tn + Tb
-
-    g = OCM.g
-    b = OCM.b
-
-    lev = [
-        C, (γ + δ) * Kb, (γ + δ) * Kc, g, Yc + Yb,
-        Yb - (OCM.r + δ) * Kb - w * Nb, w * (Nc + Nb),
-        Yc - w * Nc - δ * Kc, OCM.r * Kb, δ * (Kc + Kb), Yc + Yb,
-        Tb, Tn, Tp, Td, Tc, Tx,
-        g, (OCM.r - γ) * b, OCM.tr, g + (OCM.r - γ) * b + OCM.tr,
-        w * Nc, rc * Kc, δ * Kc, Yc, Kc,
-        w * Nb, OCM.r * Kb, δ * Kb, Yb - (OCM.r + δ) * Kb - w * Nb, Yb, Kb
+    expressions = [
+        "Y", "WN", "WNc", "WNb", "Pib",
+        "rK", "rcKc", "rKb", "dK",
+        "Y", "C", "G", "dgK",
+        "Tax", "Tw", "Tb", "Tp", "Tc",
+        "GTiB", "G", "T", "iB",
+        "A", "Ab", "Aw", "Lb",
+        "Nfc", "Kfc"
     ]
 
-    den = hcat(fill(Yc + Yb, 21), fill(Yc, 5), fill(Yb, 6))
-    shr_vec = (lev[:] ./ den[:]) .* 100.0
+    raw_values = [
+        Y_Y, WN_Y, WNc_Y, WNb_Y, Pib_Y,
+        rK_Y, rKc_Y, rKb_Y, dK_Y,
+        Y_Y, C_Y, G_Y, dgK_Y,
+        Tax_Y, Tn_Y, Tb_Y, Tp_Y, Tc_Y,
+        GTiB_Y, G_Y, T_Y, iB_Y,
+        A_Y/100, Ab_Y/100, Aw_Y/100, Bb_by_Y,
+        Nfc , Kfc
+    ]
 
-    return (; 
-        Consumption     = shr_vec[1],
-        Inv_Private     = shr_vec[2],
-        Inv_Public      = shr_vec[3],
-        Defense         = shr_vec[4],
-        GDP             = shr_vec[5],
-        Sweat_Income    = shr_vec[6],
-        Compensation    = shr_vec[7],
-        Profits         = shr_vec[8],
-        Interest_Kb     = shr_vec[9],
-        Depreciation    = shr_vec[10],
-        Output          = shr_vec[11],
-        Tax_Sweat       = shr_vec[12],
-        Tax_Wages       = shr_vec[13],
-        Tax_Profits     = shr_vec[14],
-        Tax_Dividends   = shr_vec[15],
-        Tax_Consumption = shr_vec[16],
-        Total_Tax       = shr_vec[17],
-        Gov_Defense     = shr_vec[18],
-        Gov_IntPayment  = shr_vec[19],
-        Gov_Transfers   = shr_vec[20],
-        Gov_Spending    = shr_vec[21],
-        Wages_Corp      = shr_vec[22],
-        Payments_Corp   = shr_vec[23],
-        Dep_Corp        = shr_vec[24],
-        Output_Corp     = shr_vec[25],
-        K_Corp          = shr_vec[26],
-        Wages_Biz       = shr_vec[27],
-        Payments_Biz    = shr_vec[28],
-        Dep_Biz         = shr_vec[29],
-        Residual_Biz    = shr_vec[30],
-        Output_Biz      = shr_vec[31],
-        K_Biz           = shr_vec[32]
+    values = round.([x * 100 for x in raw_values], digits=1)
+
+    descriptions = [
+        "GDI", "Comp", "CompCC", "CompPB", "Sweat",
+        "NOS", "NOSCC", "NOSPB", "Depr",
+        "GDP", "Cons", "Defense", "Inve",
+        "GRev", "Taxw", "Taxb", "Taxp", "Taxc",
+        "GExp", "Defense", "Trans", "Netint",
+        "Wealth", "WealthB", "WealthW", "LoansB",
+        "NumCon", "CapCon"
+    ]
+
+    df = DataFrame(
+        Row = 1:28,
+        Description = descriptions,
+        Expression = expressions,
+        Value = values
     )
-end
 
-"""
-    weighted_quantile(x, w, p)
-
-Compute the weighted quantile(s) of `x` with weights `w` at probability `p`.
-- `x`: data vector (e.g. lnwdst)
-- `w`: weights (e.g. OCM.ω)
-- `p`: quantile level(s), e.g. 0.10 or [0.10, 0.90]
-"""
-function weighted_quantile(x::AbstractVector, w::AbstractVector, p::Union{Real,AbstractVector})
-    idx = sortperm(x)
-    x_sorted = x[idx]
-    w_sorted = w[idx]
-    cum_weights = cumsum(w_sorted)
-    total_weight = sum(w_sorted)
-    probs = cum_weights ./ total_weight
-
-    # Helper to find value at quantile q
-    function qval(q)
-        i = findfirst(>=(q), probs)
-        return x_sorted[i]
-    end
-
-    return isa(p, Number) ? qval(p) : map(qval, p)
+    CSV.write(filepath, df)
+    return df
 end
