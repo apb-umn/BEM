@@ -1,12 +1,12 @@
 
-include("OCModelE_transition.jl") # has the F,G,ff and several helper functions
+include("OCModelEGM_transition.jl") # has the F,G,ff and several helper functions
 using Distributed
 
 # Add workers
 addprocs(8)
 
 # Load all worker-side logic
-include("OCModel_mpi.jl")
+include("OCModel_opttaxmpi.jl.jl")
 
 
 #
@@ -85,7 +85,7 @@ addprocs(8)
 
 
 # Load all worker-side logic
-include("OCModel_mpi.jl")
+include("OCModel_opttaxmpi.jl.jl")
 
 
 #
@@ -165,7 +165,7 @@ addprocs(8)
 
 
 # Load all worker-side logic
-include("OCModel_mpi.jl")
+include("OCModel_opttaxmpi.jl.jl")
 
 #
 filenamesuffix="tauw30"
@@ -245,7 +245,7 @@ addprocs(8)
 
 
 # Load all worker-side logic
-include("OCModel_mpi.jl")
+include("OCModel_opttaxmpi.jl.jl")
 
 #
 filenamesuffix="tauw10"

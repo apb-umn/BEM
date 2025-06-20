@@ -1,5 +1,4 @@
-include("OCModelE_transition.jl") # has the F,G,ff and several helper functions
-using Distributed
+include("OCModelEGM_transition.jl") # has the F,G,ff and several helper functions
 
 # Define parameters
 τb_val = 0.4
@@ -23,7 +22,7 @@ df_fast, df_slow = run_transition_analysis(
 
 
 # Define parameters
-τb_val = 0.64
+τb_val = 0.518
 ρ_τ_val_fast = 0.0
 ρ_τ_val_slow = 0.9
 

@@ -1,4 +1,4 @@
-include("OCModelE_transition.jl") # has the F,G,ff and several helper functions
+include("OCModelEGM_transition.jl") # has the F,G,ff and several helper functions
 using Distributed
 
 
@@ -7,7 +7,7 @@ using Distributed
 addprocs(8)
 
 # Load all worker-side logic
-include("OCModel_mpi.jl")
+include("OCModel_opttaxmpi.jl.jl")
 
 
 #
@@ -76,12 +76,12 @@ rmprocs(workers())
 addprocs(8)
 
 # Load all worker-side logic
-include("OCModel_mpi.jl")
+include("OCModel_opttaxmpi.jl.jl")
 
 
 #
 filenamesuffix="lowchi"
-χval=1.5
+χval=1.25
 
 # Define your parameter grid
 τb_vals = collect(range(0.21, stop=0.7, length=36))
@@ -91,8 +91,14 @@ println("Setting up old steady state (takes a few minutes) on master node...")
 OCM_old = OCModel()
 setup!(OCM_old)
 OCM_old.χ = χval
-OCM_old.r = 0.038374261709122705
-OCM_old.tr = 0.6713394785619925
+OCM_old.r,OCM_old.tr=0.03793062017083158, 0.5050856379159755
+OCM_old.rlb=OCM_old.r*0.8
+OCM_old.rub=OCM_old.r*1.2
+OCM_old.trlb=OCM_old.tr*.8
+OCM_old.trub=OCM_old.tr*1.2
+OCM_old.ibise=0
+OCM_old.Θ̄ = 0.645
+
 inputs_old, X̄_old, Ix̄_old, A_old, Taub_old, ω̄_0_old = setup_old_steady_state!(OCM_old)
 println("Old steady state setup complete..")
 
@@ -145,12 +151,12 @@ rmprocs(workers())
 addprocs(8)
 
 # Load all worker-side logic
-include("OCModel_mpi.jl")
+include("OCModel_opttaxmpi.jl.jl")
 
 
 #
 filenamesuffix="highchi"
-χval=2.5
+χval=3.0
 
 # Define your parameter grid
 τb_vals = collect(range(0.21, stop=0.7, length=36))
@@ -160,8 +166,15 @@ println("Setting up old steady state (takes a few minutes) on master node...")
 OCM_old = OCModel()
 setup!(OCM_old)
 OCM_old.χ = χval
-OCM_old.r = 0.038374261709122705
-OCM_old.tr = 0.6713394785619925
+OCM_old.χ = χval
+OCM_old.r,OCM_old.tr=0.03899143754541571, 0.5159833125479533
+OCM_old.rlb=OCM_old.r*0.8
+OCM_old.rub=OCM_old.r*1.2
+OCM_old.trlb=OCM_old.tr*.8
+OCM_old.trub=OCM_old.tr*1.2
+OCM_old.ibise=0
+OCM_old.Θ̄ = 0.65*1.01
+
 inputs_old, X̄_old, Ix̄_old, A_old, Taub_old, ω̄_0_old = setup_old_steady_state!(OCM_old)
 println("Old steady state setup complete..")
 
