@@ -74,21 +74,21 @@ Parameters of the Occupation Choice Model
 
     #Preferences
     σ::Float64   = 1.5                  #Risk Aversion
-    βo::Float64  = 0.99                 #Discount Factor (original)
+    βo::Float64  = 0.98            #Discount Factor (original)
     γ::Float64   = 0.02                 #Economy growth rate
-    βEE::Float64 =  βo*(1+γ)^(-σ)           #Discount Factor for EE (with growth) 
-    βV::Float64 = βo*(1+γ)^(1-σ)           #Discount Factor for Value function (with growth) 
+    βEE::Float64 = 0.99978311           #Discount Factor (with growth) 
+    βV::Float64 = 0.99978311           #Discount Factor (with growth) 
     σ_ε::Float64 = 0.1                 #St.Dev. of taste shock ε
 
     #Corporate parameters
     α::Float64   = 0.5                  #Corporate capital share
-    Θ̄::Float64   = 0.655                  #Corporate TFP
+    Θ̄::Float64   = 0.81                  #Corporate TFP
     δ::Float64   = 0.041                #Depreciation rate
 
     #Entrepreneur parameters
     α_b::Float64 = 0.33                 #Private capital share
     ν::Float64   = 0.33                 #Private labor share 
-    χ::Float64   = 2.0                  #Collateral constraint. Use 1.5 for comparative stats
+    χ::Float64   = 2.0                 #Collateral constraint. Use 1.5 for comparative stats
     k_min::Float64 = 1e-2                #Minimum capital (not subject to collateral constraint)
 
 
@@ -131,7 +131,7 @@ Parameters of the Occupation Choice Model
     1.4018343885804927,
     1.9651396530068437
     ]
-    risk_adjust::Float64 = 1.0         #Risk adjustment for worker productivity shocks
+    risk_adjust::Float64 = 1.75         #Risk adjustment for worker productivity shocks
 
     #Asset grids
     a̲::Float64    = 0                 #Borrowing constraint
@@ -144,9 +144,9 @@ Parameters of the Occupation Choice Model
 
     #Fiscal policy
     g::Float64    = 0.11                #Government spending on G&S
-    b::Float64    = 3.0                 #Debt
+    b::Float64    = 4.75                 #Debt
     τb::Float64   = 0.20                 #Tax on private business
-    τw::Float64   = 0.37                 #Tax on wages
+    τw::Float64   = 0.35                 #Tax on wages
     τp::Float64   = .20               #Tax on corporate profits
     τd::Float64   = 0.0               #Tax on dividend
     τc::Float64   = 0.06               #Tax on consumption
@@ -155,11 +155,11 @@ Parameters of the Occupation Choice Model
     
     #Numerical parameters
     Nhoward::Int = 1               #Number of iterations in Howard's method
-    trlb::Float64 = 0.4                 #Transfers lower bound
-    trub::Float64 = 0.7                 #Transfers upper bound
+    trlb::Float64 = 1.0644988685385797*.8                 #Transfers lower bound
+    trub::Float64 = 1.0644988685385797*1.2                #Transfers upper bound
     Ntr::Int      = 1                   #Number of transfer evaluations
-    rlb::Float64  = 0.030               #Rate lower bound 
-    rub::Float64  = 0.050               #Rate upper bound 
+    rlb::Float64  = 0.04451827886790881*.8               #Rate lower bound 
+    rub::Float64  = 0.04451827886790881*1.2              #Rate upper bound 
     Nr::Int       = 3                   #Number of rate evaluations (in check!)
     Neval::Int    = 2                   #Number of bisection evaluations
     iagg::Int     = 1                   #Show aggregate data for each r/tr combo

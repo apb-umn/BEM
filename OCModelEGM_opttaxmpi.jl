@@ -1,5 +1,4 @@
 @everywhere begin
-    include("OCModelEGMInputs.jl")
     include("OCModelEGM.jl")
     include("OCModelEGM_transition.jl")
 

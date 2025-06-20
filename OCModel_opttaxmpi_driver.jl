@@ -6,8 +6,10 @@ using Distributed, CSV, DataFrames
 # Add workers
 addprocs(8)
 
+@everywhere     include("OCModelEGMInputs.jl")
+
 # Load all worker-side logic
-include("OCModel_opttaxmpi.jl.jl")
+include("OCModelEGM_opttaxmpi.jl")
 
 
 #
@@ -21,7 +23,6 @@ filenamesuffix="base"
 println("Setting up old steady state (takes a few minutes) on master node...")
 OCM_old = OCModel()
 setup!(OCM_old)
-OCM_old.χ = χval
 OCM_old.rlb=0.03866410102334246*.8
 OCM_old.rub=0.03866410102334246*1.2
 OCM_old.trlb =0.5204623083622442*.8

@@ -1,5 +1,9 @@
 # Modular transition simulation script
 
+
+
+include("OCModelEGMInputs.jl")
+include("OCModelEGM.jl")
 include("OCModelEGM_transition.jl") # has the F,G,ff and several helper functions
 
 # Define parameters

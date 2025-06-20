@@ -12,7 +12,7 @@ Outputs: agrid,alθ,πθ,lθ,Φ,EΦeg,EΦ_aeg,ω,Λ,r,w,tr,Vcoefs
 function setup!(OCM::OCModel)
 
     @unpack a̲,Na,N_θb,N_θw,ρ_θw,σ_θw,bm_θw,ρ_θb,σ_θb,bm_θb,Nθ,
-            βo,γ,σ,Ia,amax,so,curv_a,curv_h,trlb,trub,rlb,rub,Θ̄,τp,δ,α,b,g,πθbBM,θbgridBM,πθwBM,θwgridBM = OCM
+            βo,γ,σ,Ia,amax,so,curv_a,curv_h,trlb,trub,rlb,rub,Θ̄,τp,δ,α,b,g,πθbBM,θbgridBM,πθwBM,θwgridBM,risk_adjust = OCM
 
     #Productivity shocks of workers
     if bm_θw==0
@@ -23,6 +23,7 @@ function setup!(OCM::OCModel)
         πθw = πθwBM
         θwgrid =θwgridBM
     end
+    θwgrid =θwgrid.^risk_adjust
     
     #Productivity shocks of entrepreneurs
     if bm_θb==0
@@ -33,6 +34,7 @@ function setup!(OCM::OCModel)
         πθb =πθbBM
         θbgrid = θbgridBM
     end
+    θbgrid=θbgrid.^risk_adjust
 
     #Combined processes in one Markov chain
     θ  = [kron(ones(length(θwgrid)),θbgrid) kron(θwgrid,ones(length(θbgrid)))]

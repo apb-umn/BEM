@@ -1,7 +1,3 @@
-
-
-include("OCModelEGMInputs.jl")
-include("OCModelEGM.jl")
 include("SecondOrderApproximation.jl")
  
 

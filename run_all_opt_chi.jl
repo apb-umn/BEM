@@ -1,3 +1,5 @@
+
+
 include("OCModelEGM_transition.jl") # has the F,G,ff and several helper functions
 using Distributed
 
@@ -5,9 +7,10 @@ using Distributed
 
 # Add workers
 addprocs(8)
+@everywhere     include("OCModelEGMInputs.jl")
 
 # Load all worker-side logic
-include("OCModel_opttaxmpi.jl.jl")
+include("OCModelEGM_opttaxmpi.jl")
 
 
 #
@@ -74,9 +77,10 @@ rmprocs(workers())
 
 # Add workers
 addprocs(8)
+@everywhere     include("OCModelEGMInputs.jl")
 
 # Load all worker-side logic
-include("OCModel_opttaxmpi.jl.jl")
+include("OCModelEGM_opttaxmpi.jl")
 
 
 #
@@ -149,10 +153,10 @@ rmprocs(workers())
 
 # Add workers
 addprocs(8)
+@everywhere     include("OCModelEGMInputs.jl")
 
 # Load all worker-side logic
-include("OCModel_opttaxmpi.jl.jl")
-
+include("OCModelEGM_opttaxmpi.jl")
 
 #
 filenamesuffix="highchi"

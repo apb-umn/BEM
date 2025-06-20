@@ -6,12 +6,15 @@ using Distributed, CSV, DataFrames
 # Add workers
 addprocs(8)
 
+@everywhere     include("OCModelEGMHighRiskInputs.jl")
+
 # Load all worker-side logic
-include("OCModelNoCol_mpi.jl")
+include("OCModelEGM_opttaxmpi.jl")
 
 
 #
-filenamesuffix="NoCol"
+filenamesuffix="highrisk"
+
 
 # Define your parameter grid
 τb_vals = collect(range(0.21, stop=0.7, length=36))
@@ -20,8 +23,7 @@ filenamesuffix="NoCol"
 println("Setting up old steady state (takes a few minutes) on master node...")
 OCM_old = OCModel()
 setup!(OCM_old)
-OCM_old.r = 0.039433274175068575
-OCM_old.tr =0.6456514142564836
+OCM_old.ibise = 0
 inputs_old, X̄_old, Ix̄_old, A_old, Taub_old, ω̄_0_old = setup_old_steady_state!(OCM_old)
 println("Old steady state setup complete..")
 
