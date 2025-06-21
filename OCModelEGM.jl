@@ -957,6 +957,10 @@ moments = [
     "total. assets (workers)"       Aw;
     "total. assets (owners)"        Ab;
     "total. consumption (C)"        C;
+    "profits (Pib)"             Pib;
+    "rKb (int. payments biz)"       rKb;
+    "rcKc (int. payments corp)"     rcKc;
+    "dK (depreciation)"             dK;
     "Fraction constrained"        Frac_b_cons;
     "Assets constrained"          Acons;
     "Capital constrained"         Kbcons;
@@ -997,7 +1001,7 @@ export_macro_ratios_unscaled(savepath; (;Y_Y, WN_Y, WNc_Y, WNb_Y, Pib_Y,
     return moments
 end
 
-function compare_moments(OCM_old::OCModel, OCM_new::OCModel)
+function compare_moments(OCM_old::OCModel, OCM_new::OCModel;titles::Vector{String}= ["Run 1", "Run 2"])
 
     moments1=getMoments(OCM_old)
     moments2=getMoments(OCM_new)
@@ -1018,8 +1022,25 @@ function compare_moments(OCM_old::OCModel, OCM_new::OCModel)
     combined = hcat(labels, vals1, vals2, pct_diff)
     
     # Display
-    pretty_table(combined; header=["Moment", "Run 1", "Run 2", "% Diff"], formatters=ft_printf("%.4f"))
-    
+    header=["Moment", titles[1], titles[2], "% Diff"]
+    pretty_table(combined; header=header, formatters=ft_printf("%.4f"),crop = :none)
+    titles = ["Baseline", "Alternative", "% Diff"]
+
+        # Convert to DataFrame
+    # Ensure column names are symbols (required by DataFrame)
+    colnames = Symbol.(["Moment", titles[1], titles[2], "% Diff"])
+
+    # Create DataFrame from the matrix
+    df = DataFrame(combined, colnames)
+
+    # Optional: Round numeric columns (except the "Moment" column)
+    for col in names(df)[2:end]
+        df[!, col] = round.(df[!, col], digits=4)
+    end
+
+    # Save to CSV
+
+    return df
        end
     
 
