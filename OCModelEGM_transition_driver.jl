@@ -7,7 +7,7 @@ include("OCModelEGM.jl")
 include("OCModelEGM_transition.jl") # has the F,G,ff and several helper functions
 
 # Define parameters
-τb_val = 0.5180
+τb_val = 0.40
 ρ_τ_val_fast = 0.0
 ρ_τ_val_slow = 0.9
 
