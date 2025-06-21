@@ -13,7 +13,7 @@ include("OCModelEGM_driver.jl")
 # 2. Define the productivities for the paper
 export_BM_tables(OCM, "Productivities.csv")
 # 3. Define the steady state moments for the paper
-getMoments(OCM, savepath="SSmomemts.csv")
+getMoments(OCM, savepath="SSmoments.csv")
 # 4. Figure 1: Data for fast transition (ρ_τ = 0)
 #   include("run_all_transition.jl")
 df_fast = CSV.read("df_transition_fast_0.4.csv", DataFrame)
