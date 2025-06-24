@@ -57,3 +57,6 @@ df_slow = CSV.read("df_transition_slow_0.52.csv", DataFrame)
 select!(df_slow, Not(:Iλ))
 #save the DataFrame to a CSV file
 CSV.write("Figure5.csv", df_slow)
+
+# create data for robustness exercises
+include("summarize_opt.jl")
