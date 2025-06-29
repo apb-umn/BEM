@@ -101,7 +101,7 @@
             return XpathSO, inputs, VinitFO, VinitSO
     
         catch e
-            @warn "Transition analysis failed for τb = $(OCM_new.τb)" exception=(e, catch_backtrace())
+           # @warn "Transition analysis failed for τb = $(OCM_new.τb)" exception=(e, catch_backtrace())
             return nothing
         end
     end
