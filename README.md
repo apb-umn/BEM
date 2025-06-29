@@ -38,10 +38,7 @@ This codebase supports:
 | `OCModelEGM_transition_driver.jl`  | Computes transitions for given tax reforms |
 | `OCModelEGM_opttaxmpi.jl`          | Parallel grid search for optimal business taxes |
 | `OCModel_opttaxmpi_driver.jl`      | Master script for optimal tax search |
-| `run_all_opt_chi.jl`               | Runs optimal tax search under alternative collateral constraints |
-| `run_opt_high_risk.jl`             | Optimal tax under high income risk calibration |
 | `run_all_results.jl`               | Aggregates baseline, transitions, and optimal tax runs |
-| `summarize_opt.jl`                 | Compares and exports baseline vs. optimal equilibria |
 | `SecondOrderApproximation.jl`      | 2nd-order transition approximation method |
 | `ZerothOrderApproximation.jl`      | Baseline discrete transition approximation |
 | `utilities.jl`                     | High-dimensional linear algebra utilities |
