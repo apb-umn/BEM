@@ -70,32 +70,17 @@ include("OCModelEGM_transition_driver.jl")
 
 ### 4. Compute Optimal Tax
 ```julia
-include("OCModel_opttaxmpi_driver.jl")  # Base case
-include("run_all_opt_chi.jl")           # For χ sensitivity
-include("run_opt_high_risk.jl")         # For high-risk calibration
+include("OCModel_opttaxmpi_driver.jl")  
 ```
+---
 
 ### 5. Summarize Results
 ```julia
-include("summarize_opt.jl")
+include("run_all_results.jl")           # For runs all results for the papers
 ```
-
-This exports:
-- Steady state moment tables: `SSmoments*.csv`
-- Optimal policy comparisons: `moments_comparison_*.csv`
-- Tax policy outputs: `data_opt_*.csv`, filtered and smoothed
-
 ---
 
-## 📊 Output Files
-
-- `data_opt_base.csv` — raw results of optimal tax grid
-- `data_opt_base_filtered.csv` — filtered by stability
-- `data_opt_base_smooth_filtered.csv` — smoothed for reporting
-- `transition_comparison_*.pdf` — plots of transition paths
-- `moments_comparison_*.csv` — steady state comparisons
-
----
+The code will produce several CSVs that stores the ss moments, transition paths given a reform, and summary of welfare gains for a grid of biz tax rates
 
 ## 📚 Citation
 
@@ -103,11 +88,4 @@ If you use this code, please cite the following paper:
 
 > Bhandari, A., Evans, D., & McGrattan, E. (2025). *Approximating Transition Dynamics with Discrete Choice*. University of Minnesota Working Paper.
 
-
 ---
-
-## 🧠 Notes for Researchers
-
-- Transition logic combines both continuous perturbation and discrete switching.
-- Tax simulations focus on welfare across `Vss`, `VinitSO`, and `VinitFO`.
-- Code is modular for extensions: e.g., new frictions, occupations, or policy instruments.
