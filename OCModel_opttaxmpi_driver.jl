@@ -17,7 +17,7 @@ filenamesuffix="base"
 
 
 # Define your parameter grid
-τb_vals = collect(range(0.21, stop=0.7, length=36))
+τb_vals = collect(range(0.20, stop=0.7, length=36))
 ρ_τ_vals = [0.0]
 
 println("Setting up old steady state (takes a few minutes) on master node...")
