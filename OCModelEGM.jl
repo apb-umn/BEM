@@ -172,6 +172,67 @@ end
 
 
 """
+a_pol,c_pol,λ_pol,v_pol = policyw_gridsearch(OCM)
+
+Solves the worker dynamic program using a grid search.  Uses the dense grid of a's
+that approximates the distribution of asset positions
+Inputs: parameters (OCM)
+Outputs: grid search policy rules (a_pol,c_pol,λ_pol,v_pol)
+"""
+function policyw_gridsearch(OCM::OCModel)
+    @unpack Vcoefs,σ,βV,γ,Nθ,lθ,πθ,alθ,Ia,abasis,r,w,tr,τc,τw = OCM
+
+    # Dense asset grid from distribution grid
+    ah  = alθ[1:Ia,1]
+    lθw = lθ[:,2]
+    θw  = exp.(lθw)
+    w̄   = (1-τw)*w
+
+    # Basis evaluated on dense asset grid (for E[V(a',θ')])
+    B = BasisMatrix(abasis, Direct(), ah).vals[1]   # size: Ia × Na
+
+    # Output splines for each shock state
+    a_pol = zeros(Ia,Nθ)
+    c_pol  = zeros(Ia,Nθ)
+    λ_pol  = zeros(Ia,Nθ)
+    v_pol  = zeros(Ia,Nθ)
+    for s in 1:Nθ
+        # Expected continuation value at each candidate next asset a' ∈ ah
+        EΦ     = kron(πθ[s,:]', B)                  # size: Ia × (Na*Nθ)
+        EVnext = EΦ * Vcoefs                        # size: Ia
+
+
+
+        for j in eachindex(ah)
+            # Resources given current a and shock s
+            res  = (1+r)*ah[j] + w̄*θw[s] + tr
+
+            # Candidate consumption for all a' on ah
+            cvec = (res .- (1+γ).*ah) ./ (1+τc)
+
+            # Objective: u(c) + βV * EVnext(a') over feasible c>0
+            uvec = similar(cvec)
+            @inbounds for k in eachindex(ah)
+                c = cvec[k]
+                if c > 1e-12
+                    uvec[k] = c^(1-σ)/(1-σ) + βV*EVnext[k]
+                else
+                    uvec[k:end] .= -Inf
+                    break
+                end
+            end
+            istar      = argmax(uvec)
+            a_pol[j,s]  = ah[istar]
+            c_pol[j,s]   = max(cvec[istar], 1e-12)
+            λ_pol[j,s]   = (1+r)*c_pol[j,s]^(-σ)
+            v_pol[j,s]   = uvec[istar]
+        end
+    end
+
+    return a_pol,c_pol,λ_pol,v_pol
+end
+
+"""
 
 cf,af,kf,nf,yf,πf,λf = policyb(OCM)
 
@@ -304,7 +365,91 @@ function policyb(OCM::OCModel)
     return cf,af,kf,nf,yf,πf,λf
 end
 
+"""
+c_pol,a_pol,k_pol,n_pol,y_pol,π_pol,λ_pol,v_pol = policyb_gridsearch(OCM)
 
+Solves the business dynamic program using a grid search.  Uses the dense grid of a's
+that approximates the distribution of asset positions
+Inputs: parameters (OCM)
+Outputs: grid search policy rules (c_pol,a_pol,k_pol,n_pol,y_pol,π_pol,λ_pol,v_pol)
+"""
+function policyb_gridsearch(OCM::OCModel)
+    @unpack Vcoefs,σ,βV,γ,Nθ,lθ,πθ,alθ,Ia,abasis,α_b,ν,δ,χ,r,w,tr,τc,τb,k_min = OCM
+
+    # Dense asset grid from distribution grid
+    ah  = alθ[1:Ia,1]
+    lθb = lθ[:,1]
+    θb  = exp.(lθb)
+
+    # Basis evaluated on dense asset grid (for E[V(a',θ')])
+    B = BasisMatrix(abasis, Direct(), ah).vals[1]   # size: Ia × Na
+
+    # Output arrays (Ia × Nθ)
+    a_pol = zeros(Ia,Nθ)
+    c_pol = zeros(Ia,Nθ)
+    k_pol = zeros(Ia,Nθ)
+    n_pol = zeros(Ia,Nθ)
+    y_pol = zeros(Ia,Nθ)
+    π_pol = zeros(Ia,Nθ)
+    λ_pol = zeros(Ia,Nθ)
+    v_pol = zeros(Ia,Nθ)
+    # Constant labor-to-capital ratio under interior solution
+    #nbyk = ν*(r+δ)/(α_b*w) 
+    #kvec = @. (w/(ν*θb*nbyk^(ν-1)))^(1/(α_b+ν-1))
+    nbyk = ν*(r+δ)/(α_b*w)
+
+    for s in 1:Nθ
+        # Unconstrained optimal capital
+        k_uncon = (w/(ν*θb[s]*nbyk^(ν-1)))^(1/(α_b+ν-1))
+
+        # Candidate next assets a' are the dense grid ah
+        # Collateral-limited capital for each candidate a'
+        k_cap_vec = χ .* ah .+ k_min
+        k_vec     = min.(k_uncon, k_cap_vec)
+        n_vec     = (w./(ν.*θb[s].*k_vec.^α_b)).^(1/(ν-1))
+        y_vec     = θb[s] .* k_vec.^α_b .* n_vec.^ν
+        π_vec     = y_vec .- w .* n_vec .- (r+δ) .* k_vec
+
+        # Expected continuation value at each candidate next asset a' ∈ ah
+        EVnext = kron(πθ[s,:]', B) * Vcoefs          # size: Ia
+
+        for j in eachindex(ah)
+            # Resources from current state (no wage income for business owners)
+            # (1+τc)c = (1+r)a + (1-τb)π(a) - (1+γ)a' + tr
+            res  = (1+r)*ah[j]+ (1-τb)*π_vec[j] + tr
+
+            # Consumption for each candidate a'
+            cvec = (res .- (1+γ).*ah) ./ (1+τc)
+
+            # Objective over feasible c>0
+            uvec = similar(cvec)
+            @inbounds for k in eachindex(ah)
+                c = cvec[k]
+                if c > 1e-12
+                    uvec[k] = c^(1-σ)/(1-σ) + βV*EVnext[k]
+                else
+                    uvec[k:end] .= -Inf
+                    break
+                end
+            end
+
+            istar          = argmax(uvec)
+            a_star =a_pol[j,s] = ah[istar]
+            c_star =c_pol[j,s] = cvec[istar]
+            k_star =k_pol[j,s] = k_vec[j]
+            n_star =n_pol[j,s] = n_vec[j]
+            y_star =y_pol[j,s] = y_vec[j]
+            π_star =π_pol[j,s] = π_vec[j]
+            v_pol[j,s] = uvec[istar]
+            # Shadow value λ with collateral wedge when binding
+            mpkc_wedge     = α_b*θb[s]*k_star^(α_b-1)*n_star^ν - (r+δ)
+            binds          = (k_cap_vec[istar] < k_uncon)
+            λ_pol[j,s]         = (1+r)*c_star^(-σ) + (binds ? χ*c_star^(-σ)*mpkc_wedge*(1-τb) : 0.0)
+        end
+    end
+
+    return c_pol,a_pol,k_pol,n_pol,y_pol,π_pol,λ_pol,v_pol
+end
 
 
 """
@@ -464,6 +609,55 @@ function dist!(OCM::OCModel)
     vb     = hcat([bf.v[s](ah) for s in 1:Nθ]...)
     cw     = hcat([wf.c[s](ah) for s in 1:Nθ]...)
     cb     = hcat([bf.c[s](ah) for s in 1:Nθ]...)
+    nwdst  = [exp.(alθ[:,3]);zeros(Ia*Nθ)]
+    nbdst  = [zeros(Ia*Nθ);nb[:]]
+    kbdst  = [zeros(Ia*Nθ);kb[:]]
+    ybdst  = [zeros(Ia*Nθ);yb[:]]
+    vdst   = [vw[:];vb[:]]
+    cdst   = [cw[:];cb[:]]
+    adst   = hcat([alθ[:,1];alθ[:,1]])
+    
+    return cdst,adst,vdst,ybdst,kbdst,nbdst,nwdst
+end
+
+
+"""
+
+cdst,adst,vdst,ybdst,kbdst,nbdst,nwdst = dist!(OCM::OCModel)
+
+Computes the stationary distribution 
+Inputs: parameters (OCM)
+Outputs: consumption, asset, value, capital, and labor distributions
+
+"""
+function dist_grid!(OCM::OCModel)
+    @unpack Vcoefs,wf,bf,Nθ,lθ,πθ,Ia,alθ,r,w,σ_ε = OCM
+    a_polw,c_polw,λ_polw,v_polw = policyw_gridsearch(OCM)
+    c_polb,a_polb,k_polb,n_polb,y_polb,π_polb,λ_polb,v_polb = policyb_gridsearch(OCM)
+
+
+
+    ah  = alθ[1:Ia,1] #grids are all the same for all shocks
+    afw = max.(min.(a_polw,ah[end]),ah[1]) 
+    afb = max.(min.(a_polb,ah[end]),ah[1]) 
+    Vw  = v_polw
+    Vb  = v_polb
+    p = probw.(Vb.-Vw,σ_ε)
+    
+    Qsw = [kron(πθ[s,:],BasisMatrix(Basis(SplineParams(ah,0,1)),Direct(),@view afw[:,s]).vals[1]') for s in 1:Nθ]
+    Qsb = [kron(πθ[s,:],BasisMatrix(Basis(SplineParams(ah,0,1)),Direct(),@view afb[:,s]).vals[1]') for s in 1:Nθ]
+    Λtemp = hcat(Qsw...,Qsb...)
+    OCM.Λ = vcat(p[:].*Λtemp,(1 .- p[:]).*Λtemp)
+
+    OCM.ω .=  real(eigsolve(OCM.Λ,OCM.ω,1)[2])[1]
+    OCM.ω ./= sum(OCM.ω)
+    nb     = n_polb
+    kb     = k_polb
+    yb     = y_polb
+    vw     = v_polw
+    vb     = v_polb
+    cw     = c_polw
+    cb     = c_polb
     nwdst  = [exp.(alθ[:,3]);zeros(Ia*Nθ)]
     nbdst  = [zeros(Ia*Nθ);nb[:]]
     kbdst  = [zeros(Ia*Nθ);kb[:]]
@@ -1001,6 +1195,232 @@ export_macro_ratios_unscaled(savepath; (;Y_Y, WN_Y, WNc_Y, WNb_Y, Pib_Y,
     return moments
 end
 
+
+
+function getMoments_grid(OCM::OCModel;savepath::String="macro_ratios_grid.tex")
+    @unpack τp,τd,τb,τc,τw,δ,Θ̄,α,b,γ,g,iprint,r,tr,bf,wf,Ia,Nθ,alθ,ab_col_cutoff,lθ,χ = OCM
+   updatecutoffs!(OCM)
+   a_polw,c_polw,λ_polw,v_polw = policyw_gridsearch(OCM)
+   c_polb,a_polb,k_polb,n_polb,y_polb,π_polb,λ_polb,v_polb = policyb_gridsearch(OCM)
+   dist_grid!(OCM)
+   rc     = r/(1-τp)
+   K2Nc   = ((rc+δ)/(Θ̄*α))^(1/(α-1))
+   w = (1-α)*Θ̄*K2Nc^α
+   ah  = alθ[1:Ia,1] #grids are all the same for all shocks
+
+   nb     = n_polb
+   kb     = k_polb
+   yb     = y_polb
+   vw     = v_polw
+   vb     = v_polb
+   cw     = c_polw
+   cb     = c_polb
+   pib    = π_polb
+   lnwdst  = [log(OCM.w).+alθ[:,3];zeros(Ia*Nθ)] #mlog wage earnings
+   nwdst  = [exp.(alθ[:,3]);zeros(Ia*Nθ)] #
+   zdst = hcat([zeros(Ia*Nθ);exp.(alθ[:,2])]) #productivity shocks
+
+
+   nbdst  = [zeros(Ia*Nθ);nb[:]]
+   pidst  = [zeros(Ia*Nθ);pib[:]] #profits of business owners
+   kbdst  = [zeros(Ia*Nθ);kb[:]]
+   mpkdist = OCM.α_b.*zdst.*kbdst.^(OCM.α_b-1).*nbdst.^OCM.ν
+  lnmpkdist = log.(mpkdist)
+
+   ybdst  = [zeros(Ia*Nθ);yb[:]]
+   vdst   = [vw[:];vb[:]]
+   cdst   = [cw[:];cb[:]]
+   adst   = hcat([alθ[:,1];alθ[:,1]])
+   awdist= hcat([alθ[:,1];alθ[:,1].*0])
+   abdist = hcat([alθ[:,1].*0;alθ[:,1]]) 
+   indcons = hcat([(ah .< ab_col_cutoff[lθ[s,:]]) for s in 1:Nθ]...)
+   indconsdist=[zeros(Ia*Nθ);indcons[:]]
+   acons = hcat([ah.*(ah .< ab_col_cutoff[lθ[s,:]]) for s in 1:Nθ]...)
+   aconsdist=[zeros(Ia*Nθ);acons[:]]
+   kbcons = hcat([kb[:,s].*(ah .< ab_col_cutoff[lθ[s,:]]) for s in 1:Nθ]...)
+   kbconsdist=[zeros(Ia*Nθ);kbcons[:]]
+
+
+   
+   Nb     = dot(OCM.ω,nbdst) #agg labor demand from business
+   Nc     = dot(OCM.ω,nwdst)-Nb #agg labor demand from corporate sector
+   wN      =w*(Nc+Nb) #agg wage bill
+   wNc    = w*Nc #wage bill from corporate sector
+   wNb    = w*Nb #wage bill from business
+   Kc     = K2Nc*Nc  #capital demand from corporate sector
+   Yc     = Θ̄*Kc^α*Nc^(1-α) #value added from corporate sector
+   Kb     = dot(OCM.ω,kbdst) #agg capital demand from business
+   Yb     = dot(OCM.ω,ybdst) #agg value added from business
+   Pib     =Yb-(r+δ)*Kb-w*Nb
+   rcKc      =Yc-w*Nc-δ*Kc
+   rKb    = r*Kb
+   dK    = δ*Kc+δ*Kb #depreciation of capital
+   dgK   =(γ+δ)*(Kc+Kb) #invest
+
+
+
+   C      = dot(OCM.ω,cdst) #agg consumption
+   Tc     = τc*C #tax on consumption
+   Tp     = τp*(Yc-w*Nc-δ*Kc) #tax on profits of corporate sector
+   Td     = τd*(Yc-w*Nc-(γ+δ)*Kc-Tp) #tax on dividends of business
+   Tn     = τw*w*(Nc+Nb) #tax on labor income
+   Tb     = τb*(Yb-(r+δ)*Kb-w*Nb) #tax on profits of business
+   tx = Tc+Tp+Td+Tn+Tb #total tax revenue
+   G=g #government spending
+   T= tr #government transfers
+   iB =(r-γ)*b
+   GTiB = G+T+iB #government budget
+
+
+
+   Frac_b =sum(reshape(OCM.ω,:,2),dims=1)[2] # fraction of borrowing agents
+   V = dot(OCM.ω,vdst) #average utility
+   A = dot(OCM.ω,adst) # average assets
+   Aw= dot(OCM.ω,awdist) # average assets of workers
+   Ab= dot(OCM.ω,abdist) # average assets of business owners
+   C      = dot(OCM.ω,cdst) # average consumption
+   K=Kb+Kc # total capital in the economy
+   Y=Yb+Yc # total output in the economy
+
+
+   # collateral constraints
+   Frac_b_cons= dot(OCM.ω,indconsdist) # fraction of constrained agents
+
+   Acons= dot(OCM.ω,aconsdist) # average assets of constrained agents
+
+   Kbcons= dot(OCM.ω,kbconsdist) # average capital of constrained agents
+
+   Bb=Kbcons-Acons # external debt of business owners
+
+   Bb_by_Kb = Bb/Kb # external debt to capital ratio of business owners
+   Bb_by_Y = Bb/Y # external debt of private to agg. gdp of business owners
+
+
+   #distribuitional moments
+   indx_workers=1:Ia*Nθ # indices for business owners
+   workers_ω = OCM.ω[indx_workers]./sum(OCM.ω[indx_workers]) # weights for workers
+   mean_log_wageearnings = dot(workers_ω,lnwdst[indx_workers]) # mean log wage earnings
+   std_log_wageearnings = sqrt(dot(workers_ω,((lnwdst[indx_workers] .- mean_log_wageearnings).^2))) # std log wage earnings
+   q10_log_wageearnings, q25_log_wageearnings, q75_log_wageearnings, q90_log_wageearnings = weighted_quantile(lnwdst[indx_workers], workers_ω, [0.10, 0.25,0.75,0.90])
+   
+   indx_owners=Ia*Nθ+1:Ia*2*Nθ # indices for workers
+   owners_ω = OCM.ω[indx_owners]./sum(OCM.ω[indx_owners]) # weights for business owners
+   sel=.!isnan.(lnmpkdist[indx_owners])
+   mean_mpkdist = dot(owners_ω[sel],lnmpkdist[indx_owners][sel])
+   std_mpkdist = sqrt(dot(owners_ω[sel],((lnmpkdist[indx_owners][sel] .- mean_mpkdist).^2))) # std log MPK 
+   q10_mpk, q25_mpk, q75_mpk, q90_mpk = weighted_quantile(lnmpkdist[indx_owners][sel], owners_ω, [0.10, 0.25,0.75,0.90])
+   piybdst =pidst[indx_owners]./(ybdst[indx_owners] .+ .0001)
+   mean_piybdst = dot(owners_ω,piybdst) # mean profit share
+   std_piybdst = sqrt(dot(owners_ω,((piybdst .- mean_piybdst).^2))) # std profit share
+   pidst_plus1 = max.(pidst[indx_owners], 0.0001) # avoid division by zero
+   lnpidst= log.(pidst_plus1) # log profit share
+   q10_lnpi, q25_lnpi, q75_lnpi, q90_lnpi = weighted_quantile(lnpidst, owners_ω, [0.10, 0.25,0.75,0.90])
+   mean_lnpi=dot(owners_ω,lnpidst) # mean profit share
+   std_lnpi = sqrt(dot(owners_ω,((lnpidst .- mean_lnpi).^2))) # std log profit share
+
+# ratios
+   Y_Y = Y/Y # output to output ratio (should be 1)
+   WN_Y = wN/Y # wage bill to output ratio
+   WNc_Y = wNc/Y # wage bill to output ratio of corporate sector
+   WNb_Y = wNb/Y # wage bill to output ratio of business
+   Pib_Y = Pib/Y # profit share of business owners
+   rKb_Y = rKb/Y # interest payments to output ratio of business
+   rKc_Y = rcKc/Y # interest payments to output ratio of corporate sector
+   rK_Y = (rKb+rcKc)/Y # interest payments to output ratio of total capital
+   dK_Y = dK/Y # depreciation to output ratio
+
+   C_Y = C/Y # consumption to output ratio
+   G_Y = G/Y # government spending to output ratio
+   dgK_Y = dgK/Y # investment to output ratio
+   
+   Tax_Y = tx/Y # tax revenue to output ratio
+   Tn_Y = Tn/Y # tax on labor income to output ratio
+   Tb_Y = Tb/Y # tax on profits of business to output ratio
+   Tp_Y = Tp/Y # tax on profits of corporate sector to output ratio
+   Tc_Y = Tc/Y # tax on consumption to output ratio
+   GTiB_Y = GTiB/Y # government budget to output ratio
+   T_Y = T/Y # government transfers to output ratio
+   iB_Y = iB/Y # interest payments to output ratio of government debt
+   A_Y = A/Y # assets to output ratio
+   Ab_Y = Ab/Y # assets of business owners to output ratio
+   Aw_Y = Aw/Y # assets of workers to output ratio
+   Bb_by_Y = Bb/Y # external debt to output ratio of business owners
+   Nfc =Frac_b_cons/Frac_b
+   Kfc=Kbcons/Kb
+
+
+# Create 2-column matrix explicitly
+moments = [
+   "tax on biz profits (Tb)"     τb;
+   "tax on labor income (Tn)"    τw;
+   "collateral constraint (χ)"  χ;
+   "interest rate (r)"           r;
+   "govt transfer (tr)"          tr;
+   "wage (w)"                w;
+   "Nb (pvt biz labor demand)"       Nb;
+   "Nc (corp labor demand)"      Nc;
+   "Kc (corp capital demand)"    Kc;
+   "Yc (corp value added)"       Yc;
+   "Kb (pvt biz capital demand)"     Kb;
+   "Yb (pvt biz value added)"        Yb;
+   "C (consumption)"             C;
+   "K (total capital)"          K;
+   "Y (total output)"           Y;
+   "Tc (tax on cons.)"           Tc;
+   "Tp (tax on profits corp)"    Tp;
+   "Tn (labor income tax)"       Tn;
+   "Tb (tax on profits pvt biz)"     Tb;
+   "Total tax revenue"           tx;
+   "Fraction of biz owners"       Frac_b;
+   "total. utility (V)"            V;
+   "total. assets (A)"             A;
+   "total. assets (workers)"       Aw;
+   "total. assets (owners)"        Ab;
+   "total. consumption (C)"        C;
+   "profits (Pib)"             Pib;
+   "rKb (int. payments biz)"       rKb;
+   "rcKc (int. payments corp)"     rcKc;
+   "dK (depreciation)"             dK;
+   "Fraction constrained"        Frac_b_cons;
+   "Assets constrained"          Acons;
+   "Capital constrained"         Kbcons;
+   "External debt (Bb)"          Bb;
+   "Bb/Kb (debt to capital ratio)" Bb_by_Kb;
+   "Bb/Y (debt to output ratio)" Bb_by_Y;
+   "mean log wage earnings"      mean_log_wageearnings;
+   "std log wage earnings"       std_log_wageearnings;
+   "10% quantile log wage earnings" q10_log_wageearnings;
+   "25% quantile log wage earnings" q25_log_wageearnings;
+   "75% quantile log wage earnings" q75_log_wageearnings;
+   "90% quantile log wage earnings" q90_log_wageearnings;
+   "mean log MPK"                mean_mpkdist;
+   "std log MPK"                 std_mpkdist;
+   "mean profit share"           mean_piybdst;
+   "std profit share"            std_piybdst;
+   "10% quantile log profits"    q10_lnpi;
+   "25% quantile log profits"    q25_lnpi;
+   "75% quantile log profits"    q75_lnpi;
+   "90% quantile log profits"    q90_lnpi;
+   "mean log profits"            mean_lnpi;
+   "std log profits"             std_lnpi;
+
+];
+
+# Print it as a table
+pretty_table(moments; header=["Moment", "Value"], formatters=ft_printf("%.4f"),crop = :none)
+
+
+export_macro_ratios_unscaled(savepath; (;Y_Y, WN_Y, WNc_Y, WNb_Y, Pib_Y,
+   rK_Y, rKc_Y, rKb_Y, dK_Y,
+   C_Y, G_Y, dgK_Y,
+   Tax_Y, Tn_Y, Tb_Y, Tp_Y, Tc_Y,
+   GTiB_Y, T_Y, iB_Y,
+   A_Y, Ab_Y, Aw_Y, Bb_by_Y,
+   Nfc, Kfc)...)
+
+   return moments
+end
+
 function compare_moments(OCM_old::OCModel, OCM_new::OCModel;titles::Vector{String}= ["Run 1", "Run 2"])
 
     moments1=getMoments(OCM_old)
@@ -1041,8 +1461,51 @@ function compare_moments(OCM_old::OCModel, OCM_new::OCModel;titles::Vector{Strin
     # Save to CSV
 
     return df
-       end
+end
     
+
+
+function compare_moments_grid(OCM::OCModel;titles::Vector{String}= ["EGM", "Grid Search"])
+
+    moments1=getMoments(OCM)
+    moments2=getMoments_grid(OCM)
+    # Ensure both matrices have the same number of rows
+    if size(moments1, 1) != size(moments2, 1)
+        error("The number of moments in the two models do not match.")
+    end
+    
+    # Extract labels and values from each matrix
+    labels = moments1[:, 1]               # keep the first column of either (they're same)
+    vals1 = Float64.(moments1[:, 2])      # ensure numerical type
+    vals2 = Float64.(moments2[:, 2])      # same for second run
+    
+    # Optional: % difference
+    pct_diff = 100 .* (vals2 .- vals1) ./ abs.(vals1)
+    
+    # Combine into one matrix: Moment | Run 1 | Run 2 | % Diff
+    combined = hcat(labels, vals1, vals2, pct_diff)
+    
+    # Display
+    header=["Moment", titles[1], titles[2], "% Diff"]
+    pretty_table(combined; header=header, formatters=ft_printf("%.4f"),crop = :none)
+    titles = ["EGM", "Grid Search", "% Diff"]
+
+        # Convert to DataFrame
+    # Ensure column names are symbols (required by DataFrame)
+    colnames = Symbol.(["Moment", titles[1], titles[2], "% Diff"])
+
+    # Create DataFrame from the matrix
+    df = DataFrame(combined, colnames)
+
+    # Optional: Round numeric columns (except the "Moment" column)
+    for col in names(df)[2:end]
+        df[!, col] = round.(df[!, col], digits=4)
+    end
+
+    # Save to CSV
+
+    return df
+end
 
 function assign!(OCM::OCModel,r::Float64,tr::Float64)
 
