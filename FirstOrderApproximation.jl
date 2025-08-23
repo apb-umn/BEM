@@ -243,6 +243,7 @@ function compute_Lemma4!(FO)
 
     #Next the L operator
     κ̄_a = reshape((pκ*x̄_a)*Δ*Φ,:)
+    
     dlΓκ̄_a = (dlΓ'.*reshape(κ̄_a,n.a,:))[:]
     FO.L = kron(Λ,ones(1,n.a)).*dlΓκ̄_a' #initialize L operator
 
@@ -250,9 +251,10 @@ function compute_Lemma4!(FO)
     #Iz = length(ω̄)
     Ina = Matrix(I,n.a,n.a)
     ΛIna = kron(Λ,Ina)
+    #Ma is now (n.a x n.Ω) x (n.a x n.sp) matrix
     FO.Ma = ΛIna*kron(Φ'.*ω̄,Ina)
     FO.M =  Λ*(dlΓ.*ω̄.*Φ')
-    #M is now (n.a x n.Ω) x (n.a x n.sp) matrix
+    
     
     FO.a = a = zeros(n.sp*n.a,n.Q,T)
     FO.κ = κ = zeros(n.sp,n.Q,T)

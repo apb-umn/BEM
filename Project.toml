@@ -1,10 +1,10 @@
 uuid = "00000000-0000-0000-0000-000000000000"
-authors = ["Anmol Bhandari", "David Evans", "Ellen McGrattan"]
-version = "0.1.0"
-description = "Occupational Choice Model with Endogenous Business Formation and Optimal Taxation"
 keywords = ["occupational choice", "discrete choice", "transition dynamics", "tax policy"]
 license = "MIT"
+authors = ["Anmol Bhandari", "David Evans", "Ellen McGrattan"]
 created = "2025-06-29"
+description = "Occupational Choice Model with Endogenous Business Formation and Optimal Taxation"
+version = "0.1.0"
 
 [deps]
 CSV = "336ed68f-0bac-5ca0-87d4-7b16caf5d00b"
@@ -12,5 +12,6 @@ DataFrames = "a93c6f00-e57d-5684-b7b6-d8193f3e46c0"
 Distributed = "8ba89e20-285c-5b6f-9357-94700520ee1b"
 ForwardDiff = "f6369f11-7733-5829-9624-2563aa707210"
 LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
+OrderedCollections = "bac558e1-5e72-5ebc-8fee-abe8a469f55d"
 Roots = "f2b01f46-fcfa-551c-844a-d8ac1e96c665"
 SparseArrays = "2f01184e-e22b-5df5-ae63-d93ebab69eaf"

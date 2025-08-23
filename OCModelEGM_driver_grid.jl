@@ -43,18 +43,19 @@ title!(subplot=4,"High ϵ High z")
 #policy for business owners 
 
 c_polb,a_polb,k_polb,n_polb,y_polb,π_polb,λ_polb,v_polb = policyb_gridsearch(OCM)
-
+range = 1:OCM.Ia-10
+ah = ah[range]
 plot(layout=(2,2),linewidth=2,color=:black)
 plot!(subplot=1,ah,OCM.bf.c[1](ah),linestyle=:solid,color=:black,label="EGM")
-plot!(subplot=1,ah,c_polb[:,1],linestyle=:dash,color=:black,label="Grid Search")
+plot!(subplot=1,ah,c_polb[range,1],linestyle=:dash,color=:black,label="Grid Search")
 title!(subplot=1,"Low ϵ Low z")
 plot!(subplot=2,ah,OCM.bf.c[5](ah),linestyle=:solid,color=:black,label="EGM")
-plot!(subplot=2,ah,c_polb[:,5],linestyle=:dash,color=:black,legend=false)
+plot!(subplot=2,ah,c_polb[range,5],linestyle=:dash,color=:black,legend=false)
 title!(subplot=2,"Low ϵ High z")
 plot!(subplot=3,ah,OCM.bf.c[21](ah),linestyle=:solid,color=:black,label="EGM")
-plot!(subplot=3,ah,c_polb[:,21],linestyle=:dash,color=:black,legend=false)
+plot!(subplot=3,ah,c_polb[range,21],linestyle=:dash,color=:black,legend=false)
 title!(subplot=3,"High ϵ Low z")
 plot!(subplot=4,ah,OCM.bf.c[25](ah),linestyle=:solid,color=:black,label="EGM")
-plot!(subplot=4,ah,c_polb[:,25],linestyle=:dash,color=:black,legend=false)
+plot!(subplot=4,ah,c_polb[range,25],linestyle=:dash,color=:black,legend=false)
 title!(subplot=4,"High ϵ High z")
 
