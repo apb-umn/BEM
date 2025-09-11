@@ -26,7 +26,7 @@ df_fast, df_slow = run_transition_analysis(
 
 
 # Define parameters
-τb_val = 0.518
+τb_val = 0.5880
 ρ_τ_val_fast = 0.0
 ρ_τ_val_slow = 0.9
 

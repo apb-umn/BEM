@@ -60,3 +60,4 @@ CSV.write("Figure5.csv", df_slow)
 
 # create data for robustness exercises
 include("summarize_opt.jl")
+getMoments(OCM_new, savepath="SSmoments40.csv")

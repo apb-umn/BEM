@@ -78,11 +78,11 @@ Parameters of the Occupation Choice Model
     γ::Float64   = 0.02                 #Economy growth rate
     βEE::Float64 =  βo*(1+γ)^(-σ)           #Discount Factor for EE (with growth) 
     βV::Float64 = βo*(1+γ)^(1-σ)           #Discount Factor for Value function (with growth) 
-    σ_ε::Float64 = 0.1                 #St.Dev. of taste shock ε
+    σ_ε::Float64 = 0.43                 #St.Dev. of taste shock ε
 
     #Corporate parameters
     α::Float64   = 0.5                  #Corporate capital share
-    Θ̄::Float64   = 0.655                  #Corporate TFP
+    Θ̄::Float64   = 0.655*1.05                  #Corporate TFP
     δ::Float64   = 0.041                #Depreciation rate
 
     #Entrepreneur parameters
@@ -164,7 +164,7 @@ Parameters of the Occupation Choice Model
     Neval::Int    = 2                   #Number of bisection evaluations
     iagg::Int     = 1                   #Show aggregate data for each r/tr combo
     λ::Float64    = 1.0                 #Weight on Vcoefs update
-    Nit::Int      = 5000                #Number of iterations in solve_eg!
+    Nit::Int      = 500                #Number of iterations in solve_eg!
     tolegm::Float64 = 1e-6            #Tolerance for EGM convergence
     ftolmk::Float64 = 1e-4            #Tolerance for market clearing
     xtolxmk::Float64 = 1e-4            #Tolerance for market clearing

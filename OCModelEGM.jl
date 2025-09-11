@@ -1121,6 +1121,7 @@ function getMoments(OCM::OCModel;savepath::String="macro_ratios.tex")
     Bb_by_Y = Bb/Y # external debt to output ratio of business owners
     Nfc =Frac_b_cons/Frac_b
     Kfc=Kbcons/Kb
+    semi_el = semi_elasticity_Nb(OCM; dτb=0.02);
 
 
 # Create 2-column matrix explicitly
@@ -1177,7 +1178,7 @@ moments = [
     "90% quantile log profits"    q90_lnpi;
     "mean log profits"            mean_lnpi;
     "std log profits"             std_lnpi;
-
+    "semi-emp-elasticity"          semi_el;
 ];
 
 # Print it as a table
@@ -1878,4 +1879,44 @@ function export_macro_ratios_unscaled(filepath::String;
 
     CSV.write(filepath, df)
     return df
+end
+
+"""
+Compute the semi-elasticity of aggregate labor demand wrt τ_b.
+
+Arguments
+---------
+OCM :: Any
+    Baseline model object.
+dτb :: Real = 0.02
+    Increment to add to τ_b in the counterfactual.
+
+Returns
+-------
+semi_elasticityNB :: Float64
+"""
+function semi_elasticity_Nb(OCM; dτb=0.02)
+
+    # --- helper: aggregate labor demand ---
+    aggregate_labor_demand(OCM_) = begin
+        ah = OCM_.alθ[1:OCM_.Ia, 1]
+        nb = hcat([OCM_.bf.n[s](ah) for s in 1:OCM_.Nθ]...)
+        nbdst = [zeros(OCM_.Ia * OCM_.Nθ); nb[:]]
+        dot(OCM_.ω, nbdst)
+    end
+
+    # baseline Nb
+    Nb = aggregate_labor_demand(OCM)
+
+    # counterfactual
+    OCM′ = deepcopy(OCM)
+    OCM′.τb += dτb
+    solve_eg!(OCM′)
+    dist!(OCM′)
+    Nb′ = aggregate_labor_demand(OCM′)
+
+    # semi-elasticity wrt τb
+    semi_elasticityNB = (Nb′ - Nb) / Nb / (OCM′.τb - OCM.τb)
+
+    return semi_elasticityNB
 end

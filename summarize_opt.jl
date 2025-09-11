@@ -58,8 +58,8 @@ filenamesuffix="base"
 println("Setting up old steady state (takes a few minutes) ...")
 OCM_old = OCModel()
 setup!(OCM_old)
-OCM_old.r = 0.038374261709122705
-OCM_old.tr = 0.6713394785619925
+OCM_old.r = 0.038677701422384594
+OCM_old.tr = 0.4680612510778516
 OCM_old.rlb, OCM_old.rub = OCM_old.r * 0.8, OCM_old.r * 1.2
 OCM_old.trlb, OCM_old.trub = OCM_old.tr * 0.8, OCM_old.tr * 1.2
 OCM_old.ibise = 0
@@ -77,11 +77,11 @@ OCM_old = OCModel()
 setup!(OCM_old)
 # Manual calibration
 OCM_old.χ = χval
-OCM_old.r, OCM_old.tr = 0.03793062017083158, 0.5050856379159755
+OCM_old.r,OCM_old.tr=0.03817730487966064, 0.461132217405684
 OCM_old.rlb, OCM_old.rub = OCM_old.r * 0.8, OCM_old.r * 1.2
 OCM_old.trlb, OCM_old.trub = OCM_old.tr * 0.8, OCM_old.tr * 1.2
 OCM_old.ibise = 0
-OCM_old.Θ̄ = 0.645
+OCM_old.Θ̄ = OCM_old.Θ̄*0.99
 OCM_old.iprint = 0
 
 # Run optimization and comparison
@@ -99,13 +99,13 @@ OCM_old = OCModel()
 setup!(OCM_old)
 OCM_old.χ = χval
 OCM_old.χ = χval
-OCM_old.r,OCM_old.tr=0.03899143754541571, 0.5159833125479533
+OCM_old.r,OCM_old.tr=0.03905398756438686, 0.49006603937283577
 OCM_old.rlb=OCM_old.r*0.8
 OCM_old.rub=OCM_old.r*1.2
 OCM_old.trlb=OCM_old.tr*.8
 OCM_old.trub=OCM_old.tr*1.2
 OCM_old.ibise=0
-OCM_old.Θ̄ = 0.65*1.01
+OCM_old.Θ̄ = OCM_old.Θ̄*1.02
 OCM_old.iprint = 0
 
 # Run optimization and comparison

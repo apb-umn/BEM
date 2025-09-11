@@ -1,18 +1,27 @@
+# calibrated noise
 
 include("OCModelEGMInputs.jl")
 include("OCModelEGM.jl")
-momfilename="base_moments.tex"
+momfilename="highchi_moments.tex"
+
 
 OCM=OCModel()
-setup!(OCM)
-OCM.ibise = 0
-rguess,trguess= 0.038677701422384594, 0.4680612510778516
+OCM.χ = 3.0
+OCM.Θ̄ = OCM.Θ̄*1.02
+
+OCM.Nit = 500
+
+rguess,trguess= 0.03894647645183258, 0.4647591139449789
 OCM.rlb=rguess*.8
 OCM.rub=rguess*1.2
 OCM.trlb =trguess*.8
 OCM.trub =trguess*1.2
 OCM.r=rguess
 OCM.tr=trguess
+setup!(OCM)
+
+OCM.ibise = 1
+
 ichk = 0
 
 if ichk==1
@@ -115,3 +124,67 @@ else
     end 
 end
 
+
+# Alternative version that returns only the aggregate labor demand
+function aggregate_labor_demand(OCM)
+    """
+    Calculate only the aggregate labor demand (more efficient if intermediates not needed).
+    
+    Parameters:
+    - OCM: Object containing model parameters and functions
+    
+    Returns:
+    - Nb: Aggregate labor demand (scalar)
+    """
+    
+    ah = OCM.alθ[1:OCM.Ia, 1]
+    nb = hcat([OCM.bf.n[s](ah) for s in 1:OCM.Nθ]...)
+    nbdst = [zeros(OCM.Ia * OCM.Nθ); nb[:]]
+    Nb = dot(OCM.ω, nbdst)
+    
+    return Nb
+end
+
+τ̂b = 0.02
+function get_p(OCMhat)
+    @unpack Vcoefs,wf,bf,Nθ,lθ,πθ,Ia,alθ,r,w,σ_ε = OCMhat
+
+    ah  = alθ[1:Ia,1] #grids are all the same for all shocks
+    Vw  = hcat([wf.v[s](ah) for s in 1:Nθ]...)
+    Vb  = hcat([bf.v[s](ah) for s in 1:Nθ]...)
+    p̂    = 1.0 .- probw.(Vb.-Vw,σ_ε)
+    return p̂
+end
+
+
+pvec = get_p(OCM)
+OCM′ = deepcopy(OCM)
+OCM′.τb += τ̂b 
+#OCM′.τw += τ̂b
+solve_eg!(OCM′)
+dist!(OCM′)
+
+se_rate = sum(reshape(OCM.ω,:,2)[:,2])
+se_rate′ = sum(reshape(OCM′.ω,:,2)[:,2])
+
+ah  = OCM.alθ[1:OCM.Ia,1] #grids are all the same for all shocks
+nb     = hcat([OCM.bf.n[s](ah) for s in 1:OCM.Nθ]...) #labor demand from business
+nbdst  = [zeros(OCM.Ia*OCM.Nθ);nb[:]]
+Nb     = dot(OCM.ω,nbdst) #agg labor demand from business
+
+Nb=aggregate_labor_demand(OCM)
+Nb′=aggregate_labor_demand(OCM′)
+elasticityNB= log(Nb′/Nb)/log((1-OCM′.τb)/(1-OCM.τb))
+semi_elasticityNB = (Nb′ - Nb) / Nb / (OCM′.τb - OCM.τb)
+
+println("ssemi_elasticityNB: ", semi_elasticityNB)
+
+
+# sweat income share of 11%
+# compensation to workers/Y of 45 percent
+## WNb/Y = 0.11%
+## WNc/Y = 0.34%
+# business loan-to-GDP ratio = 13%
+# tax revenues/Y of  26%
+# net interest/Y of 2.5%
+# fraction of owners 25%
