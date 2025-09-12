@@ -78,11 +78,11 @@ Parameters of the Occupation Choice Model
     γ::Float64   = 0.02                 #Economy growth rate
     βEE::Float64 = 0.99978311           #Discount Factor (with growth) 
     βV::Float64 = 0.99978311           #Discount Factor (with growth) 
-    σ_ε::Float64 = 0.1                 #St.Dev. of taste shock ε
+    σ_ε::Float64 = 0.43                 #St.Dev. of taste shock ε
 
     #Corporate parameters
     α::Float64   = 0.5                  #Corporate capital share
-    Θ̄::Float64   = 0.81                  #Corporate TFP
+    Θ̄::Float64   = 0.81*1.05                  #Corporate TFP
     δ::Float64   = 0.041                #Depreciation rate
 
     #Entrepreneur parameters

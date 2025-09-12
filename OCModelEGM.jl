@@ -1128,7 +1128,7 @@ function getMoments(OCM::OCModel;savepath::String="macro_ratios.tex")
 moments = [
     "tax on biz profits (Tb)"     τb;
     "tax on labor income (Tn)"    τw;
-    "collateral constraint (χ)"  χ;
+    "collateral constraint (chi)"  χ;
     "interest rate (r)"           r;
     "govt transfer (tr)"          tr;
     "wage (w)"                w;

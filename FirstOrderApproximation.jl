@@ -1,4 +1,4 @@
-using Parameters,BasisMatrices,SparseArrays,SuiteSparse,TensorOperations
+using Parameters,BasisMatrices,SparseArrays,SuiteSparse,TensorOperations,LinearAlgebra
 BLAS.set_num_threads(1)
 include("utilities.jl")
 include("ZerothOrderApproximation.jl")

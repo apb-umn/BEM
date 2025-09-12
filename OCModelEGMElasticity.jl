@@ -2,16 +2,18 @@
 
 include("OCModelEGMInputs.jl")
 include("OCModelEGM.jl")
-momfilename="highchi_moments.tex"
+momfilename="lowsigma_moments.tex"
 
 
 OCM=OCModel()
-OCM.χ = 3.0
-OCM.Θ̄ = OCM.Θ̄*1.02
+#OCM.χ = 3.0
+OCM.σ_ε = 0.001
+OCM.Na =200
+OCM.Θ̄ =0.645
 
 OCM.Nit = 500
 
-rguess,trguess= 0.03894647645183258, 0.4647591139449789
+rguess,trguess= 0.038695759441724556, 0.5292017623156571
 OCM.rlb=rguess*.8
 OCM.rub=rguess*1.2
 OCM.trlb =trguess*.8
@@ -145,7 +147,7 @@ function aggregate_labor_demand(OCM)
     return Nb
 end
 
-τ̂b = 0.02
+τ̂b = 0.05
 function get_p(OCMhat)
     @unpack Vcoefs,wf,bf,Nθ,lθ,πθ,Ia,alθ,r,w,σ_ε = OCMhat
 

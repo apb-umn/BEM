@@ -1,3 +1,21 @@
 *.csv
 *.pdf
 *.tex
+
+# --- EXCEPTIONS: allow these specific files ---
+!Figure*.csv
+!Parametersbase.csv
+!Parameterslowchi.csv
+!Parametershighchi.csv
+!Parametershighrisk.csv
+!Productivities.csv
+!SSMomentsbase.csv
+!SSMomentslowchi.csv
+!SSMomentshighchi.csv
+!SSMomentshighrisk.csv
+!moments_comparison*.csv
+!data_opt_base.csv
+!data_opt_lowchi.csv
+!data_opt_highchi.csv
+!data_opt_highrisk.csv
+

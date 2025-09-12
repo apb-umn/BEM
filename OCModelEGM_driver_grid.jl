@@ -8,10 +8,10 @@ momfilename_grid="base_moments_grid.tex"
 OCM=OCModel()
 setup!(OCM)
 OCM.ibise = 0
-OCM.rlb=0.03866410102334246*.8
-OCM.rub=0.03866410102334246*1.2
-OCM.trlb =0.5204623083622442*.8
-OCM.trub =0.5204623083622442*1.2
+OCM.rlb=0.038677701422384594*.8
+OCM.rub=0.038677701422384594*1.2
+OCM.trlb =0.4680612510778516*.8
+OCM.trub =0.4680612510778516*1.2
 ichk = 0
 
 ss,lev,shr,res = solvess!(OCM)
