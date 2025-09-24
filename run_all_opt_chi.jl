@@ -15,7 +15,6 @@ include("OCModelEGM_opttaxmpi.jl")
 
 #
 filenamesuffix="base"
-χval=2.0
 
 # Define your parameter grid
 τb_vals = collect(range(0.21, stop=0.7, length=36))
