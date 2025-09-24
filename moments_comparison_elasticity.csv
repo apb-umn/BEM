@@ -1,0 +1,55 @@
+Moment,Baseline,Alternative,% Diff
+tax on biz profits (Tb),0.2,0.49,145.0
+tax on labor income (Tn),0.37,0.37,0.0
+collateral constraint (chi),2.0,2.0,0.0
+interest rate (r),0.0388,0.0393,1.2653
+govt transfer (tr),0.5491,0.6402,16.6008
+wage (w),1.1979,1.1898,-0.6812
+Nb (pvt biz labor demand),0.22,0.1504,-31.642
+Nc (corp labor demand),0.7949,0.9427,18.5877
+Kc (corp capital demand),10.636,12.4417,16.9775
+Yc (corp value added),1.9046,2.2432,17.7798
+Kb (pvt biz capital demand),3.1211,2.0536,-34.2019
+Yb (pvt biz value added),0.7987,0.5423,-32.1076
+C (consumption),1.7541,1.7913,2.1179
+K (total capital),13.7571,14.4953,5.3663
+Y (total output),2.7033,2.7855,3.0399
+Tc (tax on cons.),0.1052,0.1075,2.1179
+Tp (tax on profits corp),0.1032,0.1223,18.4576
+Tn (labor income tax),0.4499,0.4812,6.965
+Tb (tax on profits pvt biz),0.0572,0.0972,69.9419
+Total tax revenue,0.7156,0.8082,12.9444
+Fraction of biz owners,0.2054,0.1244,-39.4666
+total. utility (V),-76.5776,-75.8083,1.0046
+total. assets (A),16.7574,17.496,4.4076
+total. assets (workers),13.2225,15.2865,15.6093
+total. assets (owners),3.5349,2.2095,-37.4936
+total. consumption (C),1.7541,1.7913,2.1179
+profits (Pib),0.286,0.1984,-30.6359
+rKb (int. payments biz),0.1212,0.0807,-33.3694
+rcKc (int. payments corp),0.5162,0.6115,18.4576
+dK (depreciation),0.564,0.5943,5.3663
+Fraction constrained,0.0314,0.025,-20.5227
+Assets constrained,0.3382,0.2822,-16.5646
+Capital constrained,0.6768,0.5646,-16.5665
+External debt (Bb),0.3385,0.2824,-16.5683
+Bb/Kb (debt to capital ratio),0.1085,0.1375,26.7996
+Bb/Y (debt to output ratio),0.1252,0.1014,-19.0297
+mean log wage earnings,0.3208,0.2907,-9.3712
+std log wage earnings,0.4768,0.4752,-0.3526
+10% quantile log wage earnings,-0.495,-0.5018,-1.381
+25% quantile log wage earnings,-0.1572,-0.164,-4.3489
+75% quantile log wage earnings,0.8562,0.8493,-0.7984
+90% quantile log wage earnings,0.8562,0.8493,-0.7984
+mean log MPK,-2.49,-2.4594,1.2317
+std log MPK,0.1154,0.1584,37.2261
+mean profit share,0.3504,0.3566,1.7757
+std profit share,0.0299,0.0392,31.0627
+10% quantile log profits,-0.9527,-0.952,0.0713
+25% quantile log profits,0.2703,0.2818,4.2628
+75% quantile log profits,0.2829,0.2836,0.2402
+90% quantile log profits,0.2829,1.4277,404.7167
+mean log profits,0.1126,0.2218,96.9728
+std log profits,0.6922,0.7421,7.2103
+semi-emp-elasticity,-1.0491,-1.7637,-68.1184
+CE welfare gains,0.0,0.012653548516465385,1.2653548516465385

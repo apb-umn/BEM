@@ -113,6 +113,30 @@ OCM_opt, comparison_df = setup_and_compare_steady_state!(OCM_old, filenamesuffix
 comparison_df
 
 
+
+#
+filenamesuffix="elasticity"
+
+println("Setting up old steady state (takes a few minutes) ...")
+OCM_old = OCModel()
+setup!(OCM_old)
+OCM_old.σ_ε = 0.43/10
+OCM_old.Θ̄ = 0.655
+rguess,trguess= 0.039187502803206986, 0.6336206401860949
+OCM.rlb=rguess*.8
+OCM.rub=rguess*1.2
+OCM.trlb =trguess*.8
+OCM.trub =trguess*1.2
+OCM.r=rguess
+OCM.tr=trguess
+OCM_old.ibise=0
+OCM_old.iprint = 0
+
+# Run optimization and comparison
+OCM_opt, comparison_df = setup_and_compare_steady_state!(OCM_old, filenamesuffix)
+comparison_df
+
+
 include("OCModelEGMHighRiskInputs.jl")
 filenamesuffix="highrisk"
 println("Setting up old steady state (takes a few minutes) ...")
