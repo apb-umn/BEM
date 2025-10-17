@@ -5,136 +5,6 @@ include("ZerothOrderApproximation.jl")
 
 using LinearAlgebra, SparseArrays
 
-# ---------- Utilities ----------
-"""
-    is_strict_diagonal(S::SparseMatrixCSC)
-
-Return true iff `S` is exactly diagonal (square, nnz==n, one entry per column on the diagonal).
-"""
-function is_strict_diagonal(S::SparseMatrixCSC)
-    m, n = size(S)
-    if m != n || nnz(S) != n
-        return false
-    end
-    @inbounds for j in 1:n
-        s = S.colptr[j]
-        e = S.colptr[j+1] - 1
-        # exactly one stored value in this column, and it's at row j
-        if s != e || S.rowval[s] != j
-            return false
-        end
-    end
-    return true
-end
-
-"""
-    maybe_diagonal_scale!(out, X, Φ, S) -> Bool
-
-If `S` is diagonal, compute `out = (X * Φ)` and then scale columns by diag(S).
-Return true if this fast path was used, else false.
-"""
-function maybe_diagonal_scale!(out::AbstractMatrix{<:Real},
-                               X::AbstractMatrix{<:Real},
-                               Φ::SparseMatrixCSC{<:Real,Int},
-                               S::SparseMatrixCSC{<:Real,Int})
-    if is_strict_diagonal(S)
-        d = diag(S)            # Vector length n
-        mul!(out, X, Φ)        # out = X * Φ   (dense × sparse → dense)
-        @views out .*= d'      # scale each column j by d[j]
-        return true
-    end
-    return false
-end
-
-# ---------- Main API (allocation-friendly) ----------
-"""
-    combine_terms(xa3, xbar, Φ, S) -> Matrix{Float64}
-
-Compute R = (x̄_a*Φ) .+ (x̄*Φ)*S efficiently.
-
-Inputs:
-- `xa3`  :: Array{<:Real,3} with size (m, 1, T) or (m, k2, T) [we flatten 2nd & 3rd dims to match xbar].
-- `xbar` :: AbstractMatrix{<:Real} of size (m, T)
-- `Φ`    :: SparseMatrixCSC{<:Real,Int} of size (T, N)
-- `S`    :: SparseMatrixCSC{<:Real,Int} of size (N, N)
-
-Returns:
-- `R`    :: Matrix{Float64} size (m, N)
-"""
-function combine_terms(xa3::Array{<:Real,3},
-                       xbar::AbstractMatrix{<:Real},
-                       Φ::SparseMatrixCSC{<:Real,Int},
-                       S::SparseMatrixCSC{<:Real,Int})
-    m = size(xa3, 1)
-    T = size(xa3, 3)
-    m2, T2 = size(xbar)
-    TΦ, N = size(Φ)
-    NS1, NS2 = size(S)
-
-    @assert m == m2 "Row mismatch: size(x̄_a,1)=$(m) vs size(x̄,1)=$(m2)"
-    @assert T == T2 "Time/cols mismatch: size(x̄_a,3)=$(T) vs size(x̄,2)=$(T2)"
-    @assert T == TΦ "Φ must have T rows: size(Φ,1)=$(TΦ) vs T=$(T)"
-    @assert NS1 == N && NS2 == N "S must be N×N: got $(NS1)×$(NS2), N=$(N)"
-
-    # 1) Flatten x̄_a (no copy of data; just a view of memory)
-    #    Your `x̄_a` is 10×1×T, so this yields 10×T.
-    xa = reshape(xa3, m, T)
-
-    # 2) First term: xa * Φ (dense × sparse → dense)
-    R1 = xa * Φ                      # (m × N)
-
-    # 3) Second term: (x̄ * Φ) * S, done efficiently
-    R2 = Matrix{Float64}(undef, m, N)
-    if !maybe_diagonal_scale!(R2, xbar, Φ, S)
-        # General sparse case: keep it sparse as long as possible
-        Φ2 = Φ * S                   # (T × N) sparse
-        mul!(R2, xbar, Φ2)           # (m×T) × (T×N) → (m×N) dense
-    end
-
-    # 4) Sum without new temporaries
-    R = R1
-    R .+= R2
-    return R
-end
-
-# ---------- In-place / low-allocation variant ----------
-"""
-    combine_terms!(R, tmp1, tmp2, xa3, xbar, Φ, S)
-
-In-place version filling preallocated:
-- `R`, `tmp1`, `tmp2` :: Matrix{Float64} size (m, N)
-"""
-function combine_terms!(R::AbstractMatrix{<:Real},
-                        tmp1::AbstractMatrix{<:Real},
-                        tmp2::AbstractMatrix{<:Real},
-                        xa3::Array{<:Real,3},
-                        xbar::AbstractMatrix{<:Real},
-                        Φ::SparseMatrixCSC{<:Real,Int},
-                        S::SparseMatrixCSC{<:Real,Int})
-    m, N = size(R)
-    @assert size(tmp1) == (m, N) && size(tmp2) == (m, N)
-
-    xa = reshape(xa3, size(xa3,1), size(xa3,3))  # m×T
-
-    # tmp1 = xa * Φ
-    mul!(tmp1, xa, Φ)
-
-    # tmp2 = (x̄ * Φ) scaled or (x̄ * (Φ*S))
-    if !maybe_diagonal_scale!(tmp2, xbar, Φ, S)
-        Φ2 = Φ * S
-        mul!(tmp2, xbar, Φ2)
-    end
-
-    # R = tmp1 + tmp2
-    R .= tmp1
-    R .+= tmp2
-    return R
-end
-
-# ---------- Example usage (uncomment to test with your vars) ----------
-# R = combine_terms(x̄_a, x̄, Φ, dlΓκ̄_a_mat)
-# GC.gc()  # optionally trigger GC after big allocations
-
 #Some Helper functions
 import Base./,Base.*,Base.\
 """
@@ -403,10 +273,10 @@ function compute_Lemma4!(FO)
     #and now the I operators
     FO.I  = x̄*Φ #aggregate changes in density
     dlΓκ̄_a_mat = kron(sparse(I,n.Ω,n.Ω),ones(1,n.a)).*dlΓκ̄_a'
- 
-    #FO.Ia = x̄_a*Φ .+ (x̄*Φ)*dlΓκ̄_a_mat   #aggregate changes in state 
-    FO.Ia = combine_terms(x̄_a, x̄, Φ, dlΓκ̄_a_mat)  #aggregate changes in state 
-    GC.gc()
+
+    FO.Ia = reshape(x̄_a*Φ,n.x*n.a,n.Ω) .+ (x̄*Φ)*dlΓκ̄_a_mat   #aggregate changes in state 
+    #FO.Ia = combine_terms(x̄_a, x̄, Φ, dlΓκ̄_a_mat)  #aggregate changes in state 
+    #GC.gc()
 end
 
 

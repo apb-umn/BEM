@@ -1182,7 +1182,13 @@ moments = [
 ];
 
 # Print it as a table
-pretty_table(moments; header=["Moment", "Value"], formatters=ft_printf("%.4f"),crop = :none)
+pretty_table(
+    moments;
+    column_labels = ["Moment","Value"],
+    formatters    = [PrettyTables.fmt__printf("%.4f")],  # qualify it
+    maximum_number_of_rows    = -1,
+    maximum_number_of_columns = -1
+)
 
 
 export_macro_ratios_unscaled(savepath; (;Y_Y, WN_Y, WNc_Y, WNb_Y, Pib_Y,
@@ -1410,7 +1416,13 @@ moments = [
 ];
 
 # Print it as a table
-pretty_table(moments; header=["Moment", "Value"], formatters=ft_printf("%.4f"),crop = :none)
+pretty_table(
+    moments;
+    column_labels = ["Moment", "Value"],
+    formatters    = [PrettyTables.fmt__printf("%.4f")],
+    maximum_number_of_rows    = -1,
+    maximum_number_of_columns = -1
+)
 
 
 export_macro_ratios_unscaled(savepath; (;Y_Y, WN_Y, WNc_Y, WNb_Y, Pib_Y,
@@ -1446,8 +1458,14 @@ function compare_moments(OCM_old::OCModel, OCM_new::OCModel;titles::Vector{Strin
     
     # Display
     header=["Moment", titles[1], titles[2], "% Diff"]
-    pretty_table(combined; header=header, formatters=ft_printf("%.4f"),crop = :none)
-    titles = ["Baseline", "Alternative", "% Diff"]
+    pretty_table(
+        combined;
+        column_labels = String.(header),
+        formatters    = [fmt__printf("%.4f")],
+        maximum_number_of_rows    = -1,
+        maximum_number_of_columns = -1
+    )
+        titles = ["Baseline", "Alternative", "% Diff"]
 
         # Convert to DataFrame
     # Ensure column names are symbols (required by DataFrame)
@@ -1490,8 +1508,14 @@ function compare_moments_grid(OCM::OCModel;titles::Vector{String}= ["EGM", "Grid
     
     # Display
     header=["Moment", titles[1], titles[2], "% Diff"]
-    pretty_table(combined; header=header, formatters=ft_printf("%.4f"),crop = :none)
-    titles = ["EGM", "Grid Search", "% Diff"]
+    pretty_table(
+        combined;
+        column_labels = String.(header),
+        formatters    = [fmt__printf("%.4f")],
+        maximum_number_of_rows    = -1,
+        maximum_number_of_columns = -1
+    )
+        titles = ["EGM", "Grid Search", "% Diff"]
 
         # Convert to DataFrame
     # Ensure column names are symbols (required by DataFrame)

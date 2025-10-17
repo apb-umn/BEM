@@ -496,9 +496,9 @@ function run_transition_analysis(τb_val, ρ_τ_val_fast, ρ_τ_val_slow, filena
     println("Setting up old steady state (takes a few minutes)...")
     OCM_old = OCModel()
     setup!(OCM_old)
-    OCM_old.r = 0.038374261709122705
-    OCM_old.tr = 0.6713394785619925
-    _, X̄_old, Ix̄_old, A_old, Taub_old, ω̄_0_old = setup_old_steady_state!(OCM_old)
+    OCM_old.r = 0.03867770200367673
+    OCM_old.tr = 0.46806124541903205
+        _, X̄_old, Ix̄_old, A_old, Taub_old, ω̄_0_old = setup_old_steady_state!(OCM_old)
     println("Old steady state setup complete.")
 
     println("Setting up new steady state with τb = $τb_val (takes a few minutes)...")

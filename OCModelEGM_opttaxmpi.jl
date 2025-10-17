@@ -202,18 +202,12 @@ function analyze_optimal_taub(file::String; col::Symbol = :VinitSO)
     )
 
     println("\nSummary Table:")
-    pretty_table(summary; formatters = ft_printf("%.4f"))
-
-    # Save summary table to LaTeX file
-    open("optimal_tau_summary.tex", "w") do io
-        pretty_table(
-            io, summary;
-            header = names(summary),
-            backend = Val(:latex),
-            tf = tf_latex_booktabs,
-            formatters = ft_printf("%.4f")
-        )
-    end
+    
+    pretty_table(
+        summary;
+        formatters = [fmt__printf("%.4f")]
+    )
+    
 
     # Step 4: Plot smoothed column vs τb with optima marked
     smooth_col_name = Symbol("smooth_", col)

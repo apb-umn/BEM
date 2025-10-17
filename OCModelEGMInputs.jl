@@ -65,7 +65,8 @@
 using Parameters,LinearAlgebra,BasisMatrices,SparseArrays,Arpack,Roots, 
       KrylovKit,QuantEcon, PrettyTables,StatsBase,ForwardDiff,Dierckx,
       Plots,NPZ,NLsolve,Printf,DataFrames,CSV,Distances, Interpolations
-
+using PrettyTables: fmt__printf   # new helper replaces ft_printf
+      
 
 """
 Parameters of the Occupation Choice Model
