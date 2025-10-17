@@ -23,7 +23,6 @@ filenamesuffix="base"
 println("Setting up old steady state (takes a few minutes) on master node...")
 OCM_old = OCModel()
 setup!(OCM_old)
-OCM_old.χ = χval
 OCM_old.r = 0.038677701422384594
 OCM_old.tr = 0.4680612510778516
 inputs_old, X̄_old, Ix̄_old, A_old, Taub_old, ω̄_0_old = setup_old_steady_state!(OCM_old)

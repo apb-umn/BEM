@@ -834,7 +834,7 @@ function solvess!(OCM::OCModel)
         OCM.tr = rtr[2]
         res    = ssRes(rtr) 
     else
-        ret    = nlsolve(ssRes,[OCM.r,OCM.tr],ftol=1e-6)
+        ret    = nlsolve(ssRes,[OCM.r,OCM.tr],ftol=1e-4,xtol=1e-4,method=:newton,show_trace=false)
         OCM.r  = ret.zero[1]
         OCM.tr = ret.zero[2]
         res    = ssRes(ret.zero)
@@ -974,7 +974,7 @@ function weighted_quantile(x::AbstractVector, w::AbstractVector, p::Union{Real,A
 end
 
 
-function getMoments(OCM::OCModel;savepath::String="macro_ratios.tex")
+function getMoments(OCM::OCModel;savepath::String="macro_ratios.tex",dτb=0.02)
      @unpack τp,τd,τb,τc,τw,δ,Θ̄,α,b,γ,g,iprint,r,tr,bf,wf,Ia,Nθ,alθ,ab_col_cutoff,lθ,χ = OCM
     updatecutoffs!(OCM)
     rc     = r/(1-τp)
@@ -1121,7 +1121,7 @@ function getMoments(OCM::OCModel;savepath::String="macro_ratios.tex")
     Bb_by_Y = Bb/Y # external debt to output ratio of business owners
     Nfc =Frac_b_cons/Frac_b
     Kfc=Kbcons/Kb
-    semi_el = semi_elasticity_Nb(OCM; dτb=0.02);
+    semi_el = semi_elasticity_Nb(OCM; dτb);
 
 
 # Create 2-column matrix explicitly
@@ -1348,6 +1348,8 @@ function getMoments_grid(OCM::OCModel;savepath::String="macro_ratios_grid.tex")
    Bb_by_Y = Bb/Y # external debt to output ratio of business owners
    Nfc =Frac_b_cons/Frac_b
    Kfc=Kbcons/Kb
+   semi_el = semi_elasticity_Nb(OCM; dτb=0.02);
+
 
 
 # Create 2-column matrix explicitly
@@ -1404,7 +1406,7 @@ moments = [
    "90% quantile log profits"    q90_lnpi;
    "mean log profits"            mean_lnpi;
    "std log profits"             std_lnpi;
-
+    "semi-emp-elasticity"          semi_el;
 ];
 
 # Print it as a table

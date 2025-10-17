@@ -115,11 +115,29 @@ function run_grid_point(τb_val, state::SharedState)
     Taub      = state.Taub_old
     ω̄        = state.ω̄_old
     ρ_τ_vals  = state.ρ_τ_vals
-
-
+    # --- Baseline ergodic objects (CRRA, σ ≠ 1) ---
+    cdst, _, _, _, _, _, _ = dist!(OCM_old)             # steady-state consumption
+    σ  = OCM_old.σ
+    β  = OCM_old.βV
+    ω  = OCM_old.ω
+    ω  = ω ./ sum(ω)                                    # ensure weights sum to 1
     Vss_old = X̄[inputs.Xlab .== :V][1]
+    udst = cdst.^(1 - σ) ./ (1 - σ)                     # per-period utility at each state
+    Ubar = dot(ω, udst)                                 # ergodic average per-period utility
 
-    getCE(Vnew)=(Vnew/Vss_old)^(1/(1-OCM_old.σ)) - 1. #check david
+    Wbar   = Ubar / (1 - β)                             # = \bar U / (1-β)
+    Resbar = Vss_old - Wbar                             # = \overline{Residual}/(1-β)
+
+    # --- Certainty equivalent: returns λ - 1 (fractional consumption change) ---
+    function getCE(Vnew::Number; σ::Number=σ, Wbar::Number=Wbar, Resbar::Number=Resbar)
+        @assert σ != 1 "This routine assumes CRRA with σ ≠ 1."
+        base = (Vnew - Resbar) / Wbar                   # should be > 0
+        base = ifelse(base > 0, base, eps(typeof(base)))# typed guard vs tiny negatives
+        λ = base^(1 / (1 - σ))
+        return λ - 1.0
+    end
+
+        #getCE(Vnew)=(Vnew/Vss_old)^(1/(1-OCM_old.σ)) - 1. #check david
 
 
     local_results = Vector{NamedTuple{(:τb, :ρ_τ, :Vss, :VinitFO, :VinitSO,:CESS,:CEFO,:CESO), Tuple{Float64, Float64, Float64, Float64, Float64,Float64,Float64,Float64}}}()

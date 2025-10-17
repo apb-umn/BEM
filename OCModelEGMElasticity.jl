@@ -3,17 +3,17 @@
 include("OCModelEGMInputs.jl")
 include("OCModelEGM.jl")
 momfilename="lowsigma_moments.tex"
+#include("OCModelEGM_opttaxmpi.jl")
 
 
 OCM=OCModel()
-#OCM.χ = 3.0
 OCM.σ_ε = 0.001
-OCM.Na =200
 OCM.Θ̄ =0.645
-
+OCM.τb =0.50
+OCM.Na=500
 OCM.Nit = 500
-
-rguess,trguess= 0.038695759441724556, 0.5292017623156571
+OCM.inewt=0
+rguess,trguess= 0.03944567212525258, 0.6286954243530435
 OCM.rlb=rguess*.8
 OCM.rub=rguess*1.2
 OCM.trlb =trguess*.8
@@ -22,7 +22,7 @@ OCM.r=rguess
 OCM.tr=trguess
 setup!(OCM)
 
-OCM.ibise = 1
+OCM.ibise = 0
 
 ichk = 0
 
@@ -31,7 +31,7 @@ if ichk==1
 else
     ss,lev,shr,res = solvess!(OCM)
     updatecutoffs!(OCM)
-    moments=getMoments(OCM,savepath=momfilename)
+    moments=getMoments(OCM,savepath=momfilename,dτb=0.05)
 
 
 
@@ -125,61 +125,6 @@ else
                        shr[12]+shr[13]+shr[14]+shr[15]+shr[16],shr[18]+shr[19]+shr[20])
     end 
 end
-
-
-# Alternative version that returns only the aggregate labor demand
-function aggregate_labor_demand(OCM)
-    """
-    Calculate only the aggregate labor demand (more efficient if intermediates not needed).
-    
-    Parameters:
-    - OCM: Object containing model parameters and functions
-    
-    Returns:
-    - Nb: Aggregate labor demand (scalar)
-    """
-    
-    ah = OCM.alθ[1:OCM.Ia, 1]
-    nb = hcat([OCM.bf.n[s](ah) for s in 1:OCM.Nθ]...)
-    nbdst = [zeros(OCM.Ia * OCM.Nθ); nb[:]]
-    Nb = dot(OCM.ω, nbdst)
-    
-    return Nb
-end
-
-τ̂b = 0.05
-function get_p(OCMhat)
-    @unpack Vcoefs,wf,bf,Nθ,lθ,πθ,Ia,alθ,r,w,σ_ε = OCMhat
-
-    ah  = alθ[1:Ia,1] #grids are all the same for all shocks
-    Vw  = hcat([wf.v[s](ah) for s in 1:Nθ]...)
-    Vb  = hcat([bf.v[s](ah) for s in 1:Nθ]...)
-    p̂    = 1.0 .- probw.(Vb.-Vw,σ_ε)
-    return p̂
-end
-
-
-pvec = get_p(OCM)
-OCM′ = deepcopy(OCM)
-OCM′.τb += τ̂b 
-#OCM′.τw += τ̂b
-solve_eg!(OCM′)
-dist!(OCM′)
-
-se_rate = sum(reshape(OCM.ω,:,2)[:,2])
-se_rate′ = sum(reshape(OCM′.ω,:,2)[:,2])
-
-ah  = OCM.alθ[1:OCM.Ia,1] #grids are all the same for all shocks
-nb     = hcat([OCM.bf.n[s](ah) for s in 1:OCM.Nθ]...) #labor demand from business
-nbdst  = [zeros(OCM.Ia*OCM.Nθ);nb[:]]
-Nb     = dot(OCM.ω,nbdst) #agg labor demand from business
-
-Nb=aggregate_labor_demand(OCM)
-Nb′=aggregate_labor_demand(OCM′)
-elasticityNB= log(Nb′/Nb)/log((1-OCM′.τb)/(1-OCM.τb))
-semi_elasticityNB = (Nb′ - Nb) / Nb / (OCM′.τb - OCM.τb)
-
-println("ssemi_elasticityNB: ", semi_elasticityNB)
 
 
 # sweat income share of 11%

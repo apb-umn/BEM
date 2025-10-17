@@ -1,7 +1,7 @@
 Moment,Baseline,Alternative,% Diff
 tax on biz profits (Tb),0.2,0.588,194.0
 tax on labor income (Tn),0.37,0.37,0.0
-collateral constraint (χ),2.0,2.0,0.0
+collateral constraint (chi),2.0,2.0,0.0
 interest rate (r),0.0387,0.0393,1.5053
 govt transfer (tr),0.4681,0.5696,21.6924
 wage (w),1.3235,1.3128,-0.8079
@@ -52,4 +52,4 @@ std profit share,0.0241,0.0273,13.2946
 mean log profits,-0.7947,-0.9034,-13.6818
 std log profits,1.0089,0.9982,-1.059
 semi-emp-elasticity,-0.4362,-0.5557,-27.4094
-CE welfare gains,0.0,0.010360060600543175,1.0360060600543175
+CE welfare gains,0.0,0.008728067281494889,0.8728067281494889
