@@ -7,7 +7,7 @@
 ρ_τ_val=0.0
 #τb_val=0.308 # compute_BB!(FO) produces singularity  exception
 τb_val=0.4060 # diverges to inf
- 
+#τb_val=0.43 # seems ok
 
 include("OCModelEGM_driver.jl")
 include("OCModelEGM_transition.jl") # has the F,G,ff and several helper functions
@@ -147,7 +147,6 @@ df.t = 0:(size(XpathSO, 2) - 1)
 
     # Plot each variable
     for (i, var) in enumerate(variables)
-        plot!(plt[i], df.t, linestyle=:dash, lw=2)
         plot!(plt[i], df.t, df[!, var], linestyle=:solid, lw=2)
     end
         display(plt)
