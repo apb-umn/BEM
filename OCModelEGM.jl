@@ -1946,3 +1946,60 @@ function semi_elasticity_Nb(OCM; dτb=0.02)
 
     return semi_elasticityNB
 end
+
+"""
+Plot λ(lθ, a, c) from OCM for both occupations (c=1,2), grouped by shock.
+Each row corresponds to a distinct shock level (column 2 of OCM.lθ);
+left column = c=1 (worker), right = c=2 (business).
+
+Args:
+  OCM :: OCModel
+
+Keywords:
+  nshocks::Int = 5   # number of shock levels to display (evenly spaced)
+  a_min, a_max       # zoom window for a-axis
+"""
+function plot_lambda_from_OCM(OCM; nshocks::Int=5, a_min::Real=-Inf, a_max::Real=Inf)
+    # Unpack model components
+    @unpack wf, bf, lθ, agrid = OCM
+    λf = get_policy_functions(OCM)[9]   # index 9 = λf in your definition
+
+    # Identify unique shock levels (2nd column of lθ)
+    shocks = sort(unique(lθ[:,2]))
+    s_choices = shocks[round.(Int, range(1, length(shocks); length=min(nshocks, length(shocks))))]
+    println("Shock panels: ", s_choices)
+
+    # Each row in lθ is [θ_level, shock]
+    panels = Any[]
+    for sₜ in s_choices
+        # find all θ rows with this shock
+        idxs = findall(==(sₜ), lθ[:,2])
+        isempty(idxs) && continue
+
+        # --- occupation c=1 ---
+        p1 = plot(xlabel="a", ylabel="λ", title="shock=$(round(sₜ,digits=4)) • c=1 (worker)", legend=false)
+        for i in idxs
+            λvals = [λf(lθ[i,:], a, 1) for a in agrid]
+            plot!(p1, agrid, λvals; lw=2)
+        end
+
+        # --- occupation c=2 ---
+        p2 = plot(xlabel="a", ylabel="λ", title="shock=$(round(sₜ,digits=4)) • c=2 (business)", legend=false)
+        for i in idxs
+            λvals = [λf(lθ[i,:], a, 2) for a in agrid]
+            plot!(p2, agrid, λvals; lw=2)
+        end
+
+        # apply zoom
+        if isfinite(a_min) || isfinite(a_max)
+            xlims!(p1, (isfinite(a_min) ? a_min : minimum(agrid), isfinite(a_max) ? a_max : maximum(agrid)))
+            xlims!(p2, (isfinite(a_min) ? a_min : minimum(agrid), isfinite(a_max) ? a_max : maximum(agrid)))
+        end
+
+        push!(panels, p1, p2)
+    end
+
+    combo = plot(panels...; layout=(length(panels)÷2, 2), link=:x, size=(1000, 260*(length(panels)÷2)))
+    display(combo)
+    return combo
+end

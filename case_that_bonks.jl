@@ -5,8 +5,8 @@
 ρ_τ_vals=[0.0]
 
 ρ_τ_val=0.0
-#τb_val=0.308 # compute_BB!(FO) produces singularity  exception
-τb_val=0.4060 # diverges to inf
+τb_val=0.308 # compute_BB!(FO) produces singularity  exception
+#τb_val=0.4060 # diverges to inf
 #τb_val=0.43 # seems ok
 
 include("OCModelEGM_driver.jl")
@@ -150,3 +150,108 @@ df.t = 0:(size(XpathSO, 2) - 1)
         plot!(plt[i], df.t, df[!, var], linestyle=:solid, lw=2)
     end
         display(plt)
+
+
+        # scracth work area for testing bonking parameters
+
+
+        using Plots
+
+"""
+Side-by-side occupation panels per shock level:
+  For each selected shock s, show λ vs a for c=1 (worker) and c=2 (business).
+
+Requirements on OCM:
+  - OCM.wf.λ, OCM.bf.λ :: Vector{<:Function} (or splines) indexed by rows of OCM.lθ
+  - OCM.lθ             :: Matrix (nθrows × ≥2), e.g. columns [θ_level, θ_shock]
+
+Arguments:
+  OCM, aθc_sp  : long-form table where each row j aligns with policy columns
+  acol         : column index of a in aθc_sp (default 1)
+  θ1col        : column index of θ_level in aθc_sp (default 2)
+  shockcol     : column index of θ_shock in aθc_sp (default 3)
+
+Keywords:
+  nshocks::Int = 5           number of shock levels (evenly spaced across unique values)
+  a_min::Real=-Inf, a_max::Real=Inf   x-axis window
+"""
+function plot_lambda_side_by_side_per_shock(OCM, aθc_sp;
+        acol::Int=1, θ1col::Int=2, shockcol::Int=3,
+        nshocks::Int=5, a_min::Real=-Inf, a_max::Real=Inf)
+
+    wf, bf = OCM.wf, OCM.bf
+    θgrid  = OCM.lθ
+    @assert size(θgrid,2) ≥ 2 "OCM.lθ must have ≥2 columns (θ_level, θ_shock)."
+
+    a  = @view aθc_sp[:, acol]
+    θ1 = @view aθc_sp[:, θ1col]
+    s  = @view aθc_sp[:, shockcol]
+
+    # Pick representative shocks
+    shock_levels = sort(unique(s))
+    n_pick = min(nshocks, length(shock_levels))
+    s_choices = shock_levels[round.(Int, range(1, length(shock_levels); length=n_pick))]
+    println("Shock panels: ", s_choices)
+
+    # Nearest θ-row on first two dims (θ_level, θ_shock)
+    @inline function nearest_θ_index(θ1val::Real, sval::Real)
+        dmin = Inf; imin = 0
+        @inbounds for i in 1:size(θgrid,1)
+            d = (θgrid[i,1]-θ1val)^2 + (θgrid[i,2]-sval)^2
+            if d < dmin; dmin = d; imin = i; end
+        end
+        return imin
+    end
+
+    panels = Any[]
+    for sₜ in s_choices
+        js = findall(==(sₜ), s)
+        if isempty(js)
+            @warn "No grid points for shock=$sₜ; skipping."
+            push!(panels, plot(title="No data for shock=$sₜ")); push!(panels, plot()) # keep layout shape
+            continue
+        end
+        js = js[sortperm(a[js])]
+        avec = a[js]
+
+        # Build λ series for both occupations
+        λ1 = similar(avec); λ2 = similar(avec)
+        @inbounds for (k, j) in enumerate(js)
+            iθ = nearest_θ_index(θ1[j], s[j])
+            λ1[k] = wf.λ[iθ](a[j])   # worker c=1
+            λ2[k] = bf.λ[iθ](a[j])   # business c=2
+        end
+
+        # Filters (window + finite)
+        inwin = (avec .>= a_min) .& (avec .<= a_max)
+        good1 = inwin .& isfinite.(avec) .& isfinite.(λ1)
+        good2 = inwin .& isfinite.(avec) .& isfinite.(λ2)
+
+        p_left = plot(title="shock=$(round(sₜ, digits=6)) • c=1 (worker)",
+                      xlabel="a", ylabel="λ", legend=false)
+        p_right = plot(title="shock=$(round(sₜ, digits=6)) • c=2 (business)",
+                       xlabel="a", ylabel="λ", legend=false)
+        any(good1) && plot!(p_left,  avec[good1], λ1[good1]; lw=2)
+        any(good2) && plot!(p_right, avec[good2], λ2[good2]; lw=2)
+
+        if isfinite(a_min) || isfinite(a_max)
+            xlims!(p_left,  (isfinite(a_min) ? a_min : minimum(avec), isfinite(a_max) ? a_max : maximum(avec)))
+            xlims!(p_right, (isfinite(a_min) ? a_min : minimum(avec), isfinite(a_max) ? a_max : maximum(avec)))
+        end
+
+        push!(panels, p_left, p_right)
+    end
+
+    # Arrange as (#shocks rows) × 2 columns (c=1 | c=2), share x
+    combo = plot(panels...; layout=(length(s_choices), 2), size=(1000, 260*length(s_choices)), link=:x)
+    display(combo)
+    return combo
+end
+
+
+# Five shock levels, full range
+#plot_lambda_side_by_side_per_shock(OCM, aθc_sp)
+
+# Three shocks, zoom to a≤50
+plot_lambda_from_OCM(OCM; nshocks=5, a_max=5) # zoom on a ≤ 50
+
