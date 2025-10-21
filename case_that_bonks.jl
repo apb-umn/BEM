@@ -253,5 +253,5 @@ end
 #plot_lambda_side_by_side_per_shock(OCM, aθc_sp)
 
 # Three shocks, zoom to a≤50
-plot_lambda_from_OCM(OCM; nshocks=5, a_max=5) # zoom on a ≤ 50
+plot_lambda_from_OCM(OCM_new; nshocks=5, a_max=5) # zoom on a ≤ 50
 
