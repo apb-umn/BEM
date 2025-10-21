@@ -6,7 +6,7 @@
 
 ρ_τ_val=0.0
 #τb_val=0.308 # compute_BB!(FO) produces singularity  exception
-τb_val=0.4060
+τb_val=0.4060 # diverges to inf
  
 
 include("OCModelEGM_driver.jl")
