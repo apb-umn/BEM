@@ -45,14 +45,14 @@ CSV.write("Figure3.csv", df_filtered_smooth)
 
 # 4. Figure 4: Data for fast transition (ρ_τ = 0) for opt
 #   include("run_all_transition.jl")
-df_fast = CSV.read("df_transition_fast_0.59.csv", DataFrame)
+df_fast = CSV.read("df_transition_fast_0.64.csv", DataFrame)
 # drop column :Iλ
 select!(df_fast, Not(:Iλ))
 #save the DataFrame to a CSV file
 CSV.write("Figure4.csv", df_fast)
 
 # 5. Figure 5: Data for slow transition (ρ_τ = 0.9) for opt
-df_slow = CSV.read("df_transition_slow_0.59.csv", DataFrame)
+df_slow = CSV.read("df_transition_slow_0.64.csv", DataFrame)
 # drop column :Iλ
 select!(df_slow, Not(:Iλ))
 #save the DataFrame to a CSV file

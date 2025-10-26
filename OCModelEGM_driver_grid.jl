@@ -9,10 +9,6 @@ OCM=OCModel()
 OCM.Ia = 2000
 setup!(OCM)
 OCM.ibise = 0
-OCM.rlb=0.038677701422384594*.8
-OCM.rub=0.038677701422384594*1.2
-OCM.trlb =0.4680612510778516*.8
-OCM.trub =0.4680612510778516*1.2
 ichk = 0
 ss,lev,shr,res = solvess!(OCM)
 updatecutoffs!(OCM)

@@ -131,3 +131,58 @@ OCM_old.iprint = 0
 # Run optimization and comparison
 OCM_opt, comparison_df = setup_and_compare_steady_state!(OCM_old, filenamesuffix)
 comparison_df
+
+
+function build_results_csv(; dir=".", outfile="Results.csv")
+    # Helper to extract numeric values by row label and column index
+    function pick(df, rowlabel, col)
+        idx = findfirst(==(rowlabel), String.(df[:, 1]))
+        idx === nothing && error("Row '$rowlabel' not found in file")
+        x = df[idx, col]
+        return x isa AbstractString ? parse(Float64, x) : Float64(x)
+    end
+
+    # Input files and order (corresponding to Rows 1–5)
+    rows = [
+        ("Baseline",             "moments_comparison_base.csv"),
+        ("Tighter collateral",   "moments_comparison_highchi.csv"),
+        ("Looser collateral",    "moments_comparison_lowchi.csv"),
+        ("Higher tax elasticity","moments_comparison_elasticity.csv"),
+        ("Higher income risk",   "moments_comparison_highrisk.csv"),
+    ]
+
+    # Preallocate storage
+    Results = Matrix{Float64}(undef, length(rows), 8)
+
+    # Read files and fill rows
+    for (i, (econ, file)) in enumerate(rows)
+        df = CSV.read(joinpath(dir, file), DataFrame; header=false)
+        rename!(df, [:label, :col2, :col3, :col4])
+
+        # Fill numeric columns
+        Results[i, 1] = pick(df, "C (consumption)", 4)
+        Results[i, 2] = pick(df, "total. assets (A)", 4)
+        Results[i, 3] = pick(df, "wage (w)", 4)
+        Results[i, 4] = pick(df, "govt transfer (tr)", 4)
+        Results[i, 5] = pick(df, "Fraction of biz owners", 4)
+        Results[i, 6] = pick(df, "profits (Pib)", 4)
+        Results[i, 7] = pick(df, "tax on biz profits (Tb)", 3)   # add third column if you need both
+        Results[i, 8] = pick(df, "CE welfare gains", 4)
+    end
+
+    # --- Write manually in your requested numeric layout ---
+    open(joinpath(dir, outfile), "w") do io
+        println(io, "Row,Column1,Column2,Column3,Column4,Column5,Column6,Column7,Column8")
+        for i in 1:size(Results, 1)
+            vals = [@sprintf("%.4f", Results[i, j]) for j in 1:8]
+            println(io, string(i, ", ", join(vals, ", ")))
+        end
+    end
+
+    println("✅ Results.CSV written in numeric matrix format to $(joinpath(dir, outfile))")
+    return Results
+end
+
+
+# Example usage:
+ build_results_csv(dir=".", outfile="Results.csv")
