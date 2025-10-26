@@ -67,7 +67,7 @@ using Parameters,LinearAlgebra,BasisMatrices,SparseArrays,Arpack,Roots,
       Plots,NPZ,NLsolve,Printf,DataFrames,CSV,Distances, Interpolations
 using PrettyTables: fmt__printf   # new helper replaces ft_printf
       
-rguess,trguess=0.05772885585202771, 1.409176770593178
+rguess,trguess=0.06049712094574908, 0.8334885326073966
 
 """
 Parameters of the Occupation Choice Model
@@ -80,11 +80,11 @@ Parameters of the Occupation Choice Model
     γ::Float64   = 0.02                 #Economy growth rate
     βEE::Float64 =  βo*(1+γ)^(-σ)           #Discount Factor for EE (with growth) 
     βV::Float64 = βo*(1+γ)^(1-σ)           #Discount Factor for Value function (with growth) 
-    σ_ε::Float64 = 0.4                 #St.Dev. of taste shock ε
+    σ_ε::Float64 = 0.075                 #St.Dev. of taste shock ε
 
     #Corporate parameters
     α::Float64   = 0.45                  #Corporate capital share
-    Θ̄::Float64   = 1.6                #Corporate TFP
+    Θ̄::Float64   = 1.15                #Corporate TFP
     δ::Float64   = 0.041                #Depreciation rate
 
     #Entrepreneur parameters
@@ -133,7 +133,7 @@ Parameters of the Occupation Choice Model
     1.4018343885804927,
     1.9651396530068437
     ]
-    risk_adjust::Float64 = 1.5         #Risk adjustment for worker productivity shocks
+    risk_adjust::Float64 = 1.0         #Risk adjustment for worker productivity shocks
 
     #Asset grids
     a̲::Float64    = 0                 #Borrowing constraint

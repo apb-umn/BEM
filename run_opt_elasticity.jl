@@ -7,7 +7,7 @@ using Distributed
 
 # Add workers
 addprocs(8)
-@everywhere     include("OCModelEGMInputs.jl")
+@everywhere     include("OCModelEGMHighElasticityInputs.jl")
 
 # Load all worker-side logic
 include("OCModelEGM_opttaxmpi.jl")
@@ -22,11 +22,7 @@ filenamesuffix="elasticity"
 
 println("Setting up old steady state (takes a few minutes) on master node...")
 OCM_old = OCModel()
-OCM_old.σ_ε = 0.43/10
-OCM_old.Θ̄ = 0.655
 setup!(OCM_old)
-OCM_old.r = 0.038827378860131295
-OCM_old.tr = 0.5490743758858707
 inputs_old, X̄_old, Ix̄_old, A_old, Taub_old, ω̄_0_old = setup_old_steady_state!(OCM_old)
 println("Old steady state setup complete..")
 

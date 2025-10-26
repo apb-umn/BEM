@@ -1,11 +1,13 @@
 
-include("OCModelEGMInputs.jl")
+include("OCModelEGMHighRiskInputs.jl")
 include("OCModelEGM.jl")
-momfilename="base_moments.tex"
+momfilename="highrisk_moments.tex"
 
 OCM=OCModel()
 setup!(OCM)
 OCM.ibise = 0
+#OCM.rub = 0.06
+#OCM.rlb = 0.03
 OCM.inewt=1
 ichk = 0
 

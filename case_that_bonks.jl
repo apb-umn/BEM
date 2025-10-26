@@ -6,6 +6,8 @@
 
 ρ_τ_val=0.0
 #τb_val=0.308 # compute_BB!(FO) produces singularity  exception
+#τb_val=0.32 # checking
+
 τb_val=0.4060 # diverges to inf
 #τb_val=0.43 # seems ok
 
@@ -41,6 +43,7 @@ println("Setting up old steady state (takes a few minutes) on master node...")
 OCM_old = OCModel()
 OCM_old.σ_ε = 0.01
 OCM_old.Θ̄ = 0.655
+OCM_old.Na = 150
 setup!(OCM_old)
 OCM_old.r = 0.038827378860131295
 OCM_old.tr = 0.5490743758858707
@@ -157,5 +160,5 @@ df.t = 0:(size(XpathSO, 2) - 1)
 #plot_lambda_side_by_side_per_shock(OCM, aθc_sp)
 
 # Three shocks, zoom to a≤50
-plot_lambda_from_OCM(OCM_new; nshocks=5, a_max=5) # zoom on a ≤ 50
+plot_lambda_from_OCM(OCM_new; nshocks=5, a_max=1) # zoom on a ≤ 50
 

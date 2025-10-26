@@ -35,7 +35,7 @@
         OCM.τw = τw
         OCM.ρ_τ = ρ_τ
         OCM.iprint = 0
-        OCM.ibise = 0
+        #OCM.ibise = 0
         ss, lev, shr, res = solvess!(OCM)
         updatecutoffs!(OCM)
         Xss = [getX(OCM); OCM.τb]

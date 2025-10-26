@@ -2,27 +2,17 @@
 
 include("OCModelEGMInputs.jl")
 include("OCModelEGM.jl")
-momfilename="lowsigma_moments.tex"
+momfilename="elasticity_moments.tex"
 #include("OCModelEGM_opttaxmpi.jl")
 
 
 OCM=OCModel()
-OCM.σ_ε = 0.001
-OCM.Θ̄ =0.645
-OCM.τb =0.50
-OCM.Na=500
-OCM.Nit = 500
-OCM.inewt=0
-rguess,trguess= 0.03944567212525258, 0.6286954243530435
-OCM.rlb=rguess*.8
-OCM.rub=rguess*1.2
-OCM.trlb =trguess*.8
-OCM.trub =trguess*1.2
-OCM.r=rguess
-OCM.tr=trguess
+OCM.σ_ε=0.075
 setup!(OCM)
-
 OCM.ibise = 0
+OCM.inewt=1
+ichk = 0
+
 
 ichk = 0
 
@@ -31,7 +21,7 @@ if ichk==1
 else
     ss,lev,shr,res = solvess!(OCM)
     updatecutoffs!(OCM)
-    moments=getMoments(OCM,savepath=momfilename,dτb=0.05)
+    moments=getMoments(OCM,savepath=momfilename,dτb=0.01)
 
 
 

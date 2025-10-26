@@ -3,6 +3,7 @@
 include("OCModelEGM_transition.jl") # has the F,G,ff and several helper functions
 using Distributed
 
+rguess,trguess=0.05923207359775146, 0.6401956237429345
 
 
 # Add workers
@@ -22,9 +23,10 @@ filenamesuffix="base"
 
 println("Setting up old steady state (takes a few minutes) on master node...")
 OCM_old = OCModel()
+OCM_old.r, OCM_old.tr = rguess, trguess
+
 setup!(OCM_old)
-OCM_old.r = 0.038677701422384594
-OCM_old.tr = 0.4680612510778516
+
 inputs_old, X̄_old, Ix̄_old, A_old, Taub_old, ω̄_0_old = setup_old_steady_state!(OCM_old)
 println("Old steady state setup complete..")
 
@@ -83,7 +85,7 @@ include("OCModelEGM_opttaxmpi.jl")
 
 #
 filenamesuffix="lowchi"
-χval=1.25
+χval=1.05
 
 # Define your parameter grid
 τb_vals = collect(range(0.21, stop=0.7, length=36))
@@ -93,7 +95,7 @@ println("Setting up old steady state (takes a few minutes) on master node...")
 OCM_old = OCModel()
 setup!(OCM_old)
 OCM_old.χ = χval
-OCM_old.r,OCM_old.tr=0.03817730487966064, 0.461132217405684
+OCM_old.r,OCM_old.tr= rguess, trguess
 OCM_old.rlb=OCM_old.r*0.8
 OCM_old.rub=OCM_old.r*1.2
 OCM_old.trlb=OCM_old.tr*.8
@@ -158,7 +160,9 @@ include("OCModelEGM_opttaxmpi.jl")
 
 #
 filenamesuffix="highchi"
-χval=3.0
+χval=2.0
+
+
 
 # Define your parameter grid
 τb_vals = collect(range(0.21, stop=0.7, length=36))
@@ -168,14 +172,13 @@ println("Setting up old steady state (takes a few minutes) on master node...")
 OCM_old = OCModel()
 setup!(OCM_old)
 OCM_old.χ = χval
-OCM_old.χ = χval
-OCM_old.r,OCM_old.tr=0.03905398756438686, 0.49006603937283577
+OCM_old.r,OCM_old.tr= rguess, trguess
 OCM_old.rlb=OCM_old.r*0.8
 OCM_old.rub=OCM_old.r*1.2
 OCM_old.trlb=OCM_old.tr*.8
 OCM_old.trub=OCM_old.tr*1.2
 OCM_old.ibise=0
-OCM_old.Θ̄ = OCM_old.Θ̄*1.01
+OCM.Θ̄=OCM.Θ̄*1.03
 
 inputs_old, X̄_old, Ix̄_old, A_old, Taub_old, ω̄_0_old = setup_old_steady_state!(OCM_old)
 println("Old steady state setup complete..")

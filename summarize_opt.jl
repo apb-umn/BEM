@@ -58,8 +58,6 @@ filenamesuffix="base"
 println("Setting up old steady state (takes a few minutes) ...")
 OCM_old = OCModel()
 setup!(OCM_old)
-OCM_old.r = 0.038677701422384594
-OCM_old.tr = 0.4680612510778516
 OCM_old.rlb, OCM_old.rub = OCM_old.r * 0.8, OCM_old.r * 1.2
 OCM_old.trlb, OCM_old.trub = OCM_old.tr * 0.8, OCM_old.tr * 1.2
 OCM_old.ibise = 0

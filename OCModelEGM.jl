@@ -38,7 +38,7 @@ function setup!(OCM::OCModel)
 
     #Combined processes in one Markov chain
     θ  = [kron(ones(length(θwgrid)),θbgrid) kron(θwgrid,ones(length(θbgrid)))]
-    πθ = OCM.πθ = kron(πθb,πθw)
+    πθ = OCM.πθ = kron(πθw,πθb)
     lθ = OCM.lθ = log.(θ)
 
     #Grid points and basis matrices for policy functions
@@ -974,7 +974,7 @@ function weighted_quantile(x::AbstractVector, w::AbstractVector, p::Union{Real,A
 end
 
 
-function getMoments(OCM::OCModel;savepath::String="macro_ratios.tex",dτb=0.02)
+function getMoments(OCM::OCModel;savepath::String="macro_ratios.tex",dτb=0.05)
      @unpack τp,τd,τb,τc,τw,δ,Θ̄,α,b,γ,g,iprint,r,tr,bf,wf,Ia,Nθ,alθ,ab_col_cutoff,lθ,χ = OCM
     updatecutoffs!(OCM)
     rc     = r/(1-τp)
@@ -1187,7 +1187,8 @@ pretty_table(
     column_labels = ["Moment","Value"],
     formatters    = [PrettyTables.fmt__printf("%.4f")],  # qualify it
     maximum_number_of_rows    = -1,
-    maximum_number_of_columns = -1
+    maximum_number_of_columns = -1,
+    display_size = (typemax(Int), 120)  # widen display box (rows, cols)
 )
 
 
@@ -1421,7 +1422,8 @@ pretty_table(
     column_labels = ["Moment", "Value"],
     formatters    = [PrettyTables.fmt__printf("%.4f")],
     maximum_number_of_rows    = -1,
-    maximum_number_of_columns = -1
+    maximum_number_of_columns = -1,
+    display_size = (typemax(Int), 120)  # widen display box (rows, cols)
 )
 
 
@@ -1921,7 +1923,7 @@ Returns
 -------
 semi_elasticityNB :: Float64
 """
-function semi_elasticity_Nb(OCM; dτb=0.02)
+function semi_elasticity_Nb(OCM; dτb=0.01)
 
     # --- helper: aggregate labor demand ---
     aggregate_labor_demand(OCM_) = begin
@@ -1942,7 +1944,8 @@ function semi_elasticity_Nb(OCM; dτb=0.02)
     Nb′ = aggregate_labor_demand(OCM′)
 
     # semi-elasticity wrt τb
-    semi_elasticityNB = (Nb′ - Nb) / Nb / (OCM′.τb - OCM.τb)
+    semi_elasticityNB = (log(Nb′) - log(Nb)) / (OCM′.τb - OCM.τb)
+
 
     return semi_elasticityNB
 end

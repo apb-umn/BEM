@@ -230,9 +230,10 @@ function compute_Lemma4!(FO)
     #compute Γκ̄
     
     #start with computing La 
-    #ā_a = reshape((p*x̄)*Φₐ,n.a,:)  #ā_a is n.a x (n.a x n.Ω )(compress last two dimensions)
+    ā_a = reshape((p*x̄)*Φₐ,n.a,:)  #ā_a is n.a x (n.a x n.Ω )(compress last two dimensions)
     x̄_a = reshape(FO.x̄_a,n.x,n.a,n.sp)
-    ā_a =  reshape(p*reshape(x̄_a,n.x,n.a,:)*Φ,n.a,:)
+    #ā_a =  reshape(p*reshape(x̄_a,n.x,n.a,:)*Φ,n.a,:)
+    #ā_a = clamp.((ā_a),-2,2)
     FO.La = La = kron(Λ,ones(n.a,n.a)) #initialize La operator 
 
     rowsLa = rowvals(La)

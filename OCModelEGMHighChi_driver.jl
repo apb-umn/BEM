@@ -1,9 +1,11 @@
 
 include("OCModelEGMInputs.jl")
 include("OCModelEGM.jl")
-momfilename="base_moments.tex"
+momfilename="highchi_moments.tex"
 
 OCM=OCModel()
+OCM.χ = 2.0
+OCM.Θ̄=OCM.Θ̄*1.03
 setup!(OCM)
 OCM.ibise = 0
 OCM.inewt=1
