@@ -5,7 +5,6 @@ include("OCModelEGM.jl")
 include("OCModelEGM_transition.jl") # has the F,G,ff and several helper functions
 
 
-rguess,trguess=0.05923207359775146, 0.6150774768199434
 # Define parameters
 τb_val = 0.4
 ρ_τ_val_fast = 0.0

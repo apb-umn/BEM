@@ -3,7 +3,6 @@
 include("OCModelEGM_transition.jl") # has the F,G,ff and several helper functions
 using Distributed
 
-rguess,trguess=0.05923207359775146, 0.6401956237429345
 
 
 # Add workers

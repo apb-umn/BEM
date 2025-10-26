@@ -58,8 +58,6 @@ filenamesuffix="base"
 println("Setting up old steady state (takes a few minutes) ...")
 OCM_old = OCModel()
 setup!(OCM_old)
-OCM_old.rlb, OCM_old.rub = OCM_old.r * 0.8, OCM_old.r * 1.2
-OCM_old.trlb, OCM_old.trub = OCM_old.tr * 0.8, OCM_old.tr * 1.2
 OCM_old.ibise = 0
 OCM_old.iprint = 0
 
@@ -68,14 +66,13 @@ OCM_opt, comparison_df = setup_and_compare_steady_state!(OCM_old, filenamesuffix
 comparison_df
 
 filenamesuffix = "lowchi"
-χval = 1.25
+χval=1.05
 # Initialize and set up OCM_old
 println("Setting up old steady state (takes a few minutes) ...")
 OCM_old = OCModel()
 setup!(OCM_old)
 # Manual calibration
 OCM_old.χ = χval
-OCM_old.r,OCM_old.tr=0.03817730487966064, 0.461132217405684
 OCM_old.rlb, OCM_old.rub = OCM_old.r * 0.8, OCM_old.r * 1.2
 OCM_old.trlb, OCM_old.trub = OCM_old.tr * 0.8, OCM_old.tr * 1.2
 OCM_old.ibise = 0
@@ -90,21 +87,18 @@ comparison_df
 
 #
 filenamesuffix="highchi"
-χval=3.0
+χval=2.0
 
 println("Setting up old steady state (takes a few minutes) ...")
 OCM_old = OCModel()
 setup!(OCM_old)
 OCM_old.χ = χval
-OCM_old.χ = χval
-OCM_old.r,OCM_old.tr=0.03905398756438686, 0.49006603937283577
 OCM_old.rlb=OCM_old.r*0.8
 OCM_old.rub=OCM_old.r*1.2
 OCM_old.trlb=OCM_old.tr*.8
 OCM_old.trub=OCM_old.tr*1.2
 OCM_old.ibise=0
-OCM_old.Θ̄ = OCM_old.Θ̄*1.02
-OCM_old.iprint = 0
+OCM.Θ̄=OCM.Θ̄*1.03
 
 # Run optimization and comparison
 OCM_opt, comparison_df = setup_and_compare_steady_state!(OCM_old, filenamesuffix)
@@ -114,19 +108,10 @@ comparison_df
 
 #
 filenamesuffix="elasticity"
-
+include("OCModelEGMHighElasticityInputs.jl")
 println("Setting up old steady state (takes a few minutes) ...")
 OCM_old = OCModel()
 setup!(OCM_old)
-OCM_old.σ_ε = 0.43/10
-OCM_old.Θ̄ = 0.655
-rguess,trguess= 0.039187502803206986, 0.6336206401860949
-OCM.rlb=rguess*.8
-OCM.rub=rguess*1.2
-OCM.trlb =trguess*.8
-OCM.trub =trguess*1.2
-OCM.r=rguess
-OCM.tr=trguess
 OCM_old.ibise=0
 OCM_old.iprint = 0
 
