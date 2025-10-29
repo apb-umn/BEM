@@ -1,4 +1,4 @@
-Moment,Baseline,Alternative,% Diff
+Moment,Baseline,Alternative,Diff
 tax on biz profits (Tb),0.2,0.642,221.0
 tax on labor income (Tn),0.37,0.37,0.0
 collateral constraint (chi),1.25,1.25,0.0
@@ -37,20 +37,21 @@ Bb/Kb (debt to capital ratio),0.0796,0.0681,-14.515
 Bb/Y (debt to output ratio),0.0716,0.0434,-39.4109
 mean log wage earnings,0.7904,0.7784,-1.5209
 std log wage earnings,0.2624,0.2623,-0.0364
-10% quantile log wage earnings,0.4328,0.4236,-2.1422
-25% quantile log wage earnings,0.7706,0.7613,-1.2032
-75% quantile log wage earnings,1.1084,1.0991,-0.8365
-90% quantile log wage earnings,1.1084,1.0991,-0.8365
+10 quantile log wage earnings,0.4328,0.4236,-2.1422
+25 quantile log wage earnings,0.7706,0.7613,-1.2032
+75 quantile log wage earnings,1.1084,1.0991,-0.8365
+90 quantile log wage earnings,1.1084,1.0991,-0.8365
 mean log MPK,-2.2525,-2.2357,0.7497
 std log MPK,0.1114,0.1455,30.6262
 mean profit share,0.3529,0.3539,0.2729
 std profit share,0.03,0.036,20.0654
-10% quantile log profits,-4.2191,-4.2202,-0.0262
-25% quantile log profits,-2.9836,-2.9847,-0.0371
-75% quantile log profits,0.7065,0.6487,-8.1833
-90% quantile log profits,0.723,0.7219,-0.153
+10 quantile log profits,-4.2191,-4.2202,-0.0262
+25 quantile log profits,-2.9836,-2.9847,-0.0371
+75 quantile log profits,0.7065,0.6487,-8.1833
+90 quantile log profits,0.723,0.7219,-0.153
 mean log profits,-1.0883,-1.3455,-23.6352
 std log profits,1.7884,1.7947,0.3511
 semi-emp-elasticity,-0.3618,-0.5467,-51.1104
 noise parameter,0.4,0.4,0.0
+risk factor,1.0,1.0,0.0
 CE welfare gains,0.0,0.007711444809853196,0.7711444809853196

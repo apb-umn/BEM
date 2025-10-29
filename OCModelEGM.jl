@@ -1164,22 +1164,23 @@ moments = [
     "Bb/Y (debt to output ratio)" Bb_by_Y;
     "mean log wage earnings"      mean_log_wageearnings;
     "std log wage earnings"       std_log_wageearnings;
-    "10% quantile log wage earnings" q10_log_wageearnings;
-    "25% quantile log wage earnings" q25_log_wageearnings;
-    "75% quantile log wage earnings" q75_log_wageearnings;
-    "90% quantile log wage earnings" q90_log_wageearnings;
+    "10 quantile log wage earnings" q10_log_wageearnings;
+    "25 quantile log wage earnings" q25_log_wageearnings;
+    "75 quantile log wage earnings" q75_log_wageearnings;
+    "90 quantile log wage earnings" q90_log_wageearnings;
     "mean log MPK"                mean_mpkdist;
     "std log MPK"                 std_mpkdist;
     "mean profit share"           mean_piybdst;
     "std profit share"            std_piybdst;
-    "10% quantile log profits"    q10_lnpi;
-    "25% quantile log profits"    q25_lnpi;
-    "75% quantile log profits"    q75_lnpi;
-    "90% quantile log profits"    q90_lnpi;
+    "10 quantile log profits"    q10_lnpi;
+    "25 quantile log profits"    q25_lnpi;
+    "75 quantile log profits"    q75_lnpi;
+    "90 quantile log profits"    q90_lnpi;
     "mean log profits"            mean_lnpi;
     "std log profits"             std_lnpi;
     "semi-emp-elasticity"          semi_el;
     "noise parameter"               OCM.σ_ε;
+    "risk factor"               OCM.risk_adjust;
 ];
 
 # Print it as a table
@@ -1416,6 +1417,7 @@ moments = [
    "std log profits"             std_lnpi;
     "semi-emp-elasticity"          semi_el;
     "noise parameter"               OCM.σ_ε;
+    "risk factor"               OCM.risk_adjust;
 ];
 
 # Print it as a table
@@ -1461,7 +1463,7 @@ function compare_moments(OCM_old::OCModel, OCM_new::OCModel;titles::Vector{Strin
     combined = hcat(labels, vals1, vals2, pct_diff)
     
     # Display
-    header=["Moment", titles[1], titles[2], "% Diff"]
+    header=["Moment", titles[1], titles[2], "Diff"]
     pretty_table(
         combined;
         column_labels = String.(header),
@@ -1469,11 +1471,11 @@ function compare_moments(OCM_old::OCModel, OCM_new::OCModel;titles::Vector{Strin
         maximum_number_of_rows    = -1,
         maximum_number_of_columns = -1
     )
-        titles = ["Baseline", "Alternative", "% Diff"]
+        titles = ["Baseline", "Alternative", "Diff"]
 
         # Convert to DataFrame
     # Ensure column names are symbols (required by DataFrame)
-    colnames = Symbol.(["Moment", titles[1], titles[2], "% Diff"])
+    colnames = Symbol.(["Moment", titles[1], titles[2], "Diff"])
 
     # Create DataFrame from the matrix
     df = DataFrame(combined, colnames)
@@ -1511,7 +1513,7 @@ function compare_moments_grid(OCM::OCModel;titles::Vector{String}= ["EGM", "Grid
     combined = hcat(labels, vals1, vals2, pct_diff)
     
     # Display
-    header=["Moment", titles[1], titles[2], "% Diff"]
+    header=["Moment", titles[1], titles[2], "Diff"]
     pretty_table(
         combined;
         column_labels = String.(header),
@@ -1519,11 +1521,11 @@ function compare_moments_grid(OCM::OCModel;titles::Vector{String}= ["EGM", "Grid
         maximum_number_of_rows    = -1,
         maximum_number_of_columns = -1
     )
-        titles = ["EGM", "Grid Search", "% Diff"]
+        titles = ["EGM", "Grid Search", "Diff"]
 
         # Convert to DataFrame
     # Ensure column names are symbols (required by DataFrame)
-    colnames = Symbol.(["Moment", titles[1], titles[2], "% Diff"])
+    colnames = Symbol.(["Moment", titles[1], titles[2], "Diff"])
 
     # Create DataFrame from the matrix
     df = DataFrame(combined, colnames)

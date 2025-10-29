@@ -40,7 +40,7 @@ function setup_and_compare_steady_state!(OCM_old::OCModel, filenamesuffix::Strin
         :Moment => ["CE welfare gains"],
         :Baseline => [0.0],
         :Alternative => [best_ceso],
-        Symbol("% Diff") => [best_ceso*100]
+        Symbol("Diff") => [best_ceso*100]
     )
 
     # Append it
