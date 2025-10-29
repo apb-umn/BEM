@@ -52,4 +52,5 @@ std profit share,0.0248,0.0384,54.56
 mean log profits,0.2615,-0.2264,-186.5732
 std log profits,1.1003,1.5164,37.8146
 semi-emp-elasticity,-0.9697,-1.9955,-105.7844
+noise parameter,0.075,0.075,0.0
 CE welfare gains,0.0,0.015118722617198266,1.5118722617198266

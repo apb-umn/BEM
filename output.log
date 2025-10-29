@@ -1,0 +1,2570 @@
+      Solve SS using newton method
+solve_eg converged in 183 iterations: 9.75810824838108e-7
+      Tax on business     20.000, Tax on wages     37.000
+      Interest rate      5.923, Govt transfer      0.640
+      Asset market  -1.671e-01, Govt budget   -8.516e-04
+
+solve_eg converged in 108 iterations: 9.726259009579241e-7
+      Tax on business     20.000, Tax on wages     37.000
+      Interest rate      5.982, Govt transfer      0.640
+      Asset market   4.528e-01, Govt budget    1.923e-03
+
+solve_eg converged in 114 iterations: 9.830592520299053e-7
+      Tax on business     20.000, Tax on wages     37.000
+      Interest rate      5.923, Govt transfer      0.647
+      Asset market  -1.649e-01, Govt budget    1.316e-03
+
+solve_eg converged in 96 iterations: 9.726292047040896e-7
+      Tax on business     20.000, Tax on wages     37.000
+      Interest rate      5.939, Govt transfer      0.641
+      Asset market  -2.332e-02, Govt budget   -9.656e-06
+
+solve_eg converged in 108 iterations: 9.832257397979216e-7
+      Tax on business     20.000, Tax on wages     37.000
+      Interest rate      5.999, Govt transfer      0.641
+      Asset market   6.735e-01, Govt budget    2.799e-03
+
+solve_eg converged in 114 iterations: 9.907872279280028e-7
+      Tax on business     20.000, Tax on wages     37.000
+      Interest rate      5.939, Govt transfer      0.647
+      Asset market  -1.988e-02, Govt budget    2.164e-03
+
+solve_eg converged in 87 iterations: 9.650163099728104e-7
+      Tax on business     20.000, Tax on wages     37.000
+      Interest rate      5.941, Govt transfer      0.640
+      Asset market  -4.353e-03, Govt budget   -1.502e-06
+
+solve_eg converged in 108 iterations: 9.845809301745057e-7
+      Tax on business     20.000, Tax on wages     37.000
+      Interest rate      6.001, Govt transfer      0.640
+      Asset market   7.035e-01, Govt budget    2.811e-03
+
+solve_eg converged in 114 iterations: 9.920486979952958e-7
+      Tax on business     20.000, Tax on wages     37.000
+      Interest rate      5.941, Govt transfer      0.647
+      Asset market  -6.845e-04, Govt budget    2.172e-03
+
+solve_eg converged in 84 iterations: 9.967646009689801e-7
+      Tax on business     20.000, Tax on wages     37.000
+      Interest rate      5.942, Govt transfer      0.640
+      Asset market  -9.450e-04, Govt budget   -4.210e-07
+
+solve_eg converged in 108 iterations: 9.851050117859472e-7
+      Tax on business     20.000, Tax on wages     37.000
+      Interest rate      6.001, Govt transfer      0.640
+      Asset market   7.090e-01, Govt budget    2.813e-03
+
+solve_eg converged in 114 iterations: 9.922812483353916e-7
+      Tax on business     20.000, Tax on wages     37.000
+      Interest rate      5.942, Govt transfer      0.647
+      Asset market   2.872e-03, Govt budget    2.173e-03
+
+solve_eg converged in 84 iterations: 9.779097231432665e-7
+      Tax on business     20.000, Tax on wages     37.000
+      Interest rate      5.942, Govt transfer      0.640
+      Asset market  -1.294e-04, Govt budget    9.048e-09
+
+solve_eg converged in 108 iterations: 9.850002666567104e-7
+      Tax on business     20.000, Tax on wages     37.000
+      Interest rate      6.001, Govt transfer      0.640
+      Asset market   7.102e-01, Govt budget    2.813e-03
+
+solve_eg converged in 114 iterations: 9.923325837712937e-7
+      Tax on business     20.000, Tax on wages     37.000
+      Interest rate      5.942, Govt transfer      0.647
+      Asset market   3.643e-03, Govt budget    2.174e-03
+
+solve_eg converged in 84 iterations: 9.734900058844254e-7
+      Tax on business     20.000, Tax on wages     37.000
+      Interest rate      5.942, Govt transfer      0.640
+      Asset market  -1.295e-05, Govt budget    7.376e-09
+
+solve_eg converged in 1 iterations: 9.307243551692768e-7
+      Tax on business     20.000, Tax on wages     37.000
+      Interest rate      5.942, Govt transfer      0.640
+      Asset market   1.123e-04, Govt budget    1.709e-07
+
+solve_eg converged in 110 iterations: 9.640426179291506e-7
+┌────────────────────────────────┬──────────┐
+│                         Moment │    Value │
+├────────────────────────────────┼──────────┤
+│        tax on biz profits (Tb) │   0.2000 │
+│       tax on labor income (Tn) │   0.3700 │
+│    collateral constraint (chi) │   1.2500 │
+│              interest rate (r) │   0.0594 │
+│             govt transfer (tr) │   0.6402 │
+│                       wage (w) │   2.1611 │
+│      Nb (pvt biz labor demand) │   0.1364 │
+│         Nc (corp labor demand) │   0.5446 │
+│       Kc (corp capital demand) │   8.3533 │
+│          Yc (corp value added) │   2.1397 │
+│    Kb (pvt biz capital demand) │   2.7261 │
+│       Yb (pvt biz value added) │   0.8935 │
+│                C (consumption) │   2.2474 │
+│              K (total capital) │  11.0794 │
+│               Y (total output) │   3.0333 │
+│              Tc (tax on cons.) │   0.1348 │
+│       Tp (tax on profits corp) │   0.1241 │
+│          Tn (labor income tax) │   0.5445 │
+│    Tb (tax on profits pvt biz) │   0.0650 │
+│              Total tax revenue │   0.8684 │
+│         Fraction of biz owners │   0.3549 │
+│             total. utility (V) │ -27.9020 │
+│              total. assets (A) │  14.0797 │
+│        total. assets (workers) │   8.9282 │
+│         total. assets (owners) │   5.1515 │
+│         total. consumption (C) │   2.2474 │
+│                  profits (Pib) │   0.3249 │
+│        rKb (int. payments biz) │   0.1620 │
+│      rcKc (int. payments corp) │   0.6204 │
+│              dK (depreciation) │   0.4543 │
+│           Fraction constrained │   0.0789 │
+│             Assets constrained │   0.8652 │
+│            Capital constrained │   1.0823 │
+│             External debt (Bb) │   0.2171 │
+│  Bb/Kb (debt to capital ratio) │   0.0796 │
+│    Bb/Y (debt to output ratio) │   0.0716 │
+│         mean log wage earnings │   0.7904 │
+│          std log wage earnings │   0.2624 │
+│ 10% quantile log wage earnings │   0.4328 │
+│ 25% quantile log wage earnings │   0.7706 │
+│ 75% quantile log wage earnings │   1.1084 │
+│ 90% quantile log wage earnings │   1.1084 │
+│                   mean log MPK │  -2.2525 │
+│                    std log MPK │   0.1114 │
+│              mean profit share │   0.3529 │
+│               std profit share │   0.0300 │
+│       10% quantile log profits │  -4.2191 │
+│       25% quantile log profits │  -2.9836 │
+│       75% quantile log profits │   0.7065 │
+│       90% quantile log profits │   0.7230 │
+│               mean log profits │  -1.0883 │
+│                std log profits │   1.7884 │
+│            semi-emp-elasticity │  -0.3618 │
+│                noise parameter │   0.4000 │
+└────────────────────────────────┴──────────┘
+
+                      US NIPA, 2007
+                      =============
+
+      Incomes                   Products               
+    ---------------------------------------------------
+      Sweat           1,491  |  Consumption    11,067  
+      Compensation    7,665  |    Private       9,548  
+        Nonbus        2,168  |    Nondefense    1,520  
+        C-Corp        3,665  |  Investment      4,847  
+        Pass-thru     1,832  |  Defense           679  
+      Capital income  7,437  |                         
+        Nonbus        2,233  |                         
+        Business      5,204  |                         
+    ---------------------------------------------------
+      Adj GDP        16,593                    16,593  
+
+
+      Incomes (%GDP)            Products               
+    ---------------------------------------------------
+      Sweat             9.0  |  Consumption      66.7  
+      Compensation     46.2  |  Investment       29.2  
+        Nonbus         13.1  |  Defense           4.1  
+        C-Corp         22.1  |                         
+        Pass-thru      11.0  |                         
+      Capital income   44.8  |                         
+    ---------------------------------------------------
+      Adj GDP         100.0                     100.0  
+
+
+      Tax receipts              Expenditures           
+    ---------------------------------------------------
+      Personal tax    1,492  |  Transfers       3,273  
+      I&P tax         1,037  |    NIPA          1,753  
+      Corporate tax     386  |    Nondefense    1,520  
+      Tax from ROW       14  |  Defense           679  
+                             |  Net interest      412  
+                             | *Deficit        -1,435  
+    ---------------------------------------------------
+      Total           2,929                     2,929  
+
+
+      Tax receipts (%GDP)       Expenditures (%GDP)    
+    ---------------------------------------------------
+      Personal tax      9.0  |  Transfers        19.7  
+      I&P tax           6.2  |    NIPA           10.6  
+      Corporate tax     2.3  |    Nondefense      9.2  
+      Tax from ROW      0.0  |  Defense           4.1  
+                             |  Net interest      2.5  
+                             | *Deficit          -8.6  
+    ---------------------------------------------------
+      Total            17.7                      17.7  
+
+      *includes SI, transfers, net saving              
+
+
+                    OC Model Results
+                    ================
+
+      Equilibrium values and residuals
+    -------------------------------------------
+      Interest rate             5.94%
+      Governemnt transfer       0.64
+      Asset market residual     1.12e-04
+      Government budget         1.71e-07
+
+
+      Incomes (%GDP)            Products             
+    -------------------------------------------------
+      Sweat            10.7  |  Consumption      74.1
+      Compensation     48.5  |  Investment       22.3
+      Capital income   40.8  |  Defense           3.6
+    -------------------------------------------------
+      Adj GDP         100.0                     100.0  
+
+
+      Tax receipts (%GDP)      Expenditures          
+    -------------------------------------------------
+      Sweat income      2.1  |  Transfers        21.1
+      Employee wages   18.0  |  Defense           3.6
+      Profits           4.1  |  Net interest      3.9
+      Dividends         0.0  |                      
+      Consumption       4.4  |                      
+    -------------------------------------------------
+      Total            28.6                      28.6
+solve_eg converged in 110 iterations: 9.640426179291506e-7
+┌────────────────────────────────┬──────────┐
+│                         Moment │    Value │
+├────────────────────────────────┼──────────┤
+│        tax on biz profits (Tb) │   0.2000 │
+│       tax on labor income (Tn) │   0.3700 │
+│    collateral constraint (chi) │   1.2500 │
+│              interest rate (r) │   0.0594 │
+│             govt transfer (tr) │   0.6402 │
+│                       wage (w) │   2.1611 │
+│      Nb (pvt biz labor demand) │   0.1364 │
+│         Nc (corp labor demand) │   0.5446 │
+│       Kc (corp capital demand) │   8.3533 │
+│          Yc (corp value added) │   2.1397 │
+│    Kb (pvt biz capital demand) │   2.7261 │
+│       Yb (pvt biz value added) │   0.8935 │
+│                C (consumption) │   2.2474 │
+│              K (total capital) │  11.0794 │
+│               Y (total output) │   3.0333 │
+│              Tc (tax on cons.) │   0.1348 │
+│       Tp (tax on profits corp) │   0.1241 │
+│          Tn (labor income tax) │   0.5445 │
+│    Tb (tax on profits pvt biz) │   0.0650 │
+│              Total tax revenue │   0.8684 │
+│         Fraction of biz owners │   0.3549 │
+│             total. utility (V) │ -27.9020 │
+│              total. assets (A) │  14.0797 │
+│        total. assets (workers) │   8.9282 │
+│         total. assets (owners) │   5.1515 │
+│         total. consumption (C) │   2.2474 │
+│                  profits (Pib) │   0.3249 │
+│        rKb (int. payments biz) │   0.1620 │
+│      rcKc (int. payments corp) │   0.6204 │
+│              dK (depreciation) │   0.4543 │
+│           Fraction constrained │   0.0789 │
+│             Assets constrained │   0.8652 │
+│            Capital constrained │   1.0823 │
+│             External debt (Bb) │   0.2171 │
+│  Bb/Kb (debt to capital ratio) │   0.0796 │
+│    Bb/Y (debt to output ratio) │   0.0716 │
+│         mean log wage earnings │   0.7904 │
+│          std log wage earnings │   0.2624 │
+│ 10% quantile log wage earnings │   0.4328 │
+│ 25% quantile log wage earnings │   0.7706 │
+│ 75% quantile log wage earnings │   1.1084 │
+│ 90% quantile log wage earnings │   1.1084 │
+│                   mean log MPK │  -2.2525 │
+│                    std log MPK │   0.1114 │
+│              mean profit share │   0.3529 │
+│               std profit share │   0.0300 │
+│       10% quantile log profits │  -4.2191 │
+│       25% quantile log profits │  -2.9836 │
+│       75% quantile log profits │   0.7065 │
+│       90% quantile log profits │   0.7230 │
+│               mean log profits │  -1.0883 │
+│                std log profits │   1.7884 │
+│            semi-emp-elasticity │  -0.3618 │
+│                noise parameter │   0.4000 │
+└────────────────────────────────┴──────────┘
+Setting up old steady state (takes a few minutes)...
+      Using bisection method to get a good guess
+      Solve SS using newton method
+      Interest rate       5.94, Govt transfer       0.64
+      Asset market   1.572e-04, Govt budget    1.658e-07
+
+Old steady state setup complete.
+Setting up new steady state with τb = 0.4 (takes a few minutes)...
+      Using bisection method to get a good guess
+      Solve SS using newton method
+      Interest rate       6.00, Govt transfer       0.71
+      Asset market   1.364e-04, Govt budget    1.617e-07
+
+New steady state setup complete.
+Performing transition analysis with ρ_τ = 0.0...
+→ Constructing inputs...
+...done
+→ Zeroth-order approximation...
+...done
+→ Computing derivatives...
+...done
+→ Setting up first-order approximation object...
+...done
+→ Computing x,M,L,Js components ( bulk of the calclations )...
+...done
+→ Constructing initial ω̄ vector...
+...done
+→ Setting initial conditions...
+...done
+→ Solving transition path...
+...done
+→ Constructing FO Ix paths...
+...done
+→computing SO transition path (bulk of the calclations)...
+....done
+→ Constructing X paths and value function...
+...done ✅
+Add residuals to DataFrame...
+Residuals: Asset markets: %.2e, Government budget: %.2e
+0.073970399263193750.001289062822864492
+Asset Market Residual: 0.07397039926319375
+Government Budget Constraint Residual: 0.001289062822864492
+Results saved to df_transition_fast_0.4.csv
+Transition analysis complete.
+Performing transition analysis with ρ_τ = 0.9...
+→ Constructing inputs...
+...done
+→ Zeroth-order approximation...
+...done
+→ Computing derivatives...
+...done
+→ Setting up first-order approximation object...
+...done
+→ Computing x,M,L,Js components ( bulk of the calclations )...
+...done
+→ Constructing initial ω̄ vector...
+...done
+→ Setting initial conditions...
+...done
+→ Solving transition path...
+...done
+→ Constructing FO Ix paths...
+...done
+→computing SO transition path (bulk of the calclations)...
+....done
+→ Constructing X paths and value function...
+...done ✅
+Add residuals to DataFrame...
+Residuals: Asset markets: %.2e, Government budget: %.2e
+0.25238621895302440.006659207861024959
+Asset Market Residual: 0.2523862189530244
+Government Budget Constraint Residual: 0.006659207861024959
+Results saved to df_transition_slow_0.4.csv
+Transition comparison plot saved to transition_comparison_0.4.pdf
+Transition analysis completed successfully.
+Setting up old steady state (takes a few minutes)...
+      Using bisection method to get a good guess
+      Solve SS using newton method
+      Interest rate       5.94, Govt transfer       0.64
+      Asset market   1.572e-04, Govt budget    1.658e-07
+
+Old steady state setup complete.
+Setting up new steady state with τb = 0.642 (takes a few minutes)...
+      Using bisection method to get a good guess
+      Solve SS using newton method
+      Interest rate       6.05, Govt transfer       0.78
+      Asset market   2.301e-04, Govt budget    6.325e-08
+
+New steady state setup complete.
+Performing transition analysis with ρ_τ = 0.0...
+→ Constructing inputs...
+...done
+→ Zeroth-order approximation...
+...done
+→ Computing derivatives...
+...done
+→ Setting up first-order approximation object...
+...done
+→ Computing x,M,L,Js components ( bulk of the calclations )...
+...done
+→ Constructing initial ω̄ vector...
+...done
+→ Setting initial conditions...
+...done
+→ Solving transition path...
+...done
+→ Constructing FO Ix paths...
+...done
+→computing SO transition path (bulk of the calclations)...
+....done
+→ Constructing X paths and value function...
+...done ✅
+Add residuals to DataFrame...
+Residuals: Asset markets: %.2e, Government budget: %.2e
+0.110942126076423150.0038837182506545665
+Asset Market Residual: 0.11094212607642315
+Government Budget Constraint Residual: 0.0038837182506545665
+Results saved to df_transition_fast_0.64.csv
+Transition analysis complete.
+Performing transition analysis with ρ_τ = 0.9...
+→ Constructing inputs...
+...done
+→ Zeroth-order approximation...
+...done
+→ Computing derivatives...
+...done
+→ Setting up first-order approximation object...
+...done
+→ Computing x,M,L,Js components ( bulk of the calclations )...
+...done
+→ Constructing initial ω̄ vector...
+...done
+→ Setting initial conditions...
+...done
+→ Solving transition path...
+...done
+→ Constructing FO Ix paths...
+...done
+→computing SO transition path (bulk of the calclations)...
+....done
+→ Constructing X paths and value function...
+...done ✅
+Add residuals to DataFrame...
+Residuals: Asset markets: %.2e, Government budget: %.2e
+0.53463970979512380.010066361008611054
+Asset Market Residual: 0.5346397097951238
+Government Budget Constraint Residual: 0.010066361008611054
+Results saved to df_transition_slow_0.64.csv
+Transition comparison plot saved to transition_comparison_0.64.pdf
+Transition analysis completed successfully.
+      Solve SS using newton method
+solve_eg converged in 183 iterations: 9.75810824838108e-7
+      Tax on business     20.000, Tax on wages     37.000
+      Interest rate      5.923, Govt transfer      0.640
+      Asset market  -1.671e-01, Govt budget   -8.516e-04
+
+solve_eg converged in 108 iterations: 9.726259009579241e-7
+      Tax on business     20.000, Tax on wages     37.000
+      Interest rate      5.982, Govt transfer      0.640
+      Asset market   4.528e-01, Govt budget    1.923e-03
+
+solve_eg converged in 114 iterations: 9.830592520299053e-7
+      Tax on business     20.000, Tax on wages     37.000
+      Interest rate      5.923, Govt transfer      0.647
+      Asset market  -1.649e-01, Govt budget    1.316e-03
+
+solve_eg converged in 96 iterations: 9.726292046485785e-7
+      Tax on business     20.000, Tax on wages     37.000
+      Interest rate      5.939, Govt transfer      0.641
+      Asset market  -2.332e-02, Govt budget   -9.656e-06
+
+solve_eg converged in 108 iterations: 9.832257398811883e-7
+      Tax on business     20.000, Tax on wages     37.000
+      Interest rate      5.999, Govt transfer      0.641
+      Asset market   6.735e-01, Govt budget    2.799e-03
+
+solve_eg converged in 114 iterations: 9.90787228039025e-7
+      Tax on business     20.000, Tax on wages     37.000
+      Interest rate      5.939, Govt transfer      0.647
+      Asset market  -1.988e-02, Govt budget    2.164e-03
+
+solve_eg converged in 87 iterations: 9.650163101393439e-7
+      Tax on business     20.000, Tax on wages     37.000
+      Interest rate      5.941, Govt transfer      0.640
+      Asset market  -4.353e-03, Govt budget   -1.502e-06
+
+solve_eg converged in 108 iterations: 9.84580930285528e-7
+      Tax on business     20.000, Tax on wages     37.000
+      Interest rate      6.001, Govt transfer      0.640
+      Asset market   7.035e-01, Govt budget    2.811e-03
+
+solve_eg converged in 114 iterations: 9.920486978842735e-7
+      Tax on business     20.000, Tax on wages     37.000
+      Interest rate      5.941, Govt transfer      0.647
+      Asset market  -6.845e-04, Govt budget    2.172e-03
+
+solve_eg converged in 84 iterations: 9.9676460071918e-7
+      Tax on business     20.000, Tax on wages     37.000
+      Interest rate      5.942, Govt transfer      0.640
+      Asset market  -9.450e-04, Govt budget   -4.210e-07
+
+solve_eg converged in 108 iterations: 9.851050117859472e-7
+      Tax on business     20.000, Tax on wages     37.000
+      Interest rate      6.001, Govt transfer      0.640
+      Asset market   7.090e-01, Govt budget    2.813e-03
+
+solve_eg converged in 114 iterations: 9.922812483631471e-7
+      Tax on business     20.000, Tax on wages     37.000
+      Interest rate      5.942, Govt transfer      0.647
+      Asset market   2.872e-03, Govt budget    2.173e-03
+
+solve_eg converged in 84 iterations: 9.779097230044886e-7
+      Tax on business     20.000, Tax on wages     37.000
+      Interest rate      5.942, Govt transfer      0.640
+      Asset market  -1.294e-04, Govt budget    9.048e-09
+
+solve_eg converged in 108 iterations: 9.850002665734436e-7
+      Tax on business     20.000, Tax on wages     37.000
+      Interest rate      6.001, Govt transfer      0.640
+      Asset market   7.102e-01, Govt budget    2.813e-03
+
+solve_eg converged in 114 iterations: 9.923325839378272e-7
+      Tax on business     20.000, Tax on wages     37.000
+      Interest rate      5.942, Govt transfer      0.647
+      Asset market   3.643e-03, Govt budget    2.174e-03
+
+solve_eg converged in 84 iterations: 9.734900058844254e-7
+      Tax on business     20.000, Tax on wages     37.000
+      Interest rate      5.942, Govt transfer      0.640
+      Asset market  -1.295e-05, Govt budget    7.376e-09
+
+solve_eg converged in 1 iterations: 9.307243552247879e-7
+      Tax on business     20.000, Tax on wages     37.000
+      Interest rate      5.942, Govt transfer      0.640
+      Asset market   1.123e-04, Govt budget    1.709e-07
+
+solve_eg converged in 110 iterations: 9.640426179291506e-7
+┌────────────────────────────────┬──────────┐
+│                         Moment │    Value │
+├────────────────────────────────┼──────────┤
+│        tax on biz profits (Tb) │   0.2000 │
+│       tax on labor income (Tn) │   0.3700 │
+│    collateral constraint (chi) │   1.2500 │
+│              interest rate (r) │   0.0594 │
+│             govt transfer (tr) │   0.6402 │
+│                       wage (w) │   2.1611 │
+│      Nb (pvt biz labor demand) │   0.1364 │
+│         Nc (corp labor demand) │   0.5446 │
+│       Kc (corp capital demand) │   8.3533 │
+│          Yc (corp value added) │   2.1397 │
+│    Kb (pvt biz capital demand) │   2.7261 │
+│       Yb (pvt biz value added) │   0.8935 │
+│                C (consumption) │   2.2474 │
+│              K (total capital) │  11.0794 │
+│               Y (total output) │   3.0333 │
+│              Tc (tax on cons.) │   0.1348 │
+│       Tp (tax on profits corp) │   0.1241 │
+│          Tn (labor income tax) │   0.5445 │
+│    Tb (tax on profits pvt biz) │   0.0650 │
+│              Total tax revenue │   0.8684 │
+│         Fraction of biz owners │   0.3549 │
+│             total. utility (V) │ -27.9020 │
+│              total. assets (A) │  14.0797 │
+│        total. assets (workers) │   8.9282 │
+│         total. assets (owners) │   5.1515 │
+│         total. consumption (C) │   2.2474 │
+│                  profits (Pib) │   0.3249 │
+│        rKb (int. payments biz) │   0.1620 │
+│      rcKc (int. payments corp) │   0.6204 │
+│              dK (depreciation) │   0.4543 │
+│           Fraction constrained │   0.0789 │
+│             Assets constrained │   0.8652 │
+│            Capital constrained │   1.0823 │
+│             External debt (Bb) │   0.2171 │
+│  Bb/Kb (debt to capital ratio) │   0.0796 │
+│    Bb/Y (debt to output ratio) │   0.0716 │
+│         mean log wage earnings │   0.7904 │
+│          std log wage earnings │   0.2624 │
+│ 10% quantile log wage earnings │   0.4328 │
+│ 25% quantile log wage earnings │   0.7706 │
+│ 75% quantile log wage earnings │   1.1084 │
+│ 90% quantile log wage earnings │   1.1084 │
+│                   mean log MPK │  -2.2525 │
+│                    std log MPK │   0.1114 │
+│              mean profit share │   0.3529 │
+│               std profit share │   0.0300 │
+│       10% quantile log profits │  -4.2191 │
+│       25% quantile log profits │  -2.9836 │
+│       75% quantile log profits │   0.7065 │
+│       90% quantile log profits │   0.7230 │
+│               mean log profits │  -1.0883 │
+│                std log profits │   1.7884 │
+│            semi-emp-elasticity │  -0.3618 │
+│                noise parameter │   0.4000 │
+└────────────────────────────────┴──────────┘
+
+                      US NIPA, 2007
+                      =============
+
+      Incomes                   Products               
+    ---------------------------------------------------
+      Sweat           1,491  |  Consumption    11,067  
+      Compensation    7,665  |    Private       9,548  
+        Nonbus        2,168  |    Nondefense    1,520  
+        C-Corp        3,665  |  Investment      4,847  
+        Pass-thru     1,832  |  Defense           679  
+      Capital income  7,437  |                         
+        Nonbus        2,233  |                         
+        Business      5,204  |                         
+    ---------------------------------------------------
+      Adj GDP        16,593                    16,593  
+
+
+      Incomes (%GDP)            Products               
+    ---------------------------------------------------
+      Sweat             9.0  |  Consumption      66.7  
+      Compensation     46.2  |  Investment       29.2  
+        Nonbus         13.1  |  Defense           4.1  
+        C-Corp         22.1  |                         
+        Pass-thru      11.0  |                         
+      Capital income   44.8  |                         
+    ---------------------------------------------------
+      Adj GDP         100.0                     100.0  
+
+
+      Tax receipts              Expenditures           
+    ---------------------------------------------------
+      Personal tax    1,492  |  Transfers       3,273  
+      I&P tax         1,037  |    NIPA          1,753  
+      Corporate tax     386  |    Nondefense    1,520  
+      Tax from ROW       14  |  Defense           679  
+                             |  Net interest      412  
+                             | *Deficit        -1,435  
+    ---------------------------------------------------
+      Total           2,929                     2,929  
+
+
+      Tax receipts (%GDP)       Expenditures (%GDP)    
+    ---------------------------------------------------
+      Personal tax      9.0  |  Transfers        19.7  
+      I&P tax           6.2  |    NIPA           10.6  
+      Corporate tax     2.3  |    Nondefense      9.2  
+      Tax from ROW      0.0  |  Defense           4.1  
+                             |  Net interest      2.5  
+                             | *Deficit          -8.6  
+    ---------------------------------------------------
+      Total            17.7                      17.7  
+
+      *includes SI, transfers, net saving              
+
+
+                    OC Model Results
+                    ================
+
+      Equilibrium values and residuals
+    -------------------------------------------
+      Interest rate             5.94%
+      Governemnt transfer       0.64
+      Asset market residual     1.12e-04
+      Government budget         1.71e-07
+
+
+      Incomes (%GDP)            Products             
+    -------------------------------------------------
+      Sweat            10.7  |  Consumption      74.1
+      Compensation     48.5  |  Investment       22.3
+      Capital income   40.8  |  Defense           3.6
+    -------------------------------------------------
+      Adj GDP         100.0                     100.0  
+
+
+      Tax receipts (%GDP)      Expenditures          
+    -------------------------------------------------
+      Sweat income      2.1  |  Transfers        21.1
+      Employee wages   18.0  |  Defense           3.6
+      Profits           4.1  |  Net interest      3.9
+      Dividends         0.0  |                      
+      Consumption       4.4  |                      
+    -------------------------------------------------
+      Total            28.6                      28.6
+solve_eg converged in 110 iterations: 9.640426179291506e-7
+┌────────────────────────────────┬──────────┐
+│                         Moment │    Value │
+├────────────────────────────────┼──────────┤
+│        tax on biz profits (Tb) │   0.2000 │
+│       tax on labor income (Tn) │   0.3700 │
+│    collateral constraint (chi) │   1.2500 │
+│              interest rate (r) │   0.0594 │
+│             govt transfer (tr) │   0.6402 │
+│                       wage (w) │   2.1611 │
+│      Nb (pvt biz labor demand) │   0.1364 │
+│         Nc (corp labor demand) │   0.5446 │
+│       Kc (corp capital demand) │   8.3533 │
+│          Yc (corp value added) │   2.1397 │
+│    Kb (pvt biz capital demand) │   2.7261 │
+│       Yb (pvt biz value added) │   0.8935 │
+│                C (consumption) │   2.2474 │
+│              K (total capital) │  11.0794 │
+│               Y (total output) │   3.0333 │
+│              Tc (tax on cons.) │   0.1348 │
+│       Tp (tax on profits corp) │   0.1241 │
+│          Tn (labor income tax) │   0.5445 │
+│    Tb (tax on profits pvt biz) │   0.0650 │
+│              Total tax revenue │   0.8684 │
+│         Fraction of biz owners │   0.3549 │
+│             total. utility (V) │ -27.9020 │
+│              total. assets (A) │  14.0797 │
+│        total. assets (workers) │   8.9282 │
+│         total. assets (owners) │   5.1515 │
+│         total. consumption (C) │   2.2474 │
+│                  profits (Pib) │   0.3249 │
+│        rKb (int. payments biz) │   0.1620 │
+│      rcKc (int. payments corp) │   0.6204 │
+│              dK (depreciation) │   0.4543 │
+│           Fraction constrained │   0.0789 │
+│             Assets constrained │   0.8652 │
+│            Capital constrained │   1.0823 │
+│             External debt (Bb) │   0.2171 │
+│  Bb/Kb (debt to capital ratio) │   0.0796 │
+│    Bb/Y (debt to output ratio) │   0.0716 │
+│         mean log wage earnings │   0.7904 │
+│          std log wage earnings │   0.2624 │
+│ 10% quantile log wage earnings │   0.4328 │
+│ 25% quantile log wage earnings │   0.7706 │
+│ 75% quantile log wage earnings │   1.1084 │
+│ 90% quantile log wage earnings │   1.1084 │
+│                   mean log MPK │  -2.2525 │
+│                    std log MPK │   0.1114 │
+│              mean profit share │   0.3529 │
+│               std profit share │   0.0300 │
+│       10% quantile log profits │  -4.2191 │
+│       25% quantile log profits │  -2.9836 │
+│       75% quantile log profits │   0.7065 │
+│       90% quantile log profits │   0.7230 │
+│               mean log profits │  -1.0883 │
+│                std log profits │   1.7884 │
+│            semi-emp-elasticity │  -0.3618 │
+│                noise parameter │   0.4000 │
+└────────────────────────────────┴──────────┘
+solve_eg converged in 110 iterations: 9.640426179291506e-7
+┌────────────────────────────────┬──────────┐
+│                         Moment │    Value │
+├────────────────────────────────┼──────────┤
+│        tax on biz profits (Tb) │   0.2000 │
+│       tax on labor income (Tn) │   0.3700 │
+│    collateral constraint (chi) │   1.2500 │
+│              interest rate (r) │   0.0594 │
+│             govt transfer (tr) │   0.6402 │
+│                       wage (w) │   2.1611 │
+│      Nb (pvt biz labor demand) │   0.1364 │
+│         Nc (corp labor demand) │   0.5446 │
+│       Kc (corp capital demand) │   8.3533 │
+│          Yc (corp value added) │   2.1397 │
+│    Kb (pvt biz capital demand) │   2.7261 │
+│       Yb (pvt biz value added) │   0.8935 │
+│                C (consumption) │   2.2474 │
+│              K (total capital) │  11.0794 │
+│               Y (total output) │   3.0333 │
+│              Tc (tax on cons.) │   0.1348 │
+│       Tp (tax on profits corp) │   0.1241 │
+│          Tn (labor income tax) │   0.5445 │
+│    Tb (tax on profits pvt biz) │   0.0650 │
+│              Total tax revenue │   0.8684 │
+│         Fraction of biz owners │   0.3549 │
+│             total. utility (V) │ -27.9020 │
+│              total. assets (A) │  14.0797 │
+│        total. assets (workers) │   8.9282 │
+│         total. assets (owners) │   5.1515 │
+│         total. consumption (C) │   2.2474 │
+│                  profits (Pib) │   0.3249 │
+│        rKb (int. payments biz) │   0.1620 │
+│      rcKc (int. payments corp) │   0.6204 │
+│              dK (depreciation) │   0.4543 │
+│           Fraction constrained │   0.0789 │
+│             Assets constrained │   0.8652 │
+│            Capital constrained │   1.0823 │
+│             External debt (Bb) │   0.2171 │
+│  Bb/Kb (debt to capital ratio) │   0.0796 │
+│    Bb/Y (debt to output ratio) │   0.0716 │
+│         mean log wage earnings │   0.7904 │
+│          std log wage earnings │   0.2624 │
+│ 10% quantile log wage earnings │   0.4328 │
+│ 25% quantile log wage earnings │   0.7706 │
+│ 75% quantile log wage earnings │   1.1084 │
+│ 90% quantile log wage earnings │   1.1084 │
+│                   mean log MPK │  -2.2525 │
+│                    std log MPK │   0.1114 │
+│              mean profit share │   0.3529 │
+│               std profit share │   0.0300 │
+│       10% quantile log profits │  -4.2191 │
+│       25% quantile log profits │  -2.9836 │
+│       75% quantile log profits │   0.7065 │
+│       90% quantile log profits │   0.7230 │
+│               mean log profits │  -1.0883 │
+│                std log profits │   1.7884 │
+│            semi-emp-elasticity │  -0.3618 │
+│                noise parameter │   0.4000 │
+└────────────────────────────────┴──────────┘
+Setting up old steady state (takes a few minutes) ...
+      Solve SS using newton method
+      Interest rate       5.94, Govt transfer       0.64
+      Asset market   1.123e-04, Govt budget    1.709e-07
+
+Old steady state setup complete.
+┌────────────────────────────────┬──────────┐
+│                         Moment │    Value │
+├────────────────────────────────┼──────────┤
+│        tax on biz profits (Tb) │   0.2000 │
+│       tax on labor income (Tn) │   0.3700 │
+│    collateral constraint (chi) │   1.2500 │
+│              interest rate (r) │   0.0594 │
+│             govt transfer (tr) │   0.6402 │
+│                       wage (w) │   2.1611 │
+│      Nb (pvt biz labor demand) │   0.1364 │
+│         Nc (corp labor demand) │   0.5446 │
+│       Kc (corp capital demand) │   8.3533 │
+│          Yc (corp value added) │   2.1397 │
+│    Kb (pvt biz capital demand) │   2.7261 │
+│       Yb (pvt biz value added) │   0.8935 │
+│                C (consumption) │   2.2474 │
+│              K (total capital) │  11.0794 │
+│               Y (total output) │   3.0333 │
+│              Tc (tax on cons.) │   0.1348 │
+│       Tp (tax on profits corp) │   0.1241 │
+│          Tn (labor income tax) │   0.5445 │
+│    Tb (tax on profits pvt biz) │   0.0650 │
+│              Total tax revenue │   0.8684 │
+│         Fraction of biz owners │   0.3549 │
+│             total. utility (V) │ -27.9020 │
+│              total. assets (A) │  14.0797 │
+│        total. assets (workers) │   8.9282 │
+│         total. assets (owners) │   5.1515 │
+│         total. consumption (C) │   2.2474 │
+│                  profits (Pib) │   0.3249 │
+│        rKb (int. payments biz) │   0.1620 │
+│      rcKc (int. payments corp) │   0.6204 │
+│              dK (depreciation) │   0.4543 │
+│           Fraction constrained │   0.0789 │
+│             Assets constrained │   0.8652 │
+│            Capital constrained │   1.0823 │
+│             External debt (Bb) │   0.2171 │
+│  Bb/Kb (debt to capital ratio) │   0.0796 │
+│    Bb/Y (debt to output ratio) │   0.0716 │
+│         mean log wage earnings │   0.7904 │
+│          std log wage earnings │   0.2624 │
+│ 10% quantile log wage earnings │   0.4328 │
+│ 25% quantile log wage earnings │   0.7706 │
+│ 75% quantile log wage earnings │   1.1084 │
+│ 90% quantile log wage earnings │   1.1084 │
+│                   mean log MPK │  -2.2525 │
+│                    std log MPK │   0.1114 │
+│              mean profit share │   0.3529 │
+│               std profit share │   0.0300 │
+│       10% quantile log profits │  -4.2191 │
+│       25% quantile log profits │  -2.9836 │
+│       75% quantile log profits │   0.7065 │
+│       90% quantile log profits │   0.7230 │
+│               mean log profits │  -1.0883 │
+│                std log profits │   1.7884 │
+│            semi-emp-elasticity │  -0.3618 │
+│                noise parameter │   0.4000 │
+└────────────────────────────────┴──────────┘
+Best τb for base: 0.642
+Best CESO for base: 0.007711444809853196
+      Solve SS using newton method
+      Interest rate       6.05, Govt transfer       0.78
+      Asset market   3.296e-04, Govt budget    6.493e-08
+
+┌────────────────────────────────┬──────────┐
+│                         Moment │    Value │
+├────────────────────────────────┼──────────┤
+│        tax on biz profits (Tb) │   0.6420 │
+│       tax on labor income (Tn) │   0.3700 │
+│    collateral constraint (chi) │   1.2500 │
+│              interest rate (r) │   0.0605 │
+│             govt transfer (tr) │   0.7761 │
+│                       wage (w) │   2.1411 │
+│      Nb (pvt biz labor demand) │   0.1013 │
+│         Nc (corp labor demand) │   0.6234 │
+│       Kc (corp capital demand) │   9.3675 │
+│          Yc (corp value added) │   2.4269 │
+│    Kb (pvt biz capital demand) │   1.9646 │
+│       Yb (pvt biz value added) │   0.6573 │
+│                C (consumption) │   2.2830 │
+│              K (total capital) │  11.3322 │
+│               Y (total output) │   3.0842 │
+│              Tc (tax on cons.) │   0.1370 │
+│       Tp (tax on profits corp) │   0.1416 │
+│          Tn (labor income tax) │   0.5741 │
+│    Tb (tax on profits pvt biz) │   0.1548 │
+│              Total tax revenue │   1.0075 │
+│         Fraction of biz owners │   0.3116 │
+│             total. utility (V) │ -27.7771 │
+│              total. assets (A) │  14.3332 │
+│        total. assets (workers) │   9.6471 │
+│         total. assets (owners) │   4.6861 │
+│         total. consumption (C) │   2.2830 │
+│                  profits (Pib) │   0.2411 │
+│        rKb (int. payments biz) │   0.1188 │
+│      rcKc (int. payments corp) │   0.7080 │
+│              dK (depreciation) │   0.4646 │
+│           Fraction constrained │   0.0572 │
+│             Assets constrained │   0.5327 │
+│            Capital constrained │   0.6664 │
+│             External debt (Bb) │   0.1337 │
+│  Bb/Kb (debt to capital ratio) │   0.0681 │
+│    Bb/Y (debt to output ratio) │   0.0434 │
+│         mean log wage earnings │   0.7784 │
+│          std log wage earnings │   0.2623 │
+│ 10% quantile log wage earnings │   0.4236 │
+│ 25% quantile log wage earnings │   0.7613 │
+│ 75% quantile log wage earnings │   1.0991 │
+│ 90% quantile log wage earnings │   1.0991 │
+│                   mean log MPK │  -2.2357 │
+│                    std log MPK │   0.1455 │
+│              mean profit share │   0.3539 │
+│               std profit share │   0.0360 │
+│       10% quantile log profits │  -4.2202 │
+│       25% quantile log profits │  -2.9847 │
+│       75% quantile log profits │   0.6487 │
+│       90% quantile log profits │   0.7219 │
+│               mean log profits │  -1.3455 │
+│                std log profits │   1.7947 │
+│            semi-emp-elasticity │  -0.5467 │
+│                noise parameter │   0.4000 │
+└────────────────────────────────┴──────────┘
+┌────────────────────────────────┬──────────┐
+│                         Moment │    Value │
+├────────────────────────────────┼──────────┤
+│        tax on biz profits (Tb) │   0.2000 │
+│       tax on labor income (Tn) │   0.3700 │
+│    collateral constraint (chi) │   1.2500 │
+│              interest rate (r) │   0.0594 │
+│             govt transfer (tr) │   0.6402 │
+│                       wage (w) │   2.1611 │
+│      Nb (pvt biz labor demand) │   0.1364 │
+│         Nc (corp labor demand) │   0.5446 │
+│       Kc (corp capital demand) │   8.3533 │
+│          Yc (corp value added) │   2.1397 │
+│    Kb (pvt biz capital demand) │   2.7261 │
+│       Yb (pvt biz value added) │   0.8935 │
+│                C (consumption) │   2.2474 │
+│              K (total capital) │  11.0794 │
+│               Y (total output) │   3.0333 │
+│              Tc (tax on cons.) │   0.1348 │
+│       Tp (tax on profits corp) │   0.1241 │
+│          Tn (labor income tax) │   0.5445 │
+│    Tb (tax on profits pvt biz) │   0.0650 │
+│              Total tax revenue │   0.8684 │
+│         Fraction of biz owners │   0.3549 │
+│             total. utility (V) │ -27.9020 │
+│              total. assets (A) │  14.0797 │
+│        total. assets (workers) │   8.9282 │
+│         total. assets (owners) │   5.1515 │
+│         total. consumption (C) │   2.2474 │
+│                  profits (Pib) │   0.3249 │
+│        rKb (int. payments biz) │   0.1620 │
+│      rcKc (int. payments corp) │   0.6204 │
+│              dK (depreciation) │   0.4543 │
+│           Fraction constrained │   0.0789 │
+│             Assets constrained │   0.8652 │
+│            Capital constrained │   1.0823 │
+│             External debt (Bb) │   0.2171 │
+│  Bb/Kb (debt to capital ratio) │   0.0796 │
+│    Bb/Y (debt to output ratio) │   0.0716 │
+│         mean log wage earnings │   0.7904 │
+│          std log wage earnings │   0.2624 │
+│ 10% quantile log wage earnings │   0.4328 │
+│ 25% quantile log wage earnings │   0.7706 │
+│ 75% quantile log wage earnings │   1.1084 │
+│ 90% quantile log wage earnings │   1.1084 │
+│                   mean log MPK │  -2.2525 │
+│                    std log MPK │   0.1114 │
+│              mean profit share │   0.3529 │
+│               std profit share │   0.0300 │
+│       10% quantile log profits │  -4.2191 │
+│       25% quantile log profits │  -2.9836 │
+│       75% quantile log profits │   0.7065 │
+│       90% quantile log profits │   0.7230 │
+│               mean log profits │  -1.0883 │
+│                std log profits │   1.7884 │
+│            semi-emp-elasticity │  -0.3618 │
+│                noise parameter │   0.4000 │
+└────────────────────────────────┴──────────┘
+┌────────────────────────────────┬──────────┐
+│                         Moment │    Value │
+├────────────────────────────────┼──────────┤
+│        tax on biz profits (Tb) │   0.6420 │
+│       tax on labor income (Tn) │   0.3700 │
+│    collateral constraint (chi) │   1.2500 │
+│              interest rate (r) │   0.0605 │
+│             govt transfer (tr) │   0.7761 │
+│                       wage (w) │   2.1411 │
+│      Nb (pvt biz labor demand) │   0.1013 │
+│         Nc (corp labor demand) │   0.6234 │
+│       Kc (corp capital demand) │   9.3675 │
+│          Yc (corp value added) │   2.4269 │
+│    Kb (pvt biz capital demand) │   1.9646 │
+│       Yb (pvt biz value added) │   0.6573 │
+│                C (consumption) │   2.2830 │
+│              K (total capital) │  11.3322 │
+│               Y (total output) │   3.0842 │
+│              Tc (tax on cons.) │   0.1370 │
+│       Tp (tax on profits corp) │   0.1416 │
+│          Tn (labor income tax) │   0.5741 │
+│    Tb (tax on profits pvt biz) │   0.1548 │
+│              Total tax revenue │   1.0075 │
+│         Fraction of biz owners │   0.3116 │
+│             total. utility (V) │ -27.7771 │
+│              total. assets (A) │  14.3332 │
+│        total. assets (workers) │   9.6471 │
+│         total. assets (owners) │   4.6861 │
+│         total. consumption (C) │   2.2830 │
+│                  profits (Pib) │   0.2411 │
+│        rKb (int. payments biz) │   0.1188 │
+│      rcKc (int. payments corp) │   0.7080 │
+│              dK (depreciation) │   0.4646 │
+│           Fraction constrained │   0.0572 │
+│             Assets constrained │   0.5327 │
+│            Capital constrained │   0.6664 │
+│             External debt (Bb) │   0.1337 │
+│  Bb/Kb (debt to capital ratio) │   0.0681 │
+│    Bb/Y (debt to output ratio) │   0.0434 │
+│         mean log wage earnings │   0.7784 │
+│          std log wage earnings │   0.2623 │
+│ 10% quantile log wage earnings │   0.4236 │
+│ 25% quantile log wage earnings │   0.7613 │
+│ 75% quantile log wage earnings │   1.0991 │
+│ 90% quantile log wage earnings │   1.0991 │
+│                   mean log MPK │  -2.2357 │
+│                    std log MPK │   0.1455 │
+│              mean profit share │   0.3539 │
+│               std profit share │   0.0360 │
+│       10% quantile log profits │  -4.2202 │
+│       25% quantile log profits │  -2.9847 │
+│       75% quantile log profits │   0.6487 │
+│       90% quantile log profits │   0.7219 │
+│               mean log profits │  -1.3455 │
+│                std log profits │   1.7947 │
+│            semi-emp-elasticity │  -0.5467 │
+│                noise parameter │   0.4000 │
+└────────────────────────────────┴──────────┘
+┌─────────────────────────────┬─────────┬─────────┬──────────┐
+│                      Moment │   Run 1 │   Run 2 │   % Diff │
+├─────────────────────────────┼─────────┼─────────┼──────────┤
+│     tax on biz profits (Tb) │  0.2000 │  0.6420 │ 221.0000 │
+│    tax on labor income (Tn) │  0.3700 │  0.3700 │   0.0000 │
+│ collateral constraint (chi) │  1.2500 │  1.2500 │   0.0000 │
+│           interest rate (r) │  0.0594 │  0.0605 │   1.7689 │
+│          govt transfer (tr) │  0.6402 │  0.7761 │  21.2253 │
+│                    wage (w) │  2.1611 │  2.1411 │  -0.9229 │
+│   Nb (pvt biz labor demand) │  0.1364 │  0.1013 │ -25.7490 │
+│      Nc (corp labor demand) │  0.5446 │  0.6234 │  14.4768 │
+│    Kc (corp capital demand) │  8.3533 │  9.3675 │  12.1422 │
+│       Yc (corp value added) │  2.1397 │  2.4269 │  13.4203 │
+│ Kb (pvt biz capital demand) │  2.7261 │  1.9646 │ -27.9322 │
+│    Yb (pvt biz value added) │  0.8935 │  0.6573 │ -26.4343 │
+│             C (consumption) │  2.2474 │  2.2830 │   1.5827 │
+│           K (total capital) │ 11.0794 │ 11.3322 │   2.2818 │
+│            Y (total output) │  3.0333 │  3.0842 │   1.6802 │
+│           Tc (tax on cons.) │  0.1348 │  0.1370 │   1.5827 │
+│                           ⋮ │       ⋮ │       ⋮ │        ⋮ │
+└─────────────────────────────┴─────────┴─────────┴──────────┘
+                                               38 rows omitted
+Setting up old steady state (takes a few minutes) ...
+      Solve SS using newton method
+      Interest rate       5.87, Govt transfer       0.63
+      Asset market   1.082e-04, Govt budget    1.354e-07
+
+Old steady state setup complete.
+┌────────────────────────────────┬──────────┐
+│                         Moment │    Value │
+├────────────────────────────────┼──────────┤
+│        tax on biz profits (Tb) │   0.2000 │
+│       tax on labor income (Tn) │   0.3700 │
+│    collateral constraint (chi) │   1.0500 │
+│              interest rate (r) │   0.0587 │
+│             govt transfer (tr) │   0.6323 │
+│                       wage (w) │   2.1347 │
+│      Nb (pvt biz labor demand) │   0.1341 │
+│         Nc (corp labor demand) │   0.5466 │
+│       Kc (corp capital demand) │   8.3425 │
+│          Yc (corp value added) │   2.1214 │
+│    Kb (pvt biz capital demand) │   2.5438 │
+│       Yb (pvt biz value added) │   0.8676 │
+│                C (consumption) │   2.2150 │
+│              K (total capital) │  10.8862 │
+│               Y (total output) │   2.9890 │
+│              Tc (tax on cons.) │   0.1329 │
+│       Tp (tax on profits corp) │   0.1225 │
+│          Tn (labor income tax) │   0.5376 │
+│    Tb (tax on profits pvt biz) │   0.0655 │
+│              Total tax revenue │   0.8586 │
+│         Fraction of biz owners │   0.3553 │
+│             total. utility (V) │ -28.1454 │
+│              total. assets (A) │  13.8866 │
+│        total. assets (workers) │   8.8036 │
+│         total. assets (owners) │   5.0829 │
+│         total. consumption (C) │   2.2150 │
+│                  profits (Pib) │   0.3276 │
+│        rKb (int. payments biz) │   0.1494 │
+│      rcKc (int. payments corp) │   0.6126 │
+│              dK (depreciation) │   0.4463 │
+│           Fraction constrained │   0.1100 │
+│             Assets constrained │   1.3889 │
+│            Capital constrained │   1.4594 │
+│             External debt (Bb) │   0.0705 │
+│  Bb/Kb (debt to capital ratio) │   0.0277 │
+│    Bb/Y (debt to output ratio) │   0.0236 │
+│         mean log wage earnings │   0.7783 │
+│          std log wage earnings │   0.2624 │
+│ 10% quantile log wage earnings │   0.4205 │
+│ 25% quantile log wage earnings │   0.7583 │
+│ 75% quantile log wage earnings │   1.0961 │
+│ 90% quantile log wage earnings │   1.0961 │
+│                   mean log MPK │  -2.2321 │
+│                    std log MPK │   0.1424 │
+│              mean profit share │   0.3603 │
+│               std profit share │   0.0377 │
+│       10% quantile log profits │  -4.2007 │
+│       25% quantile log profits │  -2.9651 │
+│       75% quantile log profits │   0.6988 │
+│       90% quantile log profits │   0.7393 │
+│               mean log profits │  -1.0693 │
+│                std log profits │   1.7797 │
+│            semi-emp-elasticity │  -0.3279 │
+│                noise parameter │   0.4000 │
+└────────────────────────────────┴──────────┘
+Best τb for lowchi: 0.616
+Best CESO for lowchi: 0.006837898010156884
+      Solve SS using newton method
+      Interest rate       6.02, Govt transfer       0.76
+      Asset market   2.684e-04, Govt budget    3.012e-08
+
+┌────────────────────────────────┬──────────┐
+│                         Moment │    Value │
+├────────────────────────────────┼──────────┤
+│        tax on biz profits (Tb) │   0.6160 │
+│       tax on labor income (Tn) │   0.3700 │
+│    collateral constraint (chi) │   1.0500 │
+│              interest rate (r) │   0.0602 │
+│             govt transfer (tr) │   0.7577 │
+│                       wage (w) │   2.1068 │
+│      Nb (pvt biz labor demand) │   0.1024 │
+│         Nc (corp labor demand) │   0.6202 │
+│       Kc (corp capital demand) │   9.1937 │
+│          Yc (corp value added) │   2.3758 │
+│    Kb (pvt biz capital demand) │   1.8865 │
+│       Yb (pvt biz value added) │   0.6535 │
+│                C (consumption) │   2.2434 │
+│              K (total capital) │  11.0803 │
+│               Y (total output) │   3.0292 │
+│              Tc (tax on cons.) │   0.1346 │
+│       Tp (tax on profits corp) │   0.1384 │
+│          Tn (labor income tax) │   0.5633 │
+│    Tb (tax on profits pvt biz) │   0.1521 │
+│              Total tax revenue │   0.9884 │
+│         Fraction of biz owners │   0.3138 │
+│             total. utility (V) │ -28.0432 │
+│              total. assets (A) │  14.0811 │
+│        total. assets (workers) │   9.4680 │
+│         total. assets (owners) │   4.6131 │
+│         total. consumption (C) │   2.2434 │
+│                  profits (Pib) │   0.2469 │
+│        rKb (int. payments biz) │   0.1136 │
+│      rcKc (int. payments corp) │   0.6921 │
+│              dK (depreciation) │   0.4543 │
+│           Fraction constrained │   0.0762 │
+│             Assets constrained │   0.8418 │
+│            Capital constrained │   0.8847 │
+│             External debt (Bb) │   0.0429 │
+│  Bb/Kb (debt to capital ratio) │   0.0227 │
+│    Bb/Y (debt to output ratio) │   0.0141 │
+│         mean log wage earnings │   0.7625 │
+│          std log wage earnings │   0.2623 │
+│ 10% quantile log wage earnings │   0.4074 │
+│ 25% quantile log wage earnings │   0.7452 │
+│ 75% quantile log wage earnings │   1.0830 │
+│ 90% quantile log wage earnings │   1.0830 │
+│                   mean log MPK │  -2.2173 │
+│                    std log MPK │   0.1696 │
+│              mean profit share │   0.3593 │
+│               std profit share │   0.0418 │
+│       10% quantile log profits │  -4.2022 │
+│       25% quantile log profits │  -2.9667 │
+│       75% quantile log profits │   0.6368 │
+│       90% quantile log profits │   0.7373 │
+│               mean log profits │  -1.3138 │
+│                std log profits │   1.7881 │
+│            semi-emp-elasticity │  -0.5597 │
+│                noise parameter │   0.4000 │
+└────────────────────────────────┴──────────┘
+┌────────────────────────────────┬──────────┐
+│                         Moment │    Value │
+├────────────────────────────────┼──────────┤
+│        tax on biz profits (Tb) │   0.2000 │
+│       tax on labor income (Tn) │   0.3700 │
+│    collateral constraint (chi) │   1.0500 │
+│              interest rate (r) │   0.0587 │
+│             govt transfer (tr) │   0.6323 │
+│                       wage (w) │   2.1347 │
+│      Nb (pvt biz labor demand) │   0.1341 │
+│         Nc (corp labor demand) │   0.5466 │
+│       Kc (corp capital demand) │   8.3425 │
+│          Yc (corp value added) │   2.1214 │
+│    Kb (pvt biz capital demand) │   2.5438 │
+│       Yb (pvt biz value added) │   0.8676 │
+│                C (consumption) │   2.2150 │
+│              K (total capital) │  10.8862 │
+│               Y (total output) │   2.9890 │
+│              Tc (tax on cons.) │   0.1329 │
+│       Tp (tax on profits corp) │   0.1225 │
+│          Tn (labor income tax) │   0.5376 │
+│    Tb (tax on profits pvt biz) │   0.0655 │
+│              Total tax revenue │   0.8586 │
+│         Fraction of biz owners │   0.3553 │
+│             total. utility (V) │ -28.1454 │
+│              total. assets (A) │  13.8866 │
+│        total. assets (workers) │   8.8036 │
+│         total. assets (owners) │   5.0829 │
+│         total. consumption (C) │   2.2150 │
+│                  profits (Pib) │   0.3276 │
+│        rKb (int. payments biz) │   0.1494 │
+│      rcKc (int. payments corp) │   0.6126 │
+│              dK (depreciation) │   0.4463 │
+│           Fraction constrained │   0.1100 │
+│             Assets constrained │   1.3889 │
+│            Capital constrained │   1.4594 │
+│             External debt (Bb) │   0.0705 │
+│  Bb/Kb (debt to capital ratio) │   0.0277 │
+│    Bb/Y (debt to output ratio) │   0.0236 │
+│         mean log wage earnings │   0.7783 │
+│          std log wage earnings │   0.2624 │
+│ 10% quantile log wage earnings │   0.4205 │
+│ 25% quantile log wage earnings │   0.7583 │
+│ 75% quantile log wage earnings │   1.0961 │
+│ 90% quantile log wage earnings │   1.0961 │
+│                   mean log MPK │  -2.2321 │
+│                    std log MPK │   0.1424 │
+│              mean profit share │   0.3603 │
+│               std profit share │   0.0377 │
+│       10% quantile log profits │  -4.2007 │
+│       25% quantile log profits │  -2.9651 │
+│       75% quantile log profits │   0.6988 │
+│       90% quantile log profits │   0.7393 │
+│               mean log profits │  -1.0693 │
+│                std log profits │   1.7797 │
+│            semi-emp-elasticity │  -0.3279 │
+│                noise parameter │   0.4000 │
+└────────────────────────────────┴──────────┘
+┌────────────────────────────────┬──────────┐
+│                         Moment │    Value │
+├────────────────────────────────┼──────────┤
+│        tax on biz profits (Tb) │   0.6160 │
+│       tax on labor income (Tn) │   0.3700 │
+│    collateral constraint (chi) │   1.0500 │
+│              interest rate (r) │   0.0602 │
+│             govt transfer (tr) │   0.7577 │
+│                       wage (w) │   2.1068 │
+│      Nb (pvt biz labor demand) │   0.1024 │
+│         Nc (corp labor demand) │   0.6202 │
+│       Kc (corp capital demand) │   9.1937 │
+│          Yc (corp value added) │   2.3758 │
+│    Kb (pvt biz capital demand) │   1.8865 │
+│       Yb (pvt biz value added) │   0.6535 │
+│                C (consumption) │   2.2434 │
+│              K (total capital) │  11.0803 │
+│               Y (total output) │   3.0292 │
+│              Tc (tax on cons.) │   0.1346 │
+│       Tp (tax on profits corp) │   0.1384 │
+│          Tn (labor income tax) │   0.5633 │
+│    Tb (tax on profits pvt biz) │   0.1521 │
+│              Total tax revenue │   0.9884 │
+│         Fraction of biz owners │   0.3138 │
+│             total. utility (V) │ -28.0432 │
+│              total. assets (A) │  14.0811 │
+│        total. assets (workers) │   9.4680 │
+│         total. assets (owners) │   4.6131 │
+│         total. consumption (C) │   2.2434 │
+│                  profits (Pib) │   0.2469 │
+│        rKb (int. payments biz) │   0.1136 │
+│      rcKc (int. payments corp) │   0.6921 │
+│              dK (depreciation) │   0.4543 │
+│           Fraction constrained │   0.0762 │
+│             Assets constrained │   0.8418 │
+│            Capital constrained │   0.8847 │
+│             External debt (Bb) │   0.0429 │
+│  Bb/Kb (debt to capital ratio) │   0.0227 │
+│    Bb/Y (debt to output ratio) │   0.0141 │
+│         mean log wage earnings │   0.7625 │
+│          std log wage earnings │   0.2623 │
+│ 10% quantile log wage earnings │   0.4074 │
+│ 25% quantile log wage earnings │   0.7452 │
+│ 75% quantile log wage earnings │   1.0830 │
+│ 90% quantile log wage earnings │   1.0830 │
+│                   mean log MPK │  -2.2173 │
+│                    std log MPK │   0.1696 │
+│              mean profit share │   0.3593 │
+│               std profit share │   0.0418 │
+│       10% quantile log profits │  -4.2022 │
+│       25% quantile log profits │  -2.9667 │
+│       75% quantile log profits │   0.6368 │
+│       90% quantile log profits │   0.7373 │
+│               mean log profits │  -1.3138 │
+│                std log profits │   1.7881 │
+│            semi-emp-elasticity │  -0.5597 │
+│                noise parameter │   0.4000 │
+└────────────────────────────────┴──────────┘
+┌─────────────────────────────┬─────────┬─────────┬──────────┐
+│                      Moment │   Run 1 │   Run 2 │   % Diff │
+├─────────────────────────────┼─────────┼─────────┼──────────┤
+│     tax on biz profits (Tb) │  0.2000 │  0.6160 │ 208.0000 │
+│    tax on labor income (Tn) │  0.3700 │  0.3700 │   0.0000 │
+│ collateral constraint (chi) │  1.0500 │  1.0500 │   0.0000 │
+│           interest rate (r) │  0.0587 │  0.0602 │   2.5232 │
+│          govt transfer (tr) │  0.6323 │  0.7577 │  19.8195 │
+│                    wage (w) │  2.1347 │  2.1068 │  -1.3056 │
+│   Nb (pvt biz labor demand) │  0.1341 │  0.1024 │ -23.6839 │
+│      Nc (corp labor demand) │  0.5466 │  0.6202 │  13.4696 │
+│    Kc (corp capital demand) │  8.3425 │  9.1937 │  10.2038 │
+│       Yc (corp value added) │  2.1214 │  2.3758 │  11.9882 │
+│ Kb (pvt biz capital demand) │  2.5438 │  1.8865 │ -25.8371 │
+│    Yb (pvt biz value added) │  0.8676 │  0.6535 │ -24.6802 │
+│             C (consumption) │  2.2150 │  2.2434 │   1.2813 │
+│           K (total capital) │ 10.8862 │ 11.0803 │   1.7822 │
+│            Y (total output) │  2.9890 │  3.0292 │   1.3448 │
+│           Tc (tax on cons.) │  0.1329 │  0.1346 │   1.2813 │
+│                           ⋮ │       ⋮ │       ⋮ │        ⋮ │
+└─────────────────────────────┴─────────┴─────────┴──────────┘
+                                               38 rows omitted
+Setting up old steady state (takes a few minutes) ...
+      Solve SS using newton method
+solve_eg converged in 184 iterations: 9.831308480090506e-7
+      Tax on business     20.000, Tax on wages     37.000
+      Interest rate      5.923, Govt transfer      0.640
+      Asset market  -1.052e+00, Govt budget   -1.368e-03
+
+solve_eg converged in 111 iterations: 9.94239274909603e-7
+      Tax on business     20.000, Tax on wages     37.000
+      Interest rate      5.982, Govt transfer      0.640
+      Asset market  -4.990e-01, Govt budget    1.300e-03
+
+solve_eg converged in 117 iterations: 9.91261072808003e-7
+      Tax on business     20.000, Tax on wages     37.000
+      Interest rate      5.923, Govt transfer      0.647
+      Asset market  -1.051e+00, Govt budget    7.759e-04
+
+solve_eg converged in 136 iterations: 9.742680523727731e-7
+      Tax on business     20.000, Tax on wages     37.000
+      Interest rate      6.036, Govt transfer      0.629
+      Asset market   3.357e-01, Govt budget    9.768e-05
+
+solve_eg converged in 113 iterations: 9.810958693234895e-7
+      Tax on business     20.000, Tax on wages     37.000
+      Interest rate      6.096, Govt transfer      0.629
+      Asset market   2.385e+00, Govt budget    2.979e-03
+
+solve_eg converged in 119 iterations: 9.716975899465297e-7
+      Tax on business     20.000, Tax on wages     37.000
+      Interest rate      6.036, Govt transfer      0.635
+      Asset market   3.441e-01, Govt budget    2.238e-03
+
+solve_eg converged in 63 iterations: 9.727537723658308e-7
+      Tax on business     20.000, Tax on wages     37.000
+      Interest rate      6.026, Govt transfer      0.630
+      Asset market   1.418e-01, Govt budget   -8.000e-06
+
+solve_eg converged in 113 iterations: 9.757429613455049e-7
+      Tax on business     20.000, Tax on wages     37.000
+      Interest rate      6.086, Govt transfer      0.630
+      Asset market   1.875e+00, Govt budget    2.912e-03
+
+solve_eg converged in 119 iterations: 9.667665008539217e-7
+      Tax on business     20.000, Tax on wages     37.000
+      Interest rate      6.026, Govt transfer      0.637
+      Asset market   1.492e-01, Govt budget    2.133e-03
+
+solve_eg converged in 77 iterations: 9.659350075907902e-7
+      Tax on business     20.000, Tax on wages     37.000
+      Interest rate      6.021, Govt transfer      0.631
+      Asset market   5.328e-02, Govt budget    1.444e-06
+
+solve_eg converged in 113 iterations: 9.728233328898384e-7
+      Tax on business     20.000, Tax on wages     37.000
+      Interest rate      6.081, Govt transfer      0.631
+      Asset market   1.656e+00, Govt budget    2.928e-03
+
+solve_eg converged in 119 iterations: 9.643418693028316e-7
+      Tax on business     20.000, Tax on wages     37.000
+      Interest rate      6.021, Govt transfer      0.637
+      Asset market   6.016e-02, Govt budget    2.143e-03
+
+solve_eg converged in 83 iterations: 9.928581937712622e-7
+      Tax on business     20.000, Tax on wages     37.000
+      Interest rate      6.019, Govt transfer      0.631
+      Asset market   1.873e-02, Govt budget    1.157e-06
+
+solve_eg converged in 113 iterations: 9.716741935783535e-7
+      Tax on business     20.000, Tax on wages     37.000
+      Interest rate      6.079, Govt transfer      0.631
+      Asset market   1.573e+00, Govt budget    2.928e-03
+
+solve_eg converged in 119 iterations: 9.632890227984081e-7
+      Tax on business     20.000, Tax on wages     37.000
+      Interest rate      6.019, Govt transfer      0.638
+      Asset market   2.546e-02, Govt budget    2.143e-03
+
+solve_eg converged in 86 iterations: 9.638136195255775e-7
+      Tax on business     20.000, Tax on wages     37.000
+      Interest rate      6.018, Govt transfer      0.631
+      Asset market   6.609e-03, Govt budget    6.557e-07
+
+solve_eg converged in 113 iterations: 9.709781311761922e-7
+      Tax on business     20.000, Tax on wages     37.000
+      Interest rate      6.079, Govt transfer      0.631
+      Asset market   1.544e+00, Govt budget    2.928e-03
+
+solve_eg converged in 119 iterations: 9.629059433136078e-7
+      Tax on business     20.000, Tax on wages     37.000
+      Interest rate      6.018, Govt transfer      0.638
+      Asset market   1.309e-02, Govt budget    2.143e-03
+
+solve_eg converged in 86 iterations: 9.984349003677728e-7
+      Tax on business     20.000, Tax on wages     37.000
+      Interest rate      6.018, Govt transfer      0.631
+      Asset market   2.077e-03, Govt budget    5.045e-08
+
+solve_eg converged in 113 iterations: 9.710374279936484e-7
+      Tax on business     20.000, Tax on wages     37.000
+      Interest rate      6.078, Govt transfer      0.631
+      Asset market   1.533e+00, Govt budget    2.927e-03
+
+solve_eg converged in 119 iterations: 9.627672380163599e-7
+      Tax on business     20.000, Tax on wages     37.000
+      Interest rate      6.018, Govt transfer      0.638
+      Asset market   8.696e-03, Govt budget    2.142e-03
+
+solve_eg converged in 87 iterations: 9.67016894448669e-7
+      Tax on business     20.000, Tax on wages     37.000
+      Interest rate      6.018, Govt transfer      0.631
+      Asset market   8.674e-04, Govt budget    1.950e-07
+
+solve_eg converged in 113 iterations: 9.707678854109503e-7
+      Tax on business     20.000, Tax on wages     37.000
+      Interest rate      6.078, Govt transfer      0.631
+      Asset market   1.530e+00, Govt budget    2.927e-03
+
+solve_eg converged in 119 iterations: 9.627248425403412e-7
+      Tax on business     20.000, Tax on wages     37.000
+      Interest rate      6.018, Govt transfer      0.638
+      Asset market   7.314e-03, Govt budget    2.142e-03
+
+solve_eg converged in 87 iterations: 9.704726354198279e-7
+      Tax on business     20.000, Tax on wages     37.000
+      Interest rate      6.018, Govt transfer      0.631
+      Asset market   2.769e-04, Govt budget    1.181e-08
+
+solve_eg converged in 113 iterations: 9.707683942261625e-7
+      Tax on business     20.000, Tax on wages     37.000
+      Interest rate      6.078, Govt transfer      0.631
+      Asset market   1.529e+00, Govt budget    2.927e-03
+
+solve_eg converged in 119 iterations: 9.627066328010692e-7
+      Tax on business     20.000, Tax on wages     37.000
+      Interest rate      6.018, Govt transfer      0.638
+      Asset market   6.737e-03, Govt budget    2.142e-03
+
+solve_eg converged in 87 iterations: 9.720450537820113e-7
+      Tax on business     20.000, Tax on wages     37.000
+      Interest rate      6.018, Govt transfer      0.631
+      Asset market   8.586e-05, Govt budget    1.816e-09
+
+solve_eg converged in 1 iterations: 9.29616772005204e-7
+      Tax on business     20.000, Tax on wages     37.000
+      Interest rate      6.018, Govt transfer      0.631
+      Asset market   3.047e-04, Govt budget    1.804e-07
+
+Old steady state setup complete.
+solve_eg converged in 142 iterations: 9.644798284469402e-7
+┌────────────────────────────────┬──────────┐
+│                         Moment │    Value │
+├────────────────────────────────┼──────────┤
+│        tax on biz profits (Tb) │   0.2000 │
+│       tax on labor income (Tn) │   0.3700 │
+│    collateral constraint (chi) │   2.0000 │
+│              interest rate (r) │   0.0602 │
+│             govt transfer (tr) │   0.6314 │
+│                       wage (w) │   2.1465 │
+│      Nb (pvt biz labor demand) │   0.1468 │
+│         Nc (corp labor demand) │   0.5325 │
+│       Kc (corp capital demand) │   8.0457 │
+│          Yc (corp value added) │   2.0781 │
+│    Kb (pvt biz capital demand) │   3.0353 │
+│       Yb (pvt biz value added) │   0.9550 │
+│                C (consumption) │   2.2472 │
+│              K (total capital) │  11.0811 │
+│               Y (total output) │   3.0331 │
+│              Tc (tax on cons.) │   0.1348 │
+│       Tp (tax on profits corp) │   0.1210 │
+│          Tn (labor income tax) │   0.5395 │
+│    Tb (tax on profits pvt biz) │   0.0665 │
+│              Total tax revenue │   0.8619 │
+│         Fraction of biz owners │   0.3566 │
+│             total. utility (V) │ -27.9628 │
+│              total. assets (A) │  14.0820 │
+│        total. assets (workers) │   8.8646 │
+│         total. assets (owners) │   5.2174 │
+│         total. consumption (C) │   2.2472 │
+│                  profits (Pib) │   0.3327 │
+│        rKb (int. payments biz) │   0.1827 │
+│      rcKc (int. payments corp) │   0.6052 │
+│              dK (depreciation) │   0.4543 │
+│           Fraction constrained │   0.0301 │
+│             Assets constrained │   0.2083 │
+│            Capital constrained │   0.4170 │
+│             External debt (Bb) │   0.2086 │
+│  Bb/Kb (debt to capital ratio) │   0.0687 │
+│    Bb/Y (debt to output ratio) │   0.0688 │
+│         mean log wage earnings │   0.7838 │
+│          std log wage earnings │   0.2624 │
+│ 10% quantile log wage earnings │   0.4261 │
+│ 25% quantile log wage earnings │   0.7639 │
+│ 75% quantile log wage earnings │   1.1016 │
+│ 90% quantile log wage earnings │   1.1016 │
+│                   mean log MPK │  -2.2740 │
+│                    std log MPK │   0.0683 │
+│              mean profit share │   0.3447 │
+│               std profit share │   0.0186 │
+│       10% quantile log profits │  -4.2199 │
+│       25% quantile log profits │  -2.9844 │
+│       75% quantile log profits │   0.7222 │
+│       90% quantile log profits │   0.7222 │
+│               mean log profits │  -1.0729 │
+│                std log profits │   1.7943 │
+│            semi-emp-elasticity │  -0.4807 │
+│                noise parameter │   0.4000 │
+└────────────────────────────────┴──────────┘
+Best τb for highchi: 0.644
+Best CESO for highchi: 0.008698286159525948
+      Solve SS using newton method
+solve_eg converged in 141 iterations: 9.829000646721653e-7
+      Tax on business     64.400, Tax on wages     37.000
+      Interest rate      5.923, Govt transfer      0.640
+      Asset market  -1.904e+00, Govt budget   -4.887e-02
+
+solve_eg converged in 116 iterations: 9.800878793264634e-7
+      Tax on business     64.400, Tax on wages     37.000
+      Interest rate      5.982, Govt transfer      0.640
+      Asset market  -1.415e+00, Govt budget   -4.719e-02
+
+solve_eg converged in 122 iterations: 9.669210783436188e-7
+      Tax on business     64.400, Tax on wages     37.000
+      Interest rate      5.923, Govt transfer      0.647
+      Asset market  -1.903e+00, Govt budget   -4.686e-02
+
+solve_eg converged in 139 iterations: 9.665804064917793e-7
+      Tax on business     64.400, Tax on wages     37.000
+      Interest rate      6.153, Govt transfer      0.775
+      Asset market   7.119e+00, Govt budget    9.077e-04
+
+solve_eg converged in 117 iterations: 9.83101424878452e-7
+      Tax on business     64.400, Tax on wages     37.000
+      Interest rate      6.215, Govt transfer      0.775
+      Asset market   7.188e+01, Govt budget   -1.046e-01
+
+solve_eg converged in 124 iterations: 9.706096006922849e-7
+      Tax on business     64.400, Tax on wages     37.000
+      Interest rate      6.153, Govt transfer      0.782
+      Asset market   7.039e+00, Govt budget    3.630e-03
+
+solve_eg converged in 134 iterations: 9.750302390476584e-7
+      Tax on business     64.400, Tax on wages     37.000
+      Interest rate      6.146, Govt transfer      0.737
+      Asset market   5.430e+00, Govt budget   -1.120e-02
+
+solve_eg converged in 118 iterations: 9.677444824385262e-7
+      Tax on business     64.400, Tax on wages     37.000
+      Interest rate      6.207, Govt transfer      0.737
+      Asset market   6.977e+01, Govt budget   -1.145e-01
+
+solve_eg converged in 124 iterations: 9.773766032061815e-7
+      Tax on business     64.400, Tax on wages     37.000
+      Interest rate      6.146, Govt transfer      0.745
+      Asset market   5.528e+00, Govt budget   -8.732e-03
+
+solve_eg converged in 58 iterations: 9.576368540931135e-7
+      Tax on business     64.400, Tax on wages     37.000
+      Interest rate      6.141, Govt transfer      0.744
+      Asset market   4.583e+00, Govt budget   -8.637e-03
+
+solve_eg converged in 117 iterations: 9.927149222654919e-7
+      Tax on business     64.400, Tax on wages     37.000
+      Interest rate      6.202, Govt transfer      0.744
+      Asset market   6.684e+01, Govt budget   -1.058e-01
+
+solve_eg converged in 124 iterations: 9.732437182830012e-7
+      Tax on business     64.400, Tax on wages     37.000
+      Interest rate      6.141, Govt transfer      0.752
+      Asset market   4.573e+00, Govt budget   -6.113e-03
+
+solve_eg converged in 57 iterations: 9.81891649765032e-7
+      Tax on business     64.400, Tax on wages     37.000
+      Interest rate      6.136, Govt transfer      0.749
+      Asset market   3.848e+00, Govt budget   -7.055e-03
+
+solve_eg converged in 117 iterations: 9.988387100756668e-7
+      Tax on business     64.400, Tax on wages     37.000
+      Interest rate      6.197, Govt transfer      0.749
+      Asset market   6.231e+01, Govt budget   -9.479e-02
+
+solve_eg converged in 124 iterations: 9.69950220197635e-7
+      Tax on business     64.400, Tax on wages     37.000
+      Interest rate      6.136, Govt transfer      0.756
+      Asset market   3.908e+00, Govt budget   -4.540e-03
+
+solve_eg converged in 68 iterations: 9.592838370320322e-7
+      Tax on business     64.400, Tax on wages     37.000
+      Interest rate      6.132, Govt transfer      0.752
+      Asset market   3.346e+00, Govt budget   -5.824e-03
+
+solve_eg converged in 117 iterations: 9.949006304910135e-7
+      Tax on business     64.400, Tax on wages     37.000
+      Interest rate      6.193, Govt transfer      0.752
+      Asset market   5.564e+01, Govt budget   -8.013e-02
+
+solve_eg converged in 124 iterations: 9.669065272888133e-7
+      Tax on business     64.400, Tax on wages     37.000
+      Interest rate      6.132, Govt transfer      0.760
+      Asset market   3.398e+00, Govt budget   -3.296e-03
+
+solve_eg converged in 73 iterations: 9.761468373059579e-7
+      Tax on business     64.400, Tax on wages     37.000
+      Interest rate      6.128, Govt transfer      0.755
+      Asset market   2.922e+00, Govt budget   -4.836e-03
+
+solve_eg converged in 117 iterations: 9.917504331102833e-7
+      Tax on business     64.400, Tax on wages     37.000
+      Interest rate      6.189, Govt transfer      0.755
+      Asset market   4.676e+01, Govt budget   -6.206e-02
+
+solve_eg converged in 124 iterations: 9.639566228569763e-7
+      Tax on business     64.400, Tax on wages     37.000
+      Interest rate      6.128, Govt transfer      0.763
+      Asset market   2.968e+00, Govt budget   -2.299e-03
+
+solve_eg converged in 74 iterations: 9.592758051235606e-7
+      Tax on business     64.400, Tax on wages     37.000
+      Interest rate      6.124, Govt transfer      0.758
+      Asset market   2.537e+00, Govt budget   -3.928e-03
+
+solve_eg converged in 117 iterations: 9.882235567082454e-7
+      Tax on business     64.400, Tax on wages     37.000
+      Interest rate      6.185, Govt transfer      0.758
+      Asset market   3.672e+01, Govt budget   -4.303e-02
+
+solve_eg converged in 124 iterations: 9.608404085703626e-7
+      Tax on business     64.400, Tax on wages     37.000
+      Interest rate      6.124, Govt transfer      0.766
+      Asset market   2.576e+00, Govt budget   -1.382e-03
+
+solve_eg converged in 72 iterations: 9.92046226055976e-7
+      Tax on business     64.400, Tax on wages     37.000
+      Interest rate      6.119, Govt transfer      0.761
+      Asset market   2.160e+00, Govt budget   -3.050e-03
+
+solve_eg converged in 117 iterations: 9.847037477639375e-7
+      Tax on business     64.400, Tax on wages     37.000
+      Interest rate      6.181, Govt transfer      0.761
+      Asset market   2.727e+01, Govt budget   -2.656e-02
+
+solve_eg converged in 124 iterations: 9.576300213365307e-7
+      Tax on business     64.400, Tax on wages     37.000
+      Interest rate      6.119, Govt transfer      0.769
+      Asset market   2.195e+00, Govt budget   -4.963e-04
+
+solve_eg converged in 70 iterations: 9.937445986096805e-7
+      Tax on business     64.400, Tax on wages     37.000
+      Interest rate      6.114, Govt transfer      0.764
+      Asset market   1.782e+00, Govt budget   -2.214e-03
+
+solve_eg converged in 117 iterations: 9.804735963681033e-7
+      Tax on business     64.400, Tax on wages     37.000
+      Interest rate      6.175, Govt transfer      0.764
+      Asset market   1.963e+01, Govt budget   -1.463e-02
+
+solve_eg converged in 123 iterations: 9.97295435511969e-7
+      Tax on business     64.400, Tax on wages     37.000
+      Interest rate      6.114, Govt transfer      0.772
+      Asset market   1.813e+00, Govt budget    3.465e-04
+
+solve_eg converged in 69 iterations: 9.890105309162678e-7
+      Tax on business     64.400, Tax on wages     37.000
+      Interest rate      6.108, Govt transfer      0.767
+      Asset market   1.406e+00, Govt budget   -1.480e-03
+
+solve_eg converged in 117 iterations: 9.755700013935886e-7
+      Tax on business     64.400, Tax on wages     37.000
+      Interest rate      6.169, Govt transfer      0.767
+      Asset market   1.401e+01, Govt budget   -7.043e-03
+
+solve_eg converged in 123 iterations: 9.939760691191069e-7
+      Tax on business     64.400, Tax on wages     37.000
+      Interest rate      6.108, Govt transfer      0.775
+      Asset market   1.432e+00, Govt budget    1.086e-03
+
+solve_eg converged in 70 iterations: 9.818822591101117e-7
+      Tax on business     64.400, Tax on wages     37.000
+      Interest rate      6.101, Govt transfer      0.770
+      Asset market   1.049e+00, Govt budget   -9.005e-04
+
+solve_eg converged in 117 iterations: 9.701196302391857e-7
+      Tax on business     64.400, Tax on wages     37.000
+      Interest rate      6.162, Govt transfer      0.770
+      Asset market   1.009e+01, Govt budget   -2.609e-03
+
+solve_eg converged in 123 iterations: 9.899631930321284e-7
+      Tax on business     64.400, Tax on wages     37.000
+      Interest rate      6.101, Govt transfer      0.778
+      Asset market   1.071e+00, Govt budget    1.669e-03
+
+solve_eg converged in 73 iterations: 9.758105712909249e-7
+      Tax on business     64.400, Tax on wages     37.000
+      Interest rate      6.094, Govt transfer      0.772
+      Asset market   7.324e-01, Govt budget   -4.959e-04
+
+solve_eg converged in 117 iterations: 9.655638611993922e-7
+      Tax on business     64.400, Tax on wages     37.000
+      Interest rate      6.155, Govt transfer      0.772
+      Asset market   7.475e+00, Govt budget   -1.827e-04
+
+solve_eg converged in 123 iterations: 9.855052789942143e-7
+      Tax on business     64.400, Tax on wages     37.000
+      Interest rate      6.094, Govt transfer      0.780
+      Asset market   7.503e-01, Govt budget    2.076e-03
+
+solve_eg converged in 77 iterations: 9.912949698320794e-7
+      Tax on business     64.400, Tax on wages     37.000
+      Interest rate      6.087, Govt transfer      0.774
+      Asset market   4.756e-01, Govt budget   -2.474e-04
+
+solve_eg converged in 117 iterations: 9.619990062326167e-7
+      Tax on business     64.400, Tax on wages     37.000
+      Interest rate      6.148, Govt transfer      0.774
+      Asset market   5.787e+00, Govt budget    1.073e-03
+
+solve_eg converged in 123 iterations: 9.809728090948155e-7
+      Tax on business     64.400, Tax on wages     37.000
+      Interest rate      6.087, Govt transfer      0.781
+      Asset market   4.911e-01, Govt budget    2.326e-03
+
+solve_eg converged in 82 iterations: 9.7855762482002e-7
+      Tax on business     64.400, Tax on wages     37.000
+      Interest rate      6.082, Govt transfer      0.775
+      Asset market   2.879e-01, Govt budget   -1.137e-04
+
+solve_eg converged in 117 iterations: 9.5870949679e-7
+      Tax on business     64.400, Tax on wages     37.000
+      Interest rate      6.143, Govt transfer      0.775
+      Asset market   4.744e+00, Govt budget    1.693e-03
+
+solve_eg converged in 123 iterations: 9.777587871018234e-7
+      Tax on business     64.400, Tax on wages     37.000
+      Interest rate      6.082, Govt transfer      0.782
+      Asset market   3.015e-01, Govt budget    2.459e-03
+
+solve_eg converged in 86 iterations: 9.795497875608739e-7
+      Tax on business     64.400, Tax on wages     37.000
+      Interest rate      6.078, Govt transfer      0.775
+      Asset market   1.638e-01, Govt budget   -5.002e-05
+
+solve_eg converged in 116 iterations: 9.989678458333096e-7
+      Tax on business     64.400, Tax on wages     37.000
+      Interest rate      6.139, Govt transfer      0.775
+      Asset market   4.127e+00, Govt budget    1.990e-03
+
+solve_eg converged in 123 iterations: 9.757177552305318e-7
+      Tax on business     64.400, Tax on wages     37.000
+      Interest rate      6.078, Govt transfer      0.783
+      Asset market   1.761e-01, Govt budget    2.523e-03
+
+solve_eg converged in 89 iterations: 9.762559354808964e-7
+      Tax on business     64.400, Tax on wages     37.000
+      Interest rate      6.075, Govt transfer      0.776
+      Asset market   8.885e-02, Govt budget   -2.191e-05
+
+solve_eg converged in 116 iterations: 9.972848771799825e-7
+      Tax on business     64.400, Tax on wages     37.000
+      Interest rate      6.136, Govt transfer      0.776
+      Asset market   3.782e+00, Govt budget    2.130e-03
+
+solve_eg converged in 123 iterations: 9.744740926131978e-7
+      Tax on business     64.400, Tax on wages     37.000
+      Interest rate      6.075, Govt transfer      0.784
+      Asset market   1.005e-01, Govt budget    2.551e-03
+
+solve_eg converged in 91 iterations: 9.689421867631332e-7
+      Tax on business     64.400, Tax on wages     37.000
+      Interest rate      6.074, Govt transfer      0.776
+      Asset market   4.677e-02, Govt budget   -9.862e-06
+
+solve_eg converged in 116 iterations: 9.962420712827935e-7
+      Tax on business     64.400, Tax on wages     37.000
+      Interest rate      6.135, Govt transfer      0.776
+      Asset market   3.596e+00, Govt budget    2.197e-03
+
+solve_eg converged in 123 iterations: 9.737290374844942e-7
+      Tax on business     64.400, Tax on wages     37.000
+      Interest rate      6.074, Govt transfer      0.784
+      Asset market   5.794e-02, Govt budget    2.563e-03
+
+solve_eg converged in 92 iterations: 9.708524644214123e-7
+      Tax on business     64.400, Tax on wages     37.000
+      Interest rate      6.073, Govt transfer      0.776
+      Asset market   2.411e-02, Govt budget   -4.639e-06
+
+solve_eg converged in 116 iterations: 9.956945944966655e-7
+      Tax on business     64.400, Tax on wages     37.000
+      Interest rate      6.134, Govt transfer      0.776
+      Asset market   3.498e+00, Govt budget    2.229e-03
+
+solve_eg converged in 123 iterations: 9.733146230928025e-7
+      Tax on business     64.400, Tax on wages     37.000
+      Interest rate      6.073, Govt transfer      0.784
+      Asset market   3.509e-02, Govt budget    2.568e-03
+
+solve_eg converged in 92 iterations: 9.955658256122213e-7
+      Tax on business     64.400, Tax on wages     37.000
+      Interest rate      6.073, Govt transfer      0.776
+      Asset market   1.209e-02, Govt budget   -2.313e-06
+
+solve_eg converged in 116 iterations: 9.95549190641043e-7
+      Tax on business     64.400, Tax on wages     37.000
+      Interest rate      6.133, Govt transfer      0.776
+      Asset market   3.447e+00, Govt budget    2.245e-03
+
+solve_eg converged in 123 iterations: 9.730939692365048e-7
+      Tax on business     64.400, Tax on wages     37.000
+      Interest rate      6.073, Govt transfer      0.784
+      Asset market   2.318e-02, Govt budget    2.570e-03
+
+      NEWTON WARNING:
+      Increase maxit        20
+solve_eg converged in 93 iterations: 9.650941830696702e-7
+      Tax on business     64.400, Tax on wages     37.000
+      Interest rate      6.072, Govt transfer      0.776
+      Asset market   6.400e-03, Govt budget   -9.831e-07
+
+solve_eg converged in 110 iterations: 9.811455249919554e-7
+┌────────────────────────────────┬──────────┐
+│                         Moment │    Value │
+├────────────────────────────────┼──────────┤
+│        tax on biz profits (Tb) │   0.6440 │
+│       tax on labor income (Tn) │   0.3700 │
+│    collateral constraint (chi) │   2.0000 │
+│              interest rate (r) │   0.0607 │
+│             govt transfer (tr) │   0.7762 │
+│                       wage (w) │   2.1363 │
+│      Nb (pvt biz labor demand) │   0.1087 │
+│         Nc (corp labor demand) │   0.6150 │
+│       Kc (corp capital demand) │   9.1955 │
+│          Yc (corp value added) │   2.3889 │
+│    Kb (pvt biz capital demand) │   2.2006 │
+│       Yb (pvt biz value added) │   0.7037 │
+│                C (consumption) │   2.2882 │
+│              K (total capital) │  11.3961 │
+│               Y (total output) │   3.0926 │
+│              Tc (tax on cons.) │   0.1373 │
+│       Tp (tax on profits corp) │   0.1396 │
+│          Tn (labor income tax) │   0.5721 │
+│    Tb (tax on profits pvt biz) │   0.1595 │
+│              Total tax revenue │   1.0084 │
+│         Fraction of biz owners │   0.3126 │
+│             total. utility (V) │ -27.7754 │
+│              total. assets (A) │  14.4159 │
+│        total. assets (workers) │   9.6512 │
+│         total. assets (owners) │   4.7647 │
+│         total. consumption (C) │   2.2882 │
+│                  profits (Pib) │   0.2476 │
+│        rKb (int. payments biz) │   0.1336 │
+│      rcKc (int. payments corp) │   0.6980 │
+│              dK (depreciation) │   0.4672 │
+│           Fraction constrained │   0.0273 │
+│             Assets constrained │   0.1656 │
+│            Capital constrained │   0.3314 │
+│             External debt (Bb) │   0.1659 │
+│  Bb/Kb (debt to capital ratio) │   0.0754 │
+│    Bb/Y (debt to output ratio) │   0.0536 │
+│         mean log wage earnings │   0.7762 │
+│          std log wage earnings │   0.2623 │
+│ 10% quantile log wage earnings │   0.4213 │
+│ 25% quantile log wage earnings │   0.7591 │
+│ 75% quantile log wage earnings │   1.0969 │
+│ 90% quantile log wage earnings │   1.0969 │
+│                   mean log MPK │  -2.2619 │
+│                    std log MPK │   0.0971 │
+│              mean profit share │   0.3462 │
+│               std profit share │   0.0244 │
+│       10% quantile log profits │  -4.2205 │
+│       25% quantile log profits │  -2.9850 │
+│       75% quantile log profits │   0.7089 │
+│       90% quantile log profits │   0.7217 │
+│               mean log profits │  -1.3313 │
+│                std log profits │   1.8043 │
+│            semi-emp-elasticity │  -0.5720 │
+│                noise parameter │   0.4000 │
+└────────────────────────────────┴──────────┘
+solve_eg converged in 142 iterations: 9.644798284469402e-7
+┌────────────────────────────────┬──────────┐
+│                         Moment │    Value │
+├────────────────────────────────┼──────────┤
+│        tax on biz profits (Tb) │   0.2000 │
+│       tax on labor income (Tn) │   0.3700 │
+│    collateral constraint (chi) │   2.0000 │
+│              interest rate (r) │   0.0602 │
+│             govt transfer (tr) │   0.6314 │
+│                       wage (w) │   2.1465 │
+│      Nb (pvt biz labor demand) │   0.1468 │
+│         Nc (corp labor demand) │   0.5325 │
+│       Kc (corp capital demand) │   8.0457 │
+│          Yc (corp value added) │   2.0781 │
+│    Kb (pvt biz capital demand) │   3.0353 │
+│       Yb (pvt biz value added) │   0.9550 │
+│                C (consumption) │   2.2472 │
+│              K (total capital) │  11.0811 │
+│               Y (total output) │   3.0331 │
+│              Tc (tax on cons.) │   0.1348 │
+│       Tp (tax on profits corp) │   0.1210 │
+│          Tn (labor income tax) │   0.5395 │
+│    Tb (tax on profits pvt biz) │   0.0665 │
+│              Total tax revenue │   0.8619 │
+│         Fraction of biz owners │   0.3566 │
+│             total. utility (V) │ -27.9628 │
+│              total. assets (A) │  14.0820 │
+│        total. assets (workers) │   8.8646 │
+│         total. assets (owners) │   5.2174 │
+│         total. consumption (C) │   2.2472 │
+│                  profits (Pib) │   0.3327 │
+│        rKb (int. payments biz) │   0.1827 │
+│      rcKc (int. payments corp) │   0.6052 │
+│              dK (depreciation) │   0.4543 │
+│           Fraction constrained │   0.0301 │
+│             Assets constrained │   0.2083 │
+│            Capital constrained │   0.4170 │
+│             External debt (Bb) │   0.2086 │
+│  Bb/Kb (debt to capital ratio) │   0.0687 │
+│    Bb/Y (debt to output ratio) │   0.0688 │
+│         mean log wage earnings │   0.7838 │
+│          std log wage earnings │   0.2624 │
+│ 10% quantile log wage earnings │   0.4261 │
+│ 25% quantile log wage earnings │   0.7639 │
+│ 75% quantile log wage earnings │   1.1016 │
+│ 90% quantile log wage earnings │   1.1016 │
+│                   mean log MPK │  -2.2740 │
+│                    std log MPK │   0.0683 │
+│              mean profit share │   0.3447 │
+│               std profit share │   0.0186 │
+│       10% quantile log profits │  -4.2199 │
+│       25% quantile log profits │  -2.9844 │
+│       75% quantile log profits │   0.7222 │
+│       90% quantile log profits │   0.7222 │
+│               mean log profits │  -1.0729 │
+│                std log profits │   1.7943 │
+│            semi-emp-elasticity │  -0.4807 │
+│                noise parameter │   0.4000 │
+└────────────────────────────────┴──────────┘
+solve_eg converged in 110 iterations: 9.811455249919554e-7
+┌────────────────────────────────┬──────────┐
+│                         Moment │    Value │
+├────────────────────────────────┼──────────┤
+│        tax on biz profits (Tb) │   0.6440 │
+│       tax on labor income (Tn) │   0.3700 │
+│    collateral constraint (chi) │   2.0000 │
+│              interest rate (r) │   0.0607 │
+│             govt transfer (tr) │   0.7762 │
+│                       wage (w) │   2.1363 │
+│      Nb (pvt biz labor demand) │   0.1087 │
+│         Nc (corp labor demand) │   0.6150 │
+│       Kc (corp capital demand) │   9.1955 │
+│          Yc (corp value added) │   2.3889 │
+│    Kb (pvt biz capital demand) │   2.2006 │
+│       Yb (pvt biz value added) │   0.7037 │
+│                C (consumption) │   2.2882 │
+│              K (total capital) │  11.3961 │
+│               Y (total output) │   3.0926 │
+│              Tc (tax on cons.) │   0.1373 │
+│       Tp (tax on profits corp) │   0.1396 │
+│          Tn (labor income tax) │   0.5721 │
+│    Tb (tax on profits pvt biz) │   0.1595 │
+│              Total tax revenue │   1.0084 │
+│         Fraction of biz owners │   0.3126 │
+│             total. utility (V) │ -27.7754 │
+│              total. assets (A) │  14.4159 │
+│        total. assets (workers) │   9.6512 │
+│         total. assets (owners) │   4.7647 │
+│         total. consumption (C) │   2.2882 │
+│                  profits (Pib) │   0.2476 │
+│        rKb (int. payments biz) │   0.1336 │
+│      rcKc (int. payments corp) │   0.6980 │
+│              dK (depreciation) │   0.4672 │
+│           Fraction constrained │   0.0273 │
+│             Assets constrained │   0.1656 │
+│            Capital constrained │   0.3314 │
+│             External debt (Bb) │   0.1659 │
+│  Bb/Kb (debt to capital ratio) │   0.0754 │
+│    Bb/Y (debt to output ratio) │   0.0536 │
+│         mean log wage earnings │   0.7762 │
+│          std log wage earnings │   0.2623 │
+│ 10% quantile log wage earnings │   0.4213 │
+│ 25% quantile log wage earnings │   0.7591 │
+│ 75% quantile log wage earnings │   1.0969 │
+│ 90% quantile log wage earnings │   1.0969 │
+│                   mean log MPK │  -2.2619 │
+│                    std log MPK │   0.0971 │
+│              mean profit share │   0.3462 │
+│               std profit share │   0.0244 │
+│       10% quantile log profits │  -4.2205 │
+│       25% quantile log profits │  -2.9850 │
+│       75% quantile log profits │   0.7089 │
+│       90% quantile log profits │   0.7217 │
+│               mean log profits │  -1.3313 │
+│                std log profits │   1.8043 │
+│            semi-emp-elasticity │  -0.5720 │
+│                noise parameter │   0.4000 │
+└────────────────────────────────┴──────────┘
+┌─────────────────────────────┬─────────┬─────────┬──────────┐
+│                      Moment │   Run 1 │   Run 2 │   % Diff │
+├─────────────────────────────┼─────────┼─────────┼──────────┤
+│     tax on biz profits (Tb) │  0.2000 │  0.6440 │ 222.0000 │
+│    tax on labor income (Tn) │  0.3700 │  0.3700 │   0.0000 │
+│ collateral constraint (chi) │  2.0000 │  2.0000 │   0.0000 │
+│           interest rate (r) │  0.0602 │  0.0607 │   0.9034 │
+│          govt transfer (tr) │  0.6314 │  0.7762 │  22.9419 │
+│                    wage (w) │  2.1465 │  2.1363 │  -0.4759 │
+│   Nb (pvt biz labor demand) │  0.1468 │  0.1087 │ -25.9664 │
+│      Nc (corp labor demand) │  0.5325 │  0.6150 │  15.5082 │
+│    Kc (corp capital demand) │  8.0457 │  9.1955 │  14.2902 │
+│       Yc (corp value added) │  2.0781 │  2.3889 │  14.9585 │
+│ Kb (pvt biz capital demand) │  3.0353 │  2.2006 │ -27.5000 │
+│    Yb (pvt biz value added) │  0.9550 │  0.7037 │ -26.3187 │
+│             C (consumption) │  2.2472 │  2.2882 │   1.8266 │
+│           K (total capital) │ 11.0811 │ 11.3961 │   2.8430 │
+│            Y (total output) │  3.0331 │  3.0926 │   1.9616 │
+│           Tc (tax on cons.) │  0.1348 │  0.1373 │   1.8266 │
+│                           ⋮ │       ⋮ │       ⋮ │        ⋮ │
+└─────────────────────────────┴─────────┴─────────┴──────────┘
+                                               38 rows omitted
+Setting up old steady state (takes a few minutes) ...
+      Solve SS using newton method
+      Interest rate       6.05, Govt transfer       0.83
+      Asset market   1.391e-04, Govt budget   -2.141e-08
+
+Old steady state setup complete.
+┌────────────────────────────────┬──────────┐
+│                         Moment │    Value │
+├────────────────────────────────┼──────────┤
+│        tax on biz profits (Tb) │   0.2000 │
+│       tax on labor income (Tn) │   0.3700 │
+│    collateral constraint (chi) │   1.2500 │
+│              interest rate (r) │   0.0605 │
+│             govt transfer (tr) │   0.8335 │
+│                       wage (w) │   2.1406 │
+│      Nb (pvt biz labor demand) │   0.1486 │
+│         Nc (corp labor demand) │   0.7001 │
+│       Kc (corp capital demand) │  10.5140 │
+│          Yc (corp value added) │   2.7248 │
+│    Kb (pvt biz capital demand) │   2.9885 │
+│       Yb (pvt biz value added) │   0.9638 │
+│                C (consumption) │   2.7550 │
+│              K (total capital) │  13.5025 │
+│               Y (total output) │   3.6886 │
+│              Tc (tax on cons.) │   0.1653 │
+│       Tp (tax on profits corp) │   0.1590 │
+│          Tn (labor income tax) │   0.6722 │
+│    Tb (tax on profits pvt biz) │   0.0685 │
+│              Total tax revenue │   1.0650 │
+│         Fraction of biz owners │   0.1997 │
+│             total. utility (V) │ -30.0627 │
+│              total. assets (A) │  16.5030 │
+│        total. assets (workers) │  13.1152 │
+│         total. assets (owners) │   3.3878 │
+│         total. consumption (C) │   2.7550 │
+│                  profits (Pib) │   0.3424 │
+│        rKb (int. payments biz) │   0.1808 │
+│      rcKc (int. payments corp) │   0.7951 │
+│              dK (depreciation) │   0.5536 │
+│           Fraction constrained │   0.0756 │
+│             Assets constrained │   0.9394 │
+│            Capital constrained │   1.1750 │
+│             External debt (Bb) │   0.2356 │
+│  Bb/Kb (debt to capital ratio) │   0.0788 │
+│    Bb/Y (debt to output ratio) │   0.0639 │
+│         mean log wage earnings │   0.7857 │
+│          std log wage earnings │   0.2614 │
+│ 10% quantile log wage earnings │   0.4233 │
+│ 25% quantile log wage earnings │   0.7611 │
+│ 75% quantile log wage earnings │   1.0989 │
+│ 90% quantile log wage earnings │   1.0989 │
+│                   mean log MPK │  -2.2388 │
+│                    std log MPK │   0.0865 │
+│              mean profit share │   0.3546 │
+│               std profit share │   0.0248 │
+│       10% quantile log profits │  -0.5136 │
+│       25% quantile log profits │   0.6815 │
+│       75% quantile log profits │   0.7219 │
+│       90% quantile log profits │   0.7219 │
+│               mean log profits │   0.2615 │
+│                std log profits │   1.1003 │
+│            semi-emp-elasticity │  -0.9697 │
+│                noise parameter │   0.0750 │
+└────────────────────────────────┴──────────┘
+Best τb for elasticity: 0.532
+Best CESO for elasticity: 0.015118722617198266
+      Solve SS using newton method
+      NEWTON WARNING:
+      Increase maxit        20
+      Interest rate       6.11, Govt transfer       0.96
+      Asset market  -3.392e-04, Govt budget    1.163e-07
+
+┌────────────────────────────────┬──────────┐
+│                         Moment │    Value │
+├────────────────────────────────┼──────────┤
+│        tax on biz profits (Tb) │   0.5320 │
+│       tax on labor income (Tn) │   0.3700 │
+│    collateral constraint (chi) │   1.2500 │
+│              interest rate (r) │   0.0611 │
+│             govt transfer (tr) │   0.9574 │
+│                       wage (w) │   2.1286 │
+│      Nb (pvt biz labor demand) │   0.0612 │
+│         Nc (corp labor demand) │   0.8843 │
+│       Kc (corp capital demand) │  13.1157 │
+│          Yc (corp value added) │   3.4223 │
+│    Kb (pvt biz capital demand) │   1.1972 │
+│       Yb (pvt biz value added) │   0.3947 │
+│                C (consumption) │   2.8339 │
+│              K (total capital) │  14.3129 │
+│               Y (total output) │   3.8170 │
+│              Tc (tax on cons.) │   0.1700 │
+│       Tp (tax on profits corp) │   0.2005 │
+│          Tn (labor income tax) │   0.7446 │
+│    Tb (tax on profits pvt biz) │   0.0756 │
+│              Total tax revenue │   1.1908 │
+│         Fraction of biz owners │   0.1007 │
+│             total. utility (V) │ -29.7900 │
+│              total. assets (A) │  17.3116 │
+│        total. assets (workers) │  15.2825 │
+│         total. assets (owners) │   2.0291 │
+│         total. consumption (C) │   2.8339 │
+│                  profits (Pib) │   0.1422 │
+│        rKb (int. payments biz) │   0.0732 │
+│      rcKc (int. payments corp) │   1.0023 │
+│              dK (depreciation) │   0.5868 │
+│           Fraction constrained │   0.0273 │
+│             Assets constrained │   0.2774 │
+│            Capital constrained │   0.3470 │
+│             External debt (Bb) │   0.0696 │
+│  Bb/Kb (debt to capital ratio) │   0.0581 │
+│    Bb/Y (debt to output ratio) │   0.0182 │
+│         mean log wage earnings │   0.7721 │
+│          std log wage earnings │   0.2591 │
+│ 10% quantile log wage earnings │   0.4177 │
+│ 25% quantile log wage earnings │   0.7555 │
+│ 75% quantile log wage earnings │   1.0933 │
+│ 90% quantile log wage earnings │   1.0933 │
+│                   mean log MPK │  -2.2134 │
+│                    std log MPK │   0.1538 │
+│              mean profit share │   0.3585 │
+│               std profit share │   0.0384 │
+│       10% quantile log profits │  -2.9854 │
+│       25% quantile log profits │  -0.5143 │
+│       75% quantile log profits │   0.7212 │
+│       90% quantile log profits │   0.7212 │
+│               mean log profits │  -0.2264 │
+│                std log profits │   1.5164 │
+│            semi-emp-elasticity │  -1.9955 │
+│                noise parameter │   0.0750 │
+└────────────────────────────────┴──────────┘
+┌────────────────────────────────┬──────────┐
+│                         Moment │    Value │
+├────────────────────────────────┼──────────┤
+│        tax on biz profits (Tb) │   0.2000 │
+│       tax on labor income (Tn) │   0.3700 │
+│    collateral constraint (chi) │   1.2500 │
+│              interest rate (r) │   0.0605 │
+│             govt transfer (tr) │   0.8335 │
+│                       wage (w) │   2.1406 │
+│      Nb (pvt biz labor demand) │   0.1486 │
+│         Nc (corp labor demand) │   0.7001 │
+│       Kc (corp capital demand) │  10.5140 │
+│          Yc (corp value added) │   2.7248 │
+│    Kb (pvt biz capital demand) │   2.9885 │
+│       Yb (pvt biz value added) │   0.9638 │
+│                C (consumption) │   2.7550 │
+│              K (total capital) │  13.5025 │
+│               Y (total output) │   3.6886 │
+│              Tc (tax on cons.) │   0.1653 │
+│       Tp (tax on profits corp) │   0.1590 │
+│          Tn (labor income tax) │   0.6722 │
+│    Tb (tax on profits pvt biz) │   0.0685 │
+│              Total tax revenue │   1.0650 │
+│         Fraction of biz owners │   0.1997 │
+│             total. utility (V) │ -30.0627 │
+│              total. assets (A) │  16.5030 │
+│        total. assets (workers) │  13.1152 │
+│         total. assets (owners) │   3.3878 │
+│         total. consumption (C) │   2.7550 │
+│                  profits (Pib) │   0.3424 │
+│        rKb (int. payments biz) │   0.1808 │
+│      rcKc (int. payments corp) │   0.7951 │
+│              dK (depreciation) │   0.5536 │
+│           Fraction constrained │   0.0756 │
+│             Assets constrained │   0.9394 │
+│            Capital constrained │   1.1750 │
+│             External debt (Bb) │   0.2356 │
+│  Bb/Kb (debt to capital ratio) │   0.0788 │
+│    Bb/Y (debt to output ratio) │   0.0639 │
+│         mean log wage earnings │   0.7857 │
+│          std log wage earnings │   0.2614 │
+│ 10% quantile log wage earnings │   0.4233 │
+│ 25% quantile log wage earnings │   0.7611 │
+│ 75% quantile log wage earnings │   1.0989 │
+│ 90% quantile log wage earnings │   1.0989 │
+│                   mean log MPK │  -2.2388 │
+│                    std log MPK │   0.0865 │
+│              mean profit share │   0.3546 │
+│               std profit share │   0.0248 │
+│       10% quantile log profits │  -0.5136 │
+│       25% quantile log profits │   0.6815 │
+│       75% quantile log profits │   0.7219 │
+│       90% quantile log profits │   0.7219 │
+│               mean log profits │   0.2615 │
+│                std log profits │   1.1003 │
+│            semi-emp-elasticity │  -0.9697 │
+│                noise parameter │   0.0750 │
+└────────────────────────────────┴──────────┘
+┌────────────────────────────────┬──────────┐
+│                         Moment │    Value │
+├────────────────────────────────┼──────────┤
+│        tax on biz profits (Tb) │   0.5320 │
+│       tax on labor income (Tn) │   0.3700 │
+│    collateral constraint (chi) │   1.2500 │
+│              interest rate (r) │   0.0611 │
+│             govt transfer (tr) │   0.9574 │
+│                       wage (w) │   2.1286 │
+│      Nb (pvt biz labor demand) │   0.0612 │
+│         Nc (corp labor demand) │   0.8843 │
+│       Kc (corp capital demand) │  13.1157 │
+│          Yc (corp value added) │   3.4223 │
+│    Kb (pvt biz capital demand) │   1.1972 │
+│       Yb (pvt biz value added) │   0.3947 │
+│                C (consumption) │   2.8339 │
+│              K (total capital) │  14.3129 │
+│               Y (total output) │   3.8170 │
+│              Tc (tax on cons.) │   0.1700 │
+│       Tp (tax on profits corp) │   0.2005 │
+│          Tn (labor income tax) │   0.7446 │
+│    Tb (tax on profits pvt biz) │   0.0756 │
+│              Total tax revenue │   1.1908 │
+│         Fraction of biz owners │   0.1007 │
+│             total. utility (V) │ -29.7900 │
+│              total. assets (A) │  17.3116 │
+│        total. assets (workers) │  15.2825 │
+│         total. assets (owners) │   2.0291 │
+│         total. consumption (C) │   2.8339 │
+│                  profits (Pib) │   0.1422 │
+│        rKb (int. payments biz) │   0.0732 │
+│      rcKc (int. payments corp) │   1.0023 │
+│              dK (depreciation) │   0.5868 │
+│           Fraction constrained │   0.0273 │
+│             Assets constrained │   0.2774 │
+│            Capital constrained │   0.3470 │
+│             External debt (Bb) │   0.0696 │
+│  Bb/Kb (debt to capital ratio) │   0.0581 │
+│    Bb/Y (debt to output ratio) │   0.0182 │
+│         mean log wage earnings │   0.7721 │
+│          std log wage earnings │   0.2591 │
+│ 10% quantile log wage earnings │   0.4177 │
+│ 25% quantile log wage earnings │   0.7555 │
+│ 75% quantile log wage earnings │   1.0933 │
+│ 90% quantile log wage earnings │   1.0933 │
+│                   mean log MPK │  -2.2134 │
+│                    std log MPK │   0.1538 │
+│              mean profit share │   0.3585 │
+│               std profit share │   0.0384 │
+│       10% quantile log profits │  -2.9854 │
+│       25% quantile log profits │  -0.5143 │
+│       75% quantile log profits │   0.7212 │
+│       90% quantile log profits │   0.7212 │
+│               mean log profits │  -0.2264 │
+│                std log profits │   1.5164 │
+│            semi-emp-elasticity │  -1.9955 │
+│                noise parameter │   0.0750 │
+└────────────────────────────────┴──────────┘
+┌─────────────────────────────┬─────────┬─────────┬──────────┐
+│                      Moment │   Run 1 │   Run 2 │   % Diff │
+├─────────────────────────────┼─────────┼─────────┼──────────┤
+│     tax on biz profits (Tb) │  0.2000 │  0.5320 │ 166.0000 │
+│    tax on labor income (Tn) │  0.3700 │  0.3700 │   0.0000 │
+│ collateral constraint (chi) │  1.2500 │  1.2500 │   0.0000 │
+│           interest rate (r) │  0.0605 │  0.0611 │   1.0576 │
+│          govt transfer (tr) │  0.8335 │  0.9574 │  14.8612 │
+│                    wage (w) │  2.1406 │  2.1286 │  -0.5576 │
+│   Nb (pvt biz labor demand) │  0.1486 │  0.0612 │ -58.8195 │
+│      Nc (corp labor demand) │  0.7001 │  0.8843 │  26.3044 │
+│    Kc (corp capital demand) │ 10.5140 │ 13.1157 │  24.7446 │
+│       Yc (corp value added) │  2.7248 │  3.4223 │  25.6001 │
+│ Kb (pvt biz capital demand) │  2.9885 │  1.1972 │ -59.9391 │
+│    Yb (pvt biz value added) │  0.9638 │  0.3947 │ -59.0492 │
+│             C (consumption) │  2.7550 │  2.8339 │   2.8645 │
+│           K (total capital) │ 13.5025 │ 14.3129 │   6.0016 │
+│            Y (total output) │  3.6886 │  3.8170 │   3.4816 │
+│           Tc (tax on cons.) │  0.1653 │  0.1700 │   2.8645 │
+│                           ⋮ │       ⋮ │       ⋮ │        ⋮ │
+└─────────────────────────────┴─────────┴─────────┴──────────┘
+                                               38 rows omitted
+Setting up old steady state (takes a few minutes) ...
+      Solve SS using newton method
+      Interest rate       5.77, Govt transfer       1.41
+      Asset market   1.102e-05, Govt budget    1.066e-08
+
+Old steady state setup complete.
+┌────────────────────────────────┬──────────┐
+│                         Moment │    Value │
+├────────────────────────────────┼──────────┤
+│        tax on biz profits (Tb) │   0.2000 │
+│       tax on labor income (Tn) │   0.3700 │
+│    collateral constraint (chi) │   1.2500 │
+│              interest rate (r) │   0.0577 │
+│             govt transfer (tr) │   1.4092 │
+│                       wage (w) │   3.9995 │
+│      Nb (pvt biz labor demand) │   0.1195 │
+│         Nc (corp labor demand) │   0.5752 │
+│       Kc (corp capital demand) │  16.6340 │
+│          Yc (corp value added) │   4.1829 │
+│    Kb (pvt biz capital demand) │   4.2881 │
+│       Yb (pvt biz value added) │   1.4487 │
+│                C (consumption) │   4.2454 │
+│              K (total capital) │  20.9221 │
+│               Y (total output) │   5.6317 │
+│              Tc (tax on cons.) │   0.2547 │
+│       Tp (tax on profits corp) │   0.2401 │
+│          Tn (labor income tax) │   1.0281 │
+│    Tb (tax on profits pvt biz) │   0.1095 │
+│              Total tax revenue │   1.6324 │
+│         Fraction of biz owners │   0.3792 │
+│             total. utility (V) │ -18.5173 │
+│              total. assets (A) │  23.9222 │
+│        total. assets (workers) │  14.5725 │
+│         total. assets (owners) │   9.3497 │
+│         total. consumption (C) │   4.2454 │
+│                  profits (Pib) │   0.5473 │
+│        rKb (int. payments biz) │   0.2475 │
+│      rcKc (int. payments corp) │   1.2003 │
+│              dK (depreciation) │   0.8578 │
+│           Fraction constrained │   0.0914 │
+│             Assets constrained │   1.7551 │
+│            Capital constrained │   2.1948 │
+│             External debt (Bb) │   0.4397 │
+│  Bb/Kb (debt to capital ratio) │   0.1025 │
+│    Bb/Y (debt to output ratio) │   0.0781 │
+│         mean log wage earnings │   1.4210 │
+│          std log wage earnings │   0.3949 │
+│ 10% quantile log wage earnings │   0.8795 │
+│ 25% quantile log wage earnings │   1.3862 │
+│ 75% quantile log wage earnings │   1.8928 │
+│ 90% quantile log wage earnings │   1.8928 │
+│                   mean log MPK │  -2.2482 │
+│                    std log MPK │   0.1588 │
+│              mean profit share │   0.3572 │
+│               std profit share │   0.0400 │
+│       10% quantile log profits │  -6.0357 │
+│       25% quantile log profits │  -4.1823 │
+│       75% quantile log profits │   1.3192 │
+│       90% quantile log profits │   1.3774 │
+│               mean log profits │  -1.5648 │
+│                std log profits │   2.7144 │
+│            semi-emp-elasticity │  -0.3015 │
+│                noise parameter │   0.4000 │
+└────────────────────────────────┴──────────┘
+Best τb for highrisk: 0.56
+Best CESO for highrisk: 0.003917298691148874
+      Solve SS using newton method
+      Interest rate       5.90, Govt transfer       1.59
+      Asset market   2.846e-05, Govt budget    1.799e-08
+
+┌────────────────────────────────┬──────────┐
+│                         Moment │    Value │
+├────────────────────────────────┼──────────┤
+│        tax on biz profits (Tb) │   0.5600 │
+│       tax on labor income (Tn) │   0.3700 │
+│    collateral constraint (chi) │   1.2500 │
+│              interest rate (r) │   0.0590 │
+│             govt transfer (tr) │   1.5910 │
+│                       wage (w) │   3.9540 │
+│      Nb (pvt biz labor demand) │   0.0995 │
+│         Nc (corp labor demand) │   0.6189 │
+│       Kc (corp capital demand) │  17.4495 │
+│          Yc (corp value added) │   4.4497 │
+│    Kb (pvt biz capital demand) │   3.4498 │
+│       Yb (pvt biz value added) │   1.1923 │
+│                C (consumption) │   4.2571 │
+│              K (total capital) │  20.8993 │
+│               Y (total output) │   5.6420 │
+│              Tc (tax on cons.) │   0.2554 │
+│       Tp (tax on profits corp) │   0.2574 │
+│          Tn (labor income tax) │   1.0511 │
+│    Tb (tax on profits pvt biz) │   0.2541 │
+│              Total tax revenue │   1.8180 │
+│         Fraction of biz owners │   0.3564 │
+│             total. utility (V) │ -18.5082 │
+│              total. assets (A) │  23.8995 │
+│        total. assets (workers) │  15.0743 │
+│         total. assets (owners) │   8.8252 │
+│         total. consumption (C) │   4.2571 │
+│                  profits (Pib) │   0.4538 │
+│        rKb (int. payments biz) │   0.2035 │
+│      rcKc (int. payments corp) │   1.2869 │
+│              dK (depreciation) │   0.8569 │
+│           Fraction constrained │   0.0760 │
+│             Assets constrained │   1.3142 │
+│            Capital constrained │   1.6435 │
+│             External debt (Bb) │   0.3293 │
+│  Bb/Kb (debt to capital ratio) │   0.0955 │
+│    Bb/Y (debt to output ratio) │   0.0584 │
+│         mean log wage earnings │   1.4071 │
+│          std log wage earnings │   0.3948 │
+│ 10% quantile log wage earnings │   0.8681 │
+│ 25% quantile log wage earnings │   1.3747 │
+│ 75% quantile log wage earnings │   1.8814 │
+│ 90% quantile log wage earnings │   1.8814 │
+│                   mean log MPK │  -2.2309 │
+│                    std log MPK │   0.1844 │
+│              mean profit share │   0.3576 │
+│               std profit share │   0.0438 │
+│       10% quantile log profits │  -6.0370 │
+│       25% quantile log profits │  -4.1837 │
+│       75% quantile log profits │   1.2425 │
+│       90% quantile log profits │   1.3753 │
+│               mean log profits │  -1.7799 │
+│                std log profits │   2.7005 │
+│            semi-emp-elasticity │  -0.4075 │
+│                noise parameter │   0.4000 │
+└────────────────────────────────┴──────────┘
+┌────────────────────────────────┬──────────┐
+│                         Moment │    Value │
+├────────────────────────────────┼──────────┤
+│        tax on biz profits (Tb) │   0.2000 │
+│       tax on labor income (Tn) │   0.3700 │
+│    collateral constraint (chi) │   1.2500 │
+│              interest rate (r) │   0.0577 │
+│             govt transfer (tr) │   1.4092 │
+│                       wage (w) │   3.9995 │
+│      Nb (pvt biz labor demand) │   0.1195 │
+│         Nc (corp labor demand) │   0.5752 │
+│       Kc (corp capital demand) │  16.6340 │
+│          Yc (corp value added) │   4.1829 │
+│    Kb (pvt biz capital demand) │   4.2881 │
+│       Yb (pvt biz value added) │   1.4487 │
+│                C (consumption) │   4.2454 │
+│              K (total capital) │  20.9221 │
+│               Y (total output) │   5.6317 │
+│              Tc (tax on cons.) │   0.2547 │
+│       Tp (tax on profits corp) │   0.2401 │
+│          Tn (labor income tax) │   1.0281 │
+│    Tb (tax on profits pvt biz) │   0.1095 │
+│              Total tax revenue │   1.6324 │
+│         Fraction of biz owners │   0.3792 │
+│             total. utility (V) │ -18.5173 │
+│              total. assets (A) │  23.9222 │
+│        total. assets (workers) │  14.5725 │
+│         total. assets (owners) │   9.3497 │
+│         total. consumption (C) │   4.2454 │
+│                  profits (Pib) │   0.5473 │
+│        rKb (int. payments biz) │   0.2475 │
+│      rcKc (int. payments corp) │   1.2003 │
+│              dK (depreciation) │   0.8578 │
+│           Fraction constrained │   0.0914 │
+│             Assets constrained │   1.7551 │
+│            Capital constrained │   2.1948 │
+│             External debt (Bb) │   0.4397 │
+│  Bb/Kb (debt to capital ratio) │   0.1025 │
+│    Bb/Y (debt to output ratio) │   0.0781 │
+│         mean log wage earnings │   1.4210 │
+│          std log wage earnings │   0.3949 │
+│ 10% quantile log wage earnings │   0.8795 │
+│ 25% quantile log wage earnings │   1.3862 │
+│ 75% quantile log wage earnings │   1.8928 │
+│ 90% quantile log wage earnings │   1.8928 │
+│                   mean log MPK │  -2.2482 │
+│                    std log MPK │   0.1588 │
+│              mean profit share │   0.3572 │
+│               std profit share │   0.0400 │
+│       10% quantile log profits │  -6.0357 │
+│       25% quantile log profits │  -4.1823 │
+│       75% quantile log profits │   1.3192 │
+│       90% quantile log profits │   1.3774 │
+│               mean log profits │  -1.5648 │
+│                std log profits │   2.7144 │
+│            semi-emp-elasticity │  -0.3015 │
+│                noise parameter │   0.4000 │
+└────────────────────────────────┴──────────┘
+┌────────────────────────────────┬──────────┐
+│                         Moment │    Value │
+├────────────────────────────────┼──────────┤
+│        tax on biz profits (Tb) │   0.5600 │
+│       tax on labor income (Tn) │   0.3700 │
+│    collateral constraint (chi) │   1.2500 │
+│              interest rate (r) │   0.0590 │
+│             govt transfer (tr) │   1.5910 │
+│                       wage (w) │   3.9540 │
+│      Nb (pvt biz labor demand) │   0.0995 │
+│         Nc (corp labor demand) │   0.6189 │
+│       Kc (corp capital demand) │  17.4495 │
+│          Yc (corp value added) │   4.4497 │
+│    Kb (pvt biz capital demand) │   3.4498 │
+│       Yb (pvt biz value added) │   1.1923 │
+│                C (consumption) │   4.2571 │
+│              K (total capital) │  20.8993 │
+│               Y (total output) │   5.6420 │
+│              Tc (tax on cons.) │   0.2554 │
+│       Tp (tax on profits corp) │   0.2574 │
+│          Tn (labor income tax) │   1.0511 │
+│    Tb (tax on profits pvt biz) │   0.2541 │
+│              Total tax revenue │   1.8180 │
+│         Fraction of biz owners │   0.3564 │
+│             total. utility (V) │ -18.5082 │
+│              total. assets (A) │  23.8995 │
+│        total. assets (workers) │  15.0743 │
+│         total. assets (owners) │   8.8252 │
+│         total. consumption (C) │   4.2571 │
+│                  profits (Pib) │   0.4538 │
+│        rKb (int. payments biz) │   0.2035 │
+│      rcKc (int. payments corp) │   1.2869 │
+│              dK (depreciation) │   0.8569 │
+│           Fraction constrained │   0.0760 │
+│             Assets constrained │   1.3142 │
+│            Capital constrained │   1.6435 │
+│             External debt (Bb) │   0.3293 │
+│  Bb/Kb (debt to capital ratio) │   0.0955 │
+│    Bb/Y (debt to output ratio) │   0.0584 │
+│         mean log wage earnings │   1.4071 │
+│          std log wage earnings │   0.3948 │
+│ 10% quantile log wage earnings │   0.8681 │
+│ 25% quantile log wage earnings │   1.3747 │
+│ 75% quantile log wage earnings │   1.8814 │
+│ 90% quantile log wage earnings │   1.8814 │
+│                   mean log MPK │  -2.2309 │
+│                    std log MPK │   0.1844 │
+│              mean profit share │   0.3576 │
+│               std profit share │   0.0438 │
+│       10% quantile log profits │  -6.0370 │
+│       25% quantile log profits │  -4.1837 │
+│       75% quantile log profits │   1.2425 │
+│       90% quantile log profits │   1.3753 │
+│               mean log profits │  -1.7799 │
+│                std log profits │   2.7005 │
+│            semi-emp-elasticity │  -0.4075 │
+│                noise parameter │   0.4000 │
+└────────────────────────────────┴──────────┘
+┌─────────────────────────────┬─────────┬─────────┬──────────┐
+│                      Moment │   Run 1 │   Run 2 │   % Diff │
+├─────────────────────────────┼─────────┼─────────┼──────────┤
+│     tax on biz profits (Tb) │  0.2000 │  0.5600 │ 180.0000 │
+│    tax on labor income (Tn) │  0.3700 │  0.3700 │   0.0000 │
+│ collateral constraint (chi) │  1.2500 │  1.2500 │   0.0000 │
+│           interest rate (r) │  0.0577 │  0.0590 │   2.2051 │
+│          govt transfer (tr) │  1.4092 │  1.5910 │  12.9058 │
+│                    wage (w) │  3.9995 │  3.9540 │  -1.1360 │
+│   Nb (pvt biz labor demand) │  0.1195 │  0.0995 │ -16.7571 │
+│      Nc (corp labor demand) │  0.5752 │  0.6189 │   7.6000 │
+│    Kc (corp capital demand) │ 16.6340 │ 17.4495 │   4.9026 │
+│       Yc (corp value added) │  4.1829 │  4.4497 │   6.3777 │
+│ Kb (pvt biz capital demand) │  4.2881 │  3.4498 │ -19.5494 │
+│    Yb (pvt biz value added) │  1.4487 │  1.1923 │ -17.7027 │
+│             C (consumption) │  4.2454 │  4.2571 │   0.2758 │
+│           K (total capital) │ 20.9221 │ 20.8993 │  -0.1090 │
+│            Y (total output) │  5.6317 │  5.6420 │   0.1831 │
+│           Tc (tax on cons.) │  0.2547 │  0.2554 │   0.2758 │
+│                           ⋮ │       ⋮ │       ⋮ │        ⋮ │
+└─────────────────────────────┴─────────┴─────────┴──────────┘
+                                               38 rows omitted
+✅ Results.CSV written in numeric matrix format to ./Results.csv

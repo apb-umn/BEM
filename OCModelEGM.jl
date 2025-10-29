@@ -1179,6 +1179,7 @@ moments = [
     "mean log profits"            mean_lnpi;
     "std log profits"             std_lnpi;
     "semi-emp-elasticity"          semi_el;
+    "noise parameter"               OCM.σ_ε;
 ];
 
 # Print it as a table
@@ -1414,6 +1415,7 @@ moments = [
    "mean log profits"            mean_lnpi;
    "std log profits"             std_lnpi;
     "semi-emp-elasticity"          semi_el;
+    "noise parameter"               OCM.σ_ε;
 ];
 
 # Print it as a table
