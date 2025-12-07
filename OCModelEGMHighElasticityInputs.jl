@@ -63,9 +63,8 @@
 #
 
 using Parameters,LinearAlgebra,BasisMatrices,SparseArrays,Arpack,Roots, 
-      KrylovKit,QuantEcon, PrettyTables,StatsBase,ForwardDiff,Dierckx,
+      KrylovKit,QuantEcon,StatsBase,ForwardDiff,Dierckx,
       Plots,NPZ,NLsolve,Printf,DataFrames,CSV,Distances, Interpolations
-using PrettyTables: fmt__printf   # new helper replaces ft_printf
       
 rguess,trguess=0.06049712094574908, 0.8334885326073966
 

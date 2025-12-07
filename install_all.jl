@@ -11,7 +11,6 @@ packages = [
     "Roots",
     "KrylovKit",
     "QuantEcon",
-    "PrettyTables",
     "StatsBase",
     "ForwardDiff",
     "Dierckx",
