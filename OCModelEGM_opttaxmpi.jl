@@ -201,14 +201,6 @@ function analyze_optimal_taub(file::String; col::Symbol = :VinitSO)
         Vss = [df.Vss[idx_col], df.Vss[idx_vss]]
     )
 
-    println("\nSummary Table:")
-    
-    pretty_table(
-        summary;
-        formatters = [fmt__printf("%.4f")]
-    )
-    
-
     # Step 4: Plot smoothed column vs τb with optima marked
     smooth_col_name = Symbol("smooth_", col)
     if hasproperty(df, smooth_col_name)

@@ -109,4 +109,3 @@ else
     end 
 end
 
-moments=getMoments(OCM,savepath=momfilename)

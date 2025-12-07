@@ -973,173 +973,6 @@ function weighted_quantile(x::AbstractVector, w::AbstractVector, p::Union{Real,A
     return isa(p, Number) ? qval(p) : map(qval, p)
 end
 
-using Printf
-
-# ---- number formatter (commas + fixed decimals) ----------------------------
-function fmtnum(x::Real; digits::Int=2)
-    s = @sprintf("%.*f", digits, x)
-    if digits > 0
-        int, frac = split(s, '.')
-    else
-        int, frac = s, ""
-    end
-
-    t = reverse(int)
-    parts = String[]
-    for i in 1:3:length(t)
-        push!(parts, reverse(t[i:min(i+2, end)]))
-    end
-    int_commas = join(reverse(parts), ",")
-
-    return digits > 0 ? int_commas * "." * frac : int_commas
-end
-
-"""
-    print_moments_table(moments;
-        title="Model Parameters and Moments",
-        header_left="Description",
-        header_right="Value",
-        digits=2,
-        w1=40, w2=8)
-
-`moments` passes a matrix where column 1 is a string and column 2 is a value.
-
-Conventions:
-  * if column 2 is `missing`, `""`, or `nothing` → treated as a section header
-  * if both columns are empty/`missing` → blank line
-  * otherwise → regular "Description  Value" row
-
-Layout matches the screenshot (title, header line, body, bottom rule).
-"""
-function print_moments_table(moments;
-                             title::AbstractString="Model Parameters and Moments",
-                             header_left::AbstractString="Description",
-                             header_right::AbstractString="Value",
-                             digits::Int=2,
-                             w1::Int=40, w2::Int=8)
-
-    total_width = w1 + 1 + w2
-
-    # title
-    pad = max(0, (total_width - length(title)) ÷ 2)
-    println()
-    println(" "^pad * String(title))
-    println(" "^pad * repeat("=", length(title)))
-    println()
-
-    # column headers
-    @printf("%-*s %*s\n", w1, header_left, w2, header_right)
-    println(repeat('-', total_width))
-
-    n = size(moments, 1)
-    for i in 1:n
-        desc = String(moments[i, 1])
-        val  = moments[i, 2]
-
-        # decide what kind of row this is
-        is_blank_val = val === nothing || val === "" || (val isa Missing && ismissing(val))
-        is_blank_desc = strip(desc) == ""
-
-        if is_blank_desc && is_blank_val
-            # blank line
-            println()
-        elseif is_blank_val
-            # section header: just print the text
-            println(desc)
-        else
-            # normal row
-            vstr = val isa Real ? fmtnum(val; digits=digits) : string(val)
-            @printf("%-*s %*s\n", w1, desc, w2, vstr)
-        end
-    end
-
-    println(repeat('-', total_width))
-end
-
-"""
-    print_matrix_table(data; header=[], title=nothing, digits=4)
-
-`data` is a matrix with:
-  * column 1: labels (strings or anything convertible with `string`)
-  * columns 2..end: numeric values (Run 1, Run 2, Diff, ...)
-
-`header` is a Vector of column names (same as you used for pretty_table).
-`title` is optional.
-"""
-function print_matrix_table(data;
-                            header::Vector{<:AbstractString}=String[],
-                            title::Union{Nothing,AbstractString}=nothing,
-                            digits::Int=4)
-
-    nrows, ncols = size(data)
-    @assert ncols ≥ 2 "Need at least 2 columns (label + values)."
-
-    # --- compute column widths ---------------------------------------------
-    widths = zeros(Int, ncols)
-
-    # first column (left-aligned)
-    h1 = (!isempty(header) && length(header) ≥ 1) ? String(header[1]) : ""
-    w1 = length(h1)
-    for i in 1:nrows
-        s = string(data[i, 1])
-        w1 = max(w1, length(s))
-    end
-    widths[1] = w1
-
-    # numeric columns (right-aligned)
-    for j in 2:ncols
-        hj = (!isempty(header) && length(header) ≥ j) ? String(header[j]) : ""
-        w = length(hj)
-        for i in 1:nrows
-            v = data[i, j]
-            s = v isa Real ? fmtnum(v; digits=digits) : string(v)
-            w = max(w, length(s))
-        end
-        widths[j] = w
-    end
-
-    total_width = sum(widths) + (ncols - 1)  # spaces between cols
-
-    println()
-    # --- title --------------------------------------------------------------
-    if title !== nothing
-        t = String(title)
-        pad = max(0, (total_width - length(t)) ÷ 2)
-        println(" "^pad * t)
-        println(" "^pad * repeat("=", length(t)))
-        println()
-    end
-
-    # --- header row ---------------------------------------------------------
-    if !isempty(header)
-        # first col: left
-        print(rpad(header[1], widths[1]))
-        # others: right
-        for j in 2:ncols
-            print(' ')
-            @printf("%*s", widths[j], header[j])
-        end
-        println()
-        println(repeat('-', total_width))
-    end
-
-    # --- body ---------------------------------------------------------------
-    for i in 1:nrows
-        # col 1
-        print(rpad(string(data[i, 1]), widths[1]))
-        # numeric cols
-        for j in 2:ncols
-            v = data[i, j]
-            s = v isa Real ? fmtnum(v; digits=digits) : string(v)
-            print(' ')
-            @printf("%*s", widths[j], s)
-        end
-        println()
-    end
-
-    println(repeat('-', total_width))
-end
-
 
 function getMoments(OCM::OCModel;savepath::String="macro_ratios.tex",dτb=0.05)
      @unpack τp,τd,τb,τc,τw,δ,Θ̄,α,b,γ,g,iprint,r,tr,bf,wf,Ia,Nθ,alθ,ab_col_cutoff,lθ,χ = OCM
@@ -1350,7 +1183,15 @@ moments = [
     "risk factor"               OCM.risk_adjust;
 ];
 
-print_moments_table(moments; header_left="Moment", header_right="Value")
+# Print it as a table
+pretty_table(
+    moments;
+    column_labels = ["Moment","Value"],
+    formatters    = [PrettyTables.fmt__printf("%.4f")],  # qualify it
+    maximum_number_of_rows    = -1,
+    maximum_number_of_columns = -1,
+    display_size = (typemax(Int), 120)  # widen display box (rows, cols)
+)
 
 
 export_macro_ratios_unscaled(savepath; (;Y_Y, WN_Y, WNc_Y, WNb_Y, Pib_Y,
@@ -1579,7 +1420,16 @@ moments = [
     "risk factor"               OCM.risk_adjust;
 ];
 
-print_moments_table(moments; header_left="Moment", header_right="Value")
+# Print it as a table
+pretty_table(
+    moments;
+    column_labels = ["Moment", "Value"],
+    formatters    = [PrettyTables.fmt__printf("%.4f")],
+    maximum_number_of_rows    = -1,
+    maximum_number_of_columns = -1,
+    display_size = (typemax(Int), 120)  # widen display box (rows, cols)
+)
+
 
 export_macro_ratios_unscaled(savepath; (;Y_Y, WN_Y, WNc_Y, WNb_Y, Pib_Y,
    rK_Y, rKc_Y, rKb_Y, dK_Y,
@@ -1614,11 +1464,17 @@ function compare_moments(OCM_old::OCModel, OCM_new::OCModel;titles::Vector{Strin
     
     # Display
     header=["Moment", titles[1], titles[2], "Diff"]
-    print_matrix_table(combined; header=header, title="Run comparison", digits=4)
+    pretty_table(
+        combined;
+        column_labels = String.(header),
+        formatters    = [fmt__printf("%.4f")],
+        maximum_number_of_rows    = -1,
+        maximum_number_of_columns = -1
+    )
+        titles = ["Baseline", "Alternative", "Diff"]
 
-    # Convert to DataFrame
+        # Convert to DataFrame
     # Ensure column names are symbols (required by DataFrame)
-    titles = ["Baseline", "Alternative", "Diff"]
     colnames = Symbol.(["Moment", titles[1], titles[2], "Diff"])
 
     # Create DataFrame from the matrix
@@ -1658,12 +1514,17 @@ function compare_moments_grid(OCM::OCModel;titles::Vector{String}= ["EGM", "Grid
     
     # Display
     header=["Moment", titles[1], titles[2], "Diff"]
-    print_matrix_table(combined; header=header, title="Run comparison", digits=4)
+    pretty_table(
+        combined;
+        column_labels = String.(header),
+        formatters    = [fmt__printf("%.4f")],
+        maximum_number_of_rows    = -1,
+        maximum_number_of_columns = -1
+    )
+        titles = ["EGM", "Grid Search", "Diff"]
 
-
-    # Convert to DataFrame
+        # Convert to DataFrame
     # Ensure column names are symbols (required by DataFrame)
-    titles = ["EGM", "Grid Search", "Diff"]
     colnames = Symbol.(["Moment", titles[1], titles[2], "Diff"])
 
     # Create DataFrame from the matrix
