@@ -4,51 +4,40 @@
 
 This repository contains the code for the paper:
 
-> **"Approximating Transition Dynamics with Discrete Choice"**  
-> *Anmol Bhandari, David Evans, and Ellen McGrattan*  
+> Bhandari, A., Evans, D., & McGrattan, E. (2025). "Approximating Transition Dynamics with Discrete Choice." *JPE Macro*, Special Issue on Economic Dynamics, Uncertainty, and Computation.
 
-## 📄 Abstract
+## Abstract
 
-This paper develops a method to analyze policy reforms in environments with discrete choice, such as occupational choice or default. Computing transition paths in these settings is computationally challenging, especially in models with substantial heterogeneity and many endogenous states. We extend perturbation methods to handle discrete choice by tracking both:
-- **Intensive-margin** changes conditional on choices (typically smooth and small), and
-- **Extensive-margin** changes from switching choices (discrete and potentially large).
+This paper develops a method for analyzing policy reforms in general equilibrium settings with discrete choice. Computing transition paths in these settings is computationally challenging, particularly in models with substantial heterogeneity and many endogenous states. We extend perturbation methods to handle discrete choice by appropriately tracking both intensive-margin changes conditional on discrete choices that are relatively small and extensive-margin changes resulting from a switch in a discrete choice that are relatively large. The method is fast, scalable, and efficient, providing good initial estimates for global solution methods. We demonstrate our method by analyzing optimal business taxation in a model with occupational choice between entrepreneurship and paid employment.
 
-The method is fast, scalable, and efficient — providing high-quality initial estimates for global solution methods. We apply this approach to evaluate optimal business taxation in a heterogeneous-agent model with occupational choice between wage work and entrepreneurship.
-
----
-
-## 🧭 Repository Overview
+## Repository Overview
 
 This codebase supports:
-- Solving **steady state equilibria** using an Endogenous Grid Method (EGM).
-- Simulating **transition dynamics** after tax policy shocks.
-- Performing **optimal tax computations** over grids of business tax rates (`τ_b`).
-- **Second- and zeroth-order approximations** of dynamic paths.
 
----
+- Solving steady-state equilibria using an Endogenous Grid Method (EGM)
+- Simulating transition dynamics after tax policy shocks
+- Performing optimal tax computations over grids of business tax rates (τ_b)
+- Second-, first-, and zeroth-order approximations of dynamic paths
 
-## 📂 Key Files and Modules
+## Key Files and Modules
 
-| Module / Script                     | Purpose |
-|------------------------------------|---------|
-| `OCModelEGMInputs.jl`              | Defines `OCModel` struct, grids, calibration parameters |
-| `OCModelEGM.jl`                    | Solves the model’s steady state using EGM |
-| `OCModelEGM_driver.jl`             | Driver for computing the baseline equilibrium |
-| `OCModelEGM_transition.jl`         | Transition system logic and FOC residuals |
-| `OCModelEGM_transition_driver.jl`  | Computes transitions for given tax reforms |
-| `OCModelEGM_opttaxmpi.jl`          | Parallel grid search for optimal business taxes |
-| `OCModel_opttaxmpi_driver.jl`      | Master script for optimal tax search |
-| `run_all_results.jl`               | Aggregates baseline, transitions, and optimal tax runs |
-| `SecondOrderApproximation.jl`      | 2nd-order transition approximation method |
-| `ZerothOrderApproximation.jl`      | Baseline discrete transition approximation |
-| `utilities.jl`                     | High-dimensional linear algebra utilities |
+| Module / Script                | Purpose                                          |
+|--------------------------------|--------------------------------------------------|
+| `OCModelEGMInputs.jl`          | Defines `OCModel` struct, grids, calibration parameters |
+| `OCModelEGM.jl`                | Solves the model's steady state using EGM        |
+| `OCModelEGM_driver.jl`         | Driver for computing the baseline equilibrium    |
+| `OCModelEGM_transition.jl`     | Transition system logic and FOC residuals        |
+| `OCModelEGM_opttaxmpi.jl`      | Parallel grid search for optimal business taxes  |
+| `run_all_results.jl`           | Driver for all results in the paper              |
+| `SecondOrderApproximation.jl`  | Second-order transition approximation method     |
+| `FirstOrderApproximation.jl`   | First-order transition approximation method      |
+| `ZerothOrderApproximation.jl`  | Zeroth-order objects                             |
+| `utilities.jl`                 | High-dimensional linear algebra utilities        |
 
----
-
-## 🚀 How to Run
+## How to Run
 
 ### 1. Install Dependencies
-Run the following in Julia:
+
 ```julia
 using Pkg
 Pkg.activate(".")
@@ -56,33 +45,36 @@ Pkg.instantiate()
 ```
 
 ### 2. Compute Steady State
+
 ```julia
 include("OCModelEGM_driver.jl")
 ```
 
 ### 3. Simulate Transition
+
 ```julia
-include("OCModelEGM_transition_driver.jl")
+include("run_all_transition.jl")
 ```
 
 ### 4. Compute Optimal Tax
+
 ```julia
-include("OCModel_opttaxmpi_driver.jl")  
+include("run_all_opt.jl")
 ```
----
 
-### 5. Summarize Results
+The code uses Julia's distributed computing to evaluate candidate tax rates in parallel. Adjust the parameters depending on your architecture.
+
+### 5. Generate All Results
+
 ```julia
-include("run_all_results.jl")           # For runs all results for the papers
+include("run_all_results.jl")
+include("make_data_for_draft.jl")
 ```
----
 
-The code will produce several CSVs that stores the ss moments, transition paths given a reform, and summary of welfare gains for a grid of biz tax rates
+The code produces several CSV files containing steady-state moments, transition paths for a given reform, and a summary of welfare gains for a grid of business tax rates.
 
-## 📚 Citation
+## Citation
 
-If you use this code, please cite the following paper:
+If you use this code, please cite:
 
-> Bhandari, A., Evans, D., & McGrattan, E. (2025). *Approximating Transition Dynamics with Discrete Choice*. University of Minnesota Working Paper.
-
----
+> Bhandari, A., Evans, D., & McGrattan, E. (2025). *Approximating Transition Dynamics with Discrete Choice*. JPE Macro, Special Issue on Economic Dynamics, Uncertainty, and Computation.
