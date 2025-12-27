@@ -365,6 +365,101 @@ function policyb(OCM::OCModel)
     return cf,af,kf,nf,yf,πf,λf
 end
 
+function policyb_nocollateral(OCM::OCModel)
+    @unpack Vcoefs,λcoefs,σ,βEE,γ,Nθ,lθ,a̲,EΦeg,Na,agrid,α_b,ν,δ,r,w,tr,τc,τb = OCM
+
+    lθb = lθ[:,1]
+    θb  = exp.(lθb)
+
+    # Initialize policy rules for each productivity
+    cf  = Vector{Spline1D}(undef,Nθ)
+    af  = Vector{Spline1D}(undef,Nθ)
+    kf  = Vector{Spline1D}(undef,Nθ)
+    nf  = Vector{Spline1D}(undef,Nθ)
+    yf  = Vector{Spline1D}(undef,Nθ)
+    πf  = Vector{Spline1D}(undef,Nθ)
+    λf  = Vector{Spline1D}(undef,Nθ)
+
+    # Unconstrained firm choices (no collateral constraint)
+    nbyk = ν*(r+δ)/(α_b*w)
+    kvec = @. (w/(ν*θb*nbyk^(ν-1)))^(1/(α_b+ν-1))
+    πu   = @. θb*kvec^α_b*(nbyk*kvec)^ν-(r+δ)*kvec-w*(nbyk*kvec)
+
+    # Compute value function derivative
+    EVₐ′ = reshape(EΦeg*λcoefs,:,Nθ)
+    EVₐ′ = max.(EVₐ′,1e-6)
+
+    # Compute consumption today implied by Euler equation
+    cEE = (βEE.*EVₐ′).^(-1/σ)
+
+    # Compute asset today implied by savings and consumption
+    Implieda = ((1+γ).*agrid .+ (1+τc).*cEE .- (1-τb).*πu' .- tr) ./ (1+r)
+
+    # Policies implied by unconstrained firm choices
+    k   = ones(Na).*kvec'
+    y   = ones(Na).*(θb.*kvec.^α_b.*(nbyk.*kvec).^ν)'
+    πb  = ones(Na).*πu'
+    n   = nbyk.*k
+    λ   = (1+r).*cEE.^(-σ)
+
+    # Update where borrowing constraint binding and interpolate
+    numa = 10
+    for s in 1:Nθ
+        min_a = minimum(Implieda[:,s])
+        if min_a > a̲
+            acon  = LinRange(a̲,min_a,numa+1)[1:end-1]
+            kcon  = kvec[s] .* ones(length(acon))
+            ncon  = nbyk .* kcon
+            ycon  = θb[s].*kcon.^α_b.*ncon.^ν
+            πcon  = ycon - w.*ncon - (r+δ).*kcon
+            ancon = a̲ .* ones(length(acon))
+            ccon  = ((1+r).*acon .+ (1-τb).*πcon .+ tr .- (1+γ)*a̲) ./ (1+τc)
+            λcon  = (1+r).*ccon.^(-σ)
+        end
+
+        if issorted(Implieda[:,s])
+            if Implieda[1,s] > a̲
+                cf[s] = Spline1D([acon;Implieda[:,s]],[ccon;cEE[:,s]],k=1,bc="extrapolate")
+                af[s] = Spline1D([acon;Implieda[:,s]],[ancon;agrid],k=1,bc="extrapolate")
+                kf[s] = Spline1D([acon;Implieda[:,s]],[kcon;k[:,s]],k=1,bc="extrapolate")
+                nf[s] = Spline1D([acon;Implieda[:,s]],[ncon;n[:,s]],k=1,bc="extrapolate")
+                yf[s] = Spline1D([acon;Implieda[:,s]],[ycon;y[:,s]],k=1,bc="extrapolate")
+                πf[s] = Spline1D([acon;Implieda[:,s]],[πcon;πb[:,s]],k=1,bc="extrapolate")
+                λf[s] = Spline1D([acon;Implieda[:,s]],[λcon;λ[:,s]],k=1,bc="extrapolate")
+            else
+                cf[s] = Spline1D(Implieda[:,s],cEE[:,s],k=1,bc="extrapolate")
+                af[s] = Spline1D(Implieda[:,s],agrid,k=1,bc="extrapolate")
+                kf[s] = Spline1D(Implieda[:,s],k[:,s],k=1,bc="extrapolate")
+                nf[s] = Spline1D(Implieda[:,s],n[:,s],k=1,bc="extrapolate")
+                yf[s] = Spline1D(Implieda[:,s],y[:,s],k=1,bc="extrapolate")
+                πf[s] = Spline1D(Implieda[:,s],πb[:,s],k=1,bc="extrapolate")
+                λf[s] = Spline1D(Implieda[:,s],λ[:,s],k=1,bc="extrapolate")
+            end
+        else
+            p = sortperm(Implieda[:,s])
+            if Implieda[p[1],s] > a̲
+                cf[s] = Spline1D([acon;Implieda[p,s]],[ccon;cEE[p,s]],k=1,bc="extrapolate")
+                af[s] = Spline1D([acon;Implieda[p,s]],[ancon;agrid[p]],k=1,bc="extrapolate")
+                kf[s] = Spline1D([acon;Implieda[p,s]],[kcon;k[p,s]],k=1,bc="extrapolate")
+                nf[s] = Spline1D([acon;Implieda[p,s]],[ncon;n[p,s]],k=1,bc="extrapolate")
+                yf[s] = Spline1D([acon;Implieda[p,s]],[ycon;y[p,s]],k=1,bc="extrapolate")
+                πf[s] = Spline1D([acon;Implieda[p,s]],[πcon;πb[p,s]],k=1,bc="extrapolate")
+                λf[s] = Spline1D([acon;Implieda[p,s]],[λcon;λ[p,s]],k=1,bc="extrapolate")
+            else
+                cf[s] = Spline1D(Implieda[p,s],cEE[p,s],k=1,bc="extrapolate")
+                af[s] = Spline1D(Implieda[p,s],agrid[p],k=1,bc="extrapolate")
+                kf[s] = Spline1D(Implieda[p,s],k[p,s],k=1,bc="extrapolate")
+                nf[s] = Spline1D(Implieda[p,s],n[p,s],k=1,bc="extrapolate")
+                yf[s] = Spline1D(Implieda[p,s],y[p,s],k=1,bc="extrapolate")
+                πf[s] = Spline1D(Implieda[p,s],πb[p,s],k=1,bc="extrapolate")
+                λf[s] = Spline1D(Implieda[p,s],λ[p,s],k=1,bc="extrapolate")
+            end
+        end
+    end
+
+    return cf,af,kf,nf,yf,πf,λf
+end
+
 """
 c_pol,a_pol,k_pol,n_pol,y_pol,π_pol,λ_pol,v_pol = policyb_gridsearch(OCM)
 
