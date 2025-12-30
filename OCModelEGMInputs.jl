@@ -64,7 +64,12 @@
 
 using Parameters,LinearAlgebra,BasisMatrices,SparseArrays,Arpack,Roots, 
       KrylovKit,QuantEcon,StatsBase,ForwardDiff,Dierckx,
-      Plots,NPZ,NLsolve,Printf,DataFrames,CSV,Distances, Interpolations
+      NPZ,NLsolve,Printf,DataFrames,CSV,Distances, Interpolations
+
+# Allow running without Plots/GR precompile by setting SKIP_PLOTS=1.
+if get(ENV, "SKIP_PLOTS", "0") != "1"
+    using Plots
+end
       
 rguess,trguess=0.05941619368832721, 0.640195119802852
 

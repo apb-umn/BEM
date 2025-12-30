@@ -1,6 +1,9 @@
 *.csv
 *.pdf
 *.tex
+.julia_depot/*
+.DS_Store
+.home/*
 
 # --- EXCEPTIONS: allow these specific files ---
 !Figure*.csv
