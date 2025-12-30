@@ -2244,3 +2244,31 @@ function plot_lambda_from_OCM(OCM; nshocks::Int=5, a_min::Real=-Inf, a_max::Real
     display(combo)
     return combo
 end
+
+
+"""
+    update_guesses!(OCM::OCModel, inputfile::String)
+
+Update the rguess,trguess line in the specified input file with the solved values from OCM.
+"""
+function update_guesses!(OCM::OCModel, inputfile::String)
+    # Read the file
+    lines = readlines(inputfile)
+
+    # Find and replace the rguess,trguess line
+    for i in eachindex(lines)
+        if startswith(lines[i], "rguess,trguess=")
+            lines[i] = "rguess,trguess=$(OCM.r), $(OCM.tr)"
+            break
+        end
+    end
+
+    # Write back
+    open(inputfile, "w") do io
+        for line in lines
+            println(io, line)
+        end
+    end
+
+    println("Updated guesses in $inputfile: r=$(OCM.r), tr=$(OCM.tr)")
+end

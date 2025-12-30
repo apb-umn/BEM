@@ -16,6 +16,9 @@ else
     updatecutoffs!(OCM)
     moments=getMoments(OCM,savepath=momfilename)
 
+    # Update guesses in input file with solved values
+    update_guesses!(OCM, "OCModelEGMInputs.jl")
+
 
 
     if OCM.iagg==1

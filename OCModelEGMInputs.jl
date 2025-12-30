@@ -66,7 +66,7 @@ using Parameters,LinearAlgebra,BasisMatrices,SparseArrays,Arpack,Roots,
       KrylovKit,QuantEcon,StatsBase,ForwardDiff,Dierckx,
       Plots,NPZ,NLsolve,Printf,DataFrames,CSV,Distances, Interpolations
       
-rguess,trguess=0.05923207359775146, 0.6401956237429345
+rguess,trguess=0.05941619368832721, 0.640195119802852
 
 """
 Parameters of the Occupation Choice Model
