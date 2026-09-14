@@ -1,3 +1,8 @@
+# NOTE (approximation rewrite, Sep 2026): the zeroth/first/second-order code
+# follows the z-variable + discrete-choice formulation (see
+# ApproximationChanges.tex).  The second order is AD-only (nested duals) and
+# carries no σσ (aggregate-risk) terms — the transition experiment is
+# deterministic.
 include("SecondOrderApproximation.jl")
  
 
@@ -12,7 +17,7 @@ savings, labor, and value function conditions.
 function Fw(OCM::OCModel, lθ, a_, x, X, yᵉ)
     @unpack aw_bor_cutoff, βEE, βV, σ, a̲, τc, τw, γ = OCM
     a_ = a_[1]
-    a, n, k, yb, nb, c, profit, b, λ, v = x
+    a, v, n, k, yb, nb, c, profit, b, λ = x   # xlab order (z-variables a, v first)
     λᵉ, vᵉ = yᵉ
     R, W, Tr,Taub = X
     _, ϵ = exp.(lθ)
@@ -21,19 +26,21 @@ function Fw(OCM::OCModel, lθ, a_, x, X, yᵉ)
     u_c = c^(-σ)
     u = c^(1 - σ) / (1 - σ)
 
-    # FOC system
+    # FOC system.  ROW ORDER (z-formulation): the two forward-looking
+    # equations that determine the z-variables (a, v) come FIRST, followed by
+    # the intra-temporal equations that determine y = (n,k,yb,nb,c,profit,b,λ).
     ret = [
-        R*a_ + (1 - τw)*W*ϵ + Tr - (1 + τc)*c - (1 + γ)*a,    # (1) Budget constraint
-        λ - R*u_c,                                            # (2) Envelope condition: ∂V/∂a
-        βEE*λᵉ - u_c,                                           # (3) Euler equation
-        u + βV*vᵉ - v,                                         # (4) Bellman equation
+        βEE*λᵉ - u_c,                                         # (1) Euler equation            [z: a]
+        u + βV*vᵉ - v,                                        # (2) Bellman equation          [z: v]
+        R*a_ + (1 - τw)*W*ϵ + Tr - (1 + τc)*c - (1 + γ)*a,    # (3) Budget constraint         [y: c]
+        λ - R*u_c,                                            # (4) Envelope condition: ∂V/∂a [y: λ]
         n + ϵ,                                                # (5) Labor supply condition (ϵ = disutility shock)
         k, yb, nb, profit, b                                  # (6–10) unused in worker case
     ]
 
     # Replace Euler with borrowing constraint if a_ below cutoff
     if a_ <= aw_bor_cutoff[lθ]
-        ret[3] = a̲ - a  # (3b) Binding borrowing constraint
+        ret[1] = a̲ - a  # (1b) Binding borrowing constraint
     end
 
     return ret
@@ -51,7 +58,7 @@ first-order conditions for inputs, and collateral/borrowing constraints.
 function Fb(OCM::OCModel, lθ, a_, x, X, yᵉ)
     @unpack ab_bor_cutoff, ab_col_cutoff, τb,βEE, βV,σ, α_b, ν, χ, a̲, δ , τc, τw, γ, k_min = OCM
     a_ = a_[1]
-    a, n, k, yb, nb, c, profit, b, λ, v = x
+    a, v, n, k, yb, nb, c, profit, b, λ = x   # xlab order (z-variables a, v first)
     λᵉ, vᵉ = yᵉ
     R, W, Tr,Taub = X
     r = R - 1
@@ -68,12 +75,13 @@ function Fb(OCM::OCModel, lθ, a_, x, X, yᵉ)
     u_c = c^(-σ)
     u = c^(1 - σ) / (1 - σ)
 
-    # System of residuals
+    # System of residuals.  ROW ORDER (z-formulation): forward-looking
+    # equations for the z-variables (a, v) first, intra-temporal ones after.
     ret = [
-        R*a_ + (1 - Taub)*profit + Tr - (1 + τc)*c - (1 + γ)*a,            # (1) Budget constraint
-        λ - R*u_c - u_c*χ*(mpk - r - δ)*(1-Taub),                          # (2) Marginal value of wealth
-        βEE*λᵉ - u_c,                                                        # (3) Euler equation
-        u + βV*vᵉ - v,                                                      # (4) Value function
+        βEE*λᵉ - u_c,                                                        # (1) Euler equation            [z: a]
+        u + βV*vᵉ - v,                                                      # (2) Value function            [z: v]
+        R*a_ + (1 - Taub)*profit + Tr - (1 + τc)*c - (1 + γ)*a,            # (3) Budget constraint         [y: c]
+        λ - R*u_c - u_c*χ*(mpk - r - δ)*(1-Taub),                          # (4) Marginal value of wealth  [y: λ]
         mpn - W,                                                           # (5) Labor FOC
         nb - n,                                                            # (6) Consistency: hired labor = choice
         mpk - r - δ,                                                       # (7) Capital FOC
@@ -83,7 +91,7 @@ function Fb(OCM::OCModel, lθ, a_, x, X, yᵉ)
     ]
 
     if a_ <= ab_bor_cutoff[lθ]
-        ret[3] = a̲ - a
+        ret[1] = a̲ - a
         ret[7] = k - (χ*a_ + k_min)
     elseif (a_ <= ab_col_cutoff[lθ]) && (a_ > 0)
         ret[7] = k - (χ*a_ + k_min)
@@ -102,7 +110,7 @@ balance, and correct pricing in production sectors.
 """
 function G(para::OCModel, Ix, X_, X, Xᵉ, Θ)
     @unpack α, δ, τw, τp, τd, τc, b, w, γ, r, g, τb, ρ_τ = para
-    Ia, In, Ik, Iyb, Inb, Ic, Iprofit, Ib, _, Iv = Ix
+    Ia, Iv, In, Ik, Iyb, Inb, Ic, Iprofit, Ib, _ = Ix   # xlab order (a, v first; Iλ unused)
     R, W, Tr, Frac_b, V, A, C,Taub = X
     TFP = Θ[1]
     A_ = X_[1]
@@ -152,8 +160,8 @@ Returns expected marginal utility and expected value.
 function ff(para::OCModel, x⁻, x⁺)
     @unpack σ_ε = para
 
-    λ⁻ = x⁻[9]; v⁻ = x⁻[10]
-    λ⁺ = x⁺[9]; v⁺ = x⁺[10]
+    λ⁻ = x⁻[10]; v⁻ = x⁻[2]     # xlab = [a, v, n, k, yb, nb, c, profit, b, λ]
+    λ⁺ = x⁺[10]; v⁺ = x⁺[2]
 
     Δv = (v⁺ - v⁻) / σ_ε
     T = promote_type(typeof(λ⁻), typeof(λ⁺), typeof(σ_ε), typeof(Δv))
@@ -168,6 +176,20 @@ function ff(para::OCModel, x⁻, x⁺)
         Ev = v⁻ + σ_ε * log1p(exp(Δv))
         return T[λ⁻ * p + λ⁺ * (1 - p), Ev]
     end
+end
+
+
+"""
+    pf(para::OCModel, x⁻, x⁺)
+
+Probability of choosing occupation 1 (worker) given the two occupations'
+values at the same (a,θ): Prob(c = 1) = 1/(1 + exp((v⁺ − v⁻)/σ_ε)).  Must be
+consistent with the choice probability inside `ff`.
+"""
+function pf(para::OCModel, x⁻, x⁺)
+    @unpack σ_ε = para
+    v⁻ = x⁻[2]; v⁺ = x⁺[2]
+    return 1 / (1 + exp((v⁺ - v⁻) / σ_ε))
 end
 
 
@@ -193,7 +215,7 @@ function get_policy_functions(OCM::OCModel)
     Ibf(lθ,a,c) = c==1 ? 0 : 1
 
    
-    return [af,nf,kf,yf,nbf,cf,πf,Ibf,λf,vf] #return xf
+    return [af,vf,nf,kf,yf,nbf,cf,πf,Ibf,λf] #return xf in xlab order (z-variables a, v first)
 end
 
 
@@ -208,16 +230,12 @@ function get_grids(OCM)
     aknots = [âgrid]
     a_sp = nodes(SplineParams(aknots[1],0,OCM.so)) #construct gridpoints from knots
     a_Ω = āgrid
-    nθ,nsp,nΩ = size(πθ,1),length(a_sp),length(a_Ω)
-    aθ_sp = hcat(kron(ones(nθ),a_sp),kron(lθ,ones(nsp)))
-    aθc_sp = [aθ_sp ones(size(aθ_sp,1));aθ_sp 2*ones(size(aθ_sp,1))]
-    aθ_Ω = hcat(kron(ones(nθ),a_Ω),kron(lθ,ones(nΩ)))
-    aθc_Ω = [aθ_Ω ones(size(aθ_Ω,1));aθ_Ω 2*ones(size(aθ_Ω,1))]
-
+    # REDUCED (a,θ) tensor grids in the canonical layout (a fastest, θ slowest);
+    # the policy grid is the sparse grid replicated for c = 1,2 (c slowest)
+    aθ_sp = tensor_grid([collect(a_sp)], lθ)
+    aθ_Ω  = tensor_grid([collect(a_Ω)], lθ)
     ℵ = Int[]
-    mask = OCM.ω .> 1e-10
-
-    return aknots,OCM.so,aθc_sp,aθc_Ω,ℵ
+    return aθ_sp, aθ_Ω, ℵ
 end
 
 
@@ -240,6 +258,35 @@ end
 
 
 """
+    get_conditional_transitions(OCM)
+
+The steady-state transition operators on the REDUCED fine grid (a,θ)
+CONDITIONAL on the occupation, Λc[c] (c = 1 worker, c = 2 owner), built from
+the same ingredients as `dist!`: the linear (lottery) interpolation of the
+savings policy a′(a,θ,c) onto the histogram grid, per θ block, composed with
+the Markov mixing πθ.  The unconditional pre-choice transition is
+Λ̃ = Σ_c Λc[c]·diag(p̄_c) (formed inside ZerothOrderApproximation), and
+Λ̃ μ̄ = μ̄ holds exactly for μ̄ = Σ_c OCM.ω_c.
+Also returns p̄, the steady-state probability of being a worker on the fine grid.
+"""
+function get_conditional_transitions(OCM::OCModel)
+    @unpack wf,bf,Nθ,πθ,Ia,alθ,σ_ε = OCM
+    ah  = alθ[1:Ia,1]
+    afw = max.(min.(hcat([wf.a[s](ah) for s in 1:Nθ]...),ah[end]),ah[1])
+    afb = max.(min.(hcat([bf.a[s](ah) for s in 1:Nθ]...),ah[end]),ah[1])
+    Vw  = hcat([wf.v[s](ah) for s in 1:Nθ]...)
+    Vb  = hcat([bf.v[s](ah) for s in 1:Nθ]...)
+    p̄  = probw.(Vb.-Vw,σ_ε)[:]
+    B   = Basis(SplineParams(ah,0,1))
+    Aw  = [sparse(BasisMatrix(B,Direct(),@view afw[:,s]).vals[1]') for s in 1:Nθ]
+    Ab  = [sparse(BasisMatrix(B,Direct(),@view afb[:,s]).vals[1]') for s in 1:Nθ]
+    Π   = Matrix(transpose(πθ))
+    Λc  = [FactoredTransitionMatrix(Φs=Aw, Π=Π), FactoredTransitionMatrix(Φs=Ab, Π=Π)]
+    return Λc, p̄
+end
+
+
+"""
     construct_inputs(OCM)
 
 Create and return `Inputs` object with model functions, grids, and equilibrium mappings.
@@ -248,17 +295,29 @@ Used to compute steady state and approximations.
 function construct_inputs(OCM)
     inputs = Inputs()
 
-    # Policy functions and grids
-    inputs.xf = get_policy_functions(OCM)
-    inputs.aknots, inputs.ka, inputs.aθc_sp, inputs.aθc_Ω, inputs.ℵ = get_grids(OCM)
-    inputs.xlab = [:a, :n, :k, :yb, :nb, :c, :profit, :b, :λ, :v]
-    inputs.alab = [:a]
-    inputs.κlab = [:v]
-    inputs.yᵉlab = [:λ, :v]
+    # Labels (z-variables FIRST: the states, then the forward-looking value)
+    inputs.xlab  = [:a, :v, :n, :k, :yb, :nb, :c, :profit, :b, :λ]
+    inputs.alab  = [:a]
+    inputs.zlab  = [:a, :v]
+    inputs.xelab = [:λ, :v]          # rows read by f (=ff) and pf
+    inputs.yᵉlab = [:λᵉ, :vᵉ]        # outputs of f whose expectations enter F
+    inputs.Ilab  = [:a, :v, :n, :k, :yb, :nb, :c, :profit, :b]   # integrals G reads (all but λ)
 
-    # Choice probabilities (Gumbel CDF)
-    inputs.Γf = κ -> 1 / (1 + exp(κ / OCM.σ_ε))
-    inputs.dΓf = κ -> -(1 / OCM.σ_ε) * exp(κ / OCM.σ_ε) / (1 + exp(κ / OCM.σ_ε))^2
+    # Grids and policy VALUES at the full sparse nodes (c slowest)
+    xf = get_policy_functions(OCM)
+    inputs.aθ_sp, inputs.aθ_Ω, inputs.ℵ = get_grids(OCM)
+    nspr = size(inputs.aθ_sp,1)
+    na = length(inputs.alab)
+    nx = length(xf)
+    x̄ = zeros(nx, 2*nspr)
+    for c in 1:2, jr in 1:nspr
+        a = inputs.aθ_sp[jr, 1:na]
+        θ = inputs.aθ_sp[jr, na+1:end]
+        for ix in 1:nx
+            x̄[ix, jr + (c-1)*nspr] = xf[ix](θ, a, c)[1]
+        end
+    end
+    inputs.x̄ = x̄
 
     # Aggregates and equilibrium labels
     inputs.X̄ = [getX(OCM);OCM.τb]
@@ -266,16 +325,21 @@ function construct_inputs(OCM)
     inputs.Alab = [:A,:Taub]
     inputs.Qlab = [:R, :W, :Tr,:Taub]
 
-    # Distributional objects
-    inputs.ω̄, inputs.Λ, inputs.πθ = OCM.ω, OCM.Λ, OCM.πθ
+    # Distributional objects: pre-choice masses μ̄ = Σ_c ω̄_c, worker
+    # probability p̄ and the conditional transitions on the reduced fine grid
+    inputs.μ̄ = vec(sum(reshape(OCM.ω, :, 2), dims=2))
+    inputs.Λc, inputs.p̄ = get_conditional_transitions(OCM)
+    inputs.πθ = OCM.πθ
     inputs.Θ̄ = ones(1) * OCM.Θ̄
     inputs.ρ_Θ = ones(1, 1) * 0.8
     inputs.Σ_Θ = ones(1, 1) * 0.017^2
 
-    # Residual functions
-    inputs.F = (lθ, a_, c, x, X, yᵉ) -> c == 1 ? Fw(OCM, lθ, a_, x, X, yᵉ) : Fb(OCM, lθ, a_, x, X, yᵉ)
+    # Residual functions (F receives the full node index j and the occupation c)
+    inputs.para = OCM
+    inputs.F = (j, lθ, a_, c, x, X, yᵉ) -> c == 1 ? Fw(OCM, lθ, a_, x, X, yᵉ) : Fb(OCM, lθ, a_, x, X, yᵉ)
     inputs.G = (Ix, X_, X, Xᵉ, lΘ) -> G(OCM, Ix, X_, X, Xᵉ, lΘ)
     inputs.f = (x⁻, x⁺) -> ff(OCM, x⁻, x⁺)
+    inputs.pf = (x⁻, x⁺) -> pf(OCM, x⁻, x⁺)
 
     return inputs
 end
@@ -292,10 +356,10 @@ function setup_old_steady_state!(OCM)
     X̄_0 = [getX(OCM); OCM.τb]
     A_0 = X̄_0[inputs_0.Xlab .== :A][1]
     Taub_0 = X̄_0[inputs_0.Xlab .== :Taub][1]
-    ω̄_0_base = sum(reshape(OCM.ω, :, 2), dims=2)
+    μ̄_0 = inputs_0.μ̄                       # pre-choice masses of the old steady state
     ZO_0 = ZerothOrderApproximation(inputs_0)
-    Ix̄_0 = ZO_0.x̄*ZO_0.Φ*ZO_0.ω̄
-    return inputs_0, X̄_0, Ix̄_0,A_0, Taub_0, ω̄_0_base
+    Ix̄_0 = ZO_0.x̄*(ZO_0.Φ*ZO_0.ω̄)
+    return inputs_0, X̄_0, Ix̄_0,A_0, Taub_0, μ̄_0
 end
 
 function setup_new_steady_state(τb, τw, OCM_old)
@@ -311,18 +375,29 @@ function setup_new_steady_state(τb, τw, OCM_old)
     return OCM, Xss
 end
 
-function compute_FOSOpaths(X̄_0,Ix̄_0,A_0, Taub_0, ω̄_0_base, OCM_new)
+"""
+    compute_FOpaths(X̄_0, Ix̄_0, A_0, Taub_0, μ̄_0, OCM_new; check=true)
+
+First-order transition path from the old steady state (aggregates X̄_0,
+integrals Ix̄_0, predetermined A_0, Taub_0 and pre-choice distribution μ̄_0)
+to the new steady state described by OCM_new.  Returns
+(XpathFO, IxpathFO, inputs, VinitFO, FO).  With `check=true` the zeroth-order
+residuals and the J-matrix consistency of the paths are printed.
+"""
+function compute_FOpaths(X̄_0,Ix̄_0,A_0, Taub_0, μ̄_0, OCM_new; check::Bool=true)
     println("→ Constructing inputs...")
     inputs = construct_inputs(OCM_new)
     println("...done")
 
     println("→ Zeroth-order approximation...")
     ZO = ZerothOrderApproximation(inputs)
+    check && println("   stationarity residual ‖Λ̃μ̄ − μ̄‖∞ = ", stationarity_residual(ZO))
     println("...done")
 
     println("→ Computing derivatives...")
-    computeDerivativesF!(ZO, inputs)
-    computeDerivativesG!(ZO, inputs)
+    Fres = computeDerivativesF!(ZO, inputs)
+    Gres = computeDerivativesG!(ZO, inputs)
+    check && println("   max |F| at steady state = ", maximum(abs, Fres), ",  max |G| = ", maximum(abs, Gres))
     println("...done")
 
     println("→ Setting up first-order approximation object...")
@@ -338,68 +413,63 @@ function compute_FOSOpaths(X̄_0,Ix̄_0,A_0, Taub_0, ω̄_0_base, OCM_new)
     compute_BB!(FO)
     println("...done")
 
-    println("→ Constructing initial ω̄ vector...")
-    ω̄ = reshape(OCM_new.ω, :, 2)
-    p̄ = ω̄ ./ sum(ω̄, dims=2)
-    p̄[isnan.(p̄[:, 1]), 1] .= 1.0
-    p̄[isnan.(p̄[:, 2]), 2] .= 0.0
-    ω̄_0 = (p̄ .* ω̄_0_base)[:]
-    println("...done")
-
     println("→ Setting initial conditions...")
     FO.X_0 = [A_0; Taub_0] - ZO.P * ZO.X̄
     FO.Θ_0 = [0.0]
-    FO.Δ_0 = ω̄_0 - ZO.ω̄
+    FO.Ω_0 = μ̄_0 - ZO.μ̄                 # initial pre-choice mass perturbation
     println("...done")
 
     println("→ Solving transition path...")
     solve_Xt!(FO)
     println("...done")
 
-
-
     println("→ Constructing FO Ix paths...")
-    compute_x̂t_ω̂t!(FO)
+    compute_x̂t_Ω̂t!(FO)
     IX̂=compute_Ixt(FO)
-    Ix̄ = ZO.x̄*ZO.Φ*ZO.ω̄
+    Ix̄ = ZO.x̄*(ZO.Φ*ZO.ω̄)
     IxpathFO=[Ix̄_0 Ix̄.+IX̂]
+    check && println("   J-matrix consistency of the Ix paths (rel.) = ", check_J_consistency(FO))
     println("...done")
 
+    XpathFO = [X̄_0 ZO.X̄ .+ FO.X̂t]
+    VinitFO = XpathFO[inputs.Xlab .== :V,2][1]
+    println("...done ✅")
+    return XpathFO, IxpathFO, inputs, VinitFO, FO
+end
+
+
+"""
+    compute_FOSOpaths(X̄_0, Ix̄_0, A_0, Taub_0, μ̄_0, OCM_new; check=true)
+
+First- and second-order transition paths.  The second-order correction is the
+(t,k) interaction of the transition direction with itself (initial conditions
+X_0, μ̂_1 = μ̄_0 − μ̄; no aggregate shocks), computed by the AD-only chain of
+SecondOrderApproximation.jl.  Returns (XpathSO, IxpathFO, inputs, VinitSO)
+as before, plus XpathFO and the SO object:
+    XpathSO, IxpathFO, inputs, VinitSO, XpathFO, SO
+"""
+function compute_FOSOpaths(X̄_0,Ix̄_0,A_0, Taub_0, μ̄_0, OCM_new; check::Bool=true)
+    XpathFO, IxpathFO, inputs, VinitFO, FO = compute_FOpaths(X̄_0,Ix̄_0,A_0, Taub_0, μ̄_0, OCM_new; check=check)
+    ZO = FO.ZO
 
     # === Compute SO Transition Path ===
     println("→computing SO transition path (bulk of the calclations)...")
     SO = SecondOrderApproximation(FO=FO)
     SO.X_02 = FO.X_0
     SO.Θ_02 = FO.Θ_0
-    SO.ω̂k =  FO.ω̂t
-    SO.ω̂ak =  FO.ω̂at
-    SO.x̂k =  FO.x̂t
-    SO.ŷk =  FO.ŷt
-    SO.κ̂k =  FO.κ̂t
-    SO.X̂k =  FO.X̂t
-    compute_Lemma2_ZZ!(SO)
-    compute_lemma3_components!(SO)
-    compute_ŷtk!(SO)
-    compute_lemma3_ZZ!(SO)
-    compute_lemma3_ZZ_kink!(SO)
-    compute_Lemma4_ZZ!(SO)
-    construct_Laa!(SO)
-    compute_Corollary2_ZZ!(SO)
-    compute_XZZ!(SO)
+    SO.Ω̂k = FO.Ω̂t
+    SO.ẑk = FO.ẑt
+    SO.X̂k = FO.X̂t
+    compute_ZZ_transition!(SO, inputs)
     println("....done")
-    
+
     # === Collect Results ===
     println("→ Constructing X paths and value function...")
-    XpathFO = [X̄_0 ZO.X̄ .+ FO.X̂t]
     XpathSO = [X̄_0 ZO.X̄ .+ FO.X̂t .+ 0.5*SO.X̂tk]
-    VinitFO = XpathFO[inputs.Xlab .== :V,2][1] #ZO.X̄[inputs.Xlab .== :V] + FO.X̂t[inputs.Xlab .== :V, 1]
     VinitSO = XpathSO[inputs.Xlab .== :V,2][1]
-
     println("...done ✅")
 
-
-    
-    return XpathSO, IxpathFO,inputs, VinitSO
+    return XpathSO, IxpathFO, inputs, VinitSO, XpathFO, SO
 end
 
 function getResiduals!(df,OCM_old, OCM_new)
@@ -510,7 +580,7 @@ function run_transition_analysis(
     # assign parameters (using provided or default values)
     OCM_old.r = r
     OCM_old.tr = tr 
-    _, X̄_old, Ix̄_old, A_old, Taub_old, ω̄_0_old = setup_old_steady_state!(OCM_old)
+    _, X̄_old, Ix̄_old, A_old, Taub_old, μ̄_old = setup_old_steady_state!(OCM_old)
     println("Old steady state setup complete.")
 
     println("Setting up new steady state with τb = $τb_val (takes a few minutes)...")
@@ -520,7 +590,7 @@ function run_transition_analysis(
     # --- FAST TRANSITION ---
     OCM_new.ρ_τ = ρ_τ_val_fast
     println("Performing transition analysis with ρ_τ = $ρ_τ_val_fast...")
-    Xpath, Ixpath, inputs, _ = compute_FOSOpaths(X̄_old, Ix̄_old, A_old, Taub_old, ω̄_0_old, OCM_new)
+    Xpath, Ixpath, inputs, _ = compute_FOSOpaths(X̄_old, Ix̄_old, A_old, Taub_old, μ̄_old, OCM_new)
     df_transition_fast = save_stuff(Xpath, Ixpath, inputs)
     println("Add residuals to DataFrame...")
     getResiduals!(df_transition_fast, OCM_old, OCM_new)
@@ -534,7 +604,7 @@ function run_transition_analysis(
     # --- SLOW TRANSITION ---
     OCM_new.ρ_τ = ρ_τ_val_slow
     println("Performing transition analysis with ρ_τ = $ρ_τ_val_slow...")
-    Xpath, Ixpath, inputs, _ = compute_FOSOpaths(X̄_old, Ix̄_old, A_old, Taub_old, ω̄_0_old, OCM_new)
+    Xpath, Ixpath, inputs, _ = compute_FOSOpaths(X̄_old, Ix̄_old, A_old, Taub_old, μ̄_old, OCM_new)
     df_transition_slow = save_stuff(Xpath, Ixpath, inputs)
 
     println("Add residuals to DataFrame...")

@@ -19,22 +19,30 @@ This codebase supports:
 - Performing optimal tax computations over grids of business tax rates (τ_b)
 - Second-, first-, and zeroth-order approximations of dynamic paths
 
+
+
 ## Key Files and Modules
 
-| Module / Script                | Purpose                                          |
-|--------------------------------|--------------------------------------------------|
-| `OCModelEGMInputs.jl`          | Defines `OCModel` struct, grids, calibration parameters |
-| `OCModelEGM.jl`                | Solves the model's steady state using EGM        |
-| `OCModelEGM_driver.jl`         | Driver for computing the baseline equilibrium    |
-| `OCModelEGM_transition.jl`     | Transition system logic and FOC residuals        |
-| `OCModelEGM_opttaxmpi.jl`      | Parallel grid search for optimal business taxes  |
-| `run_all_results.jl`           | Driver for all results in the paper              |
-| `SecondOrderApproximation.jl`  | Second-order transition approximation method     |
-| `FirstOrderApproximation.jl`   | First-order transition approximation method      |
-| `ZerothOrderApproximation.jl`  | Zeroth-order objects                             |
-| `utilities.jl`                 | High-dimensional linear algebra utilities        |
+
+| Module / Script               | Purpose                                                                                                                             |
+| ----------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
+| `OCModelEGMInputs.jl`         | Defines `OCModel` struct, grids, calibration parameters                                                                             |
+| `OCModelEGM.jl`               | Solves the model's steady state using EGM                                                                                           |
+| `OCModelEGM_driver.jl`        | Driver for computing the baseline equilibrium                                                                                       |
+| `OCModelEGM_transition.jl`    | Transition system logic and FOC residuals                                                                                           |
+| `OCModelEGM_opttaxmpi.jl`     | Parallel grid search for optimal business taxes                                                                                     |
+| `run_all_results.jl`          | Driver for all results in the paper                                                                                                 |
+| `SecondOrderApproximation.jl` | Second-order transition approximation: (t,k) interaction terms by nested-dual automatic differentiation, with discrete choice       |
+| `FirstOrderApproximation.jl`  | First-order transition approximation: z-variable formulation with discrete choice (method documented in `ApproximationChanges.tex`) |
+| `ZerothOrderApproximation.jl` | Zeroth-order objects: PCHIP interpolation operators, pre-choice distribution, discrete-choice maps                                  |
+| `PCHIP.jl`                    | PCHIP interpolation matrices, factored transition matrices, threading helpers                                                       |
+
+
+
 
 ## How to Run
+
+
 
 ### 1. Install Dependencies
 
@@ -44,17 +52,23 @@ Pkg.activate(".")
 Pkg.instantiate()
 ```
 
+
+
 ### 2. Compute Steady State
 
 ```julia
 include("OCModelEGM_driver.jl")
 ```
 
+
+
 ### 3. Simulate Transition
 
 ```julia
 include("run_all_transition.jl")
 ```
+
+
 
 ### 4. Compute Optimal Tax
 
@@ -78,3 +92,4 @@ The code produces several CSV files containing steady-state moments, transition 
 If you use this code, please cite:
 
 > Bhandari, A., Evans, D., & McGrattan, E. (2025). *Approximating Transition Dynamics with Discrete Choice*. JPE Macro, Special Issue on Economic Dynamics, Uncertainty, and Computation.
+
