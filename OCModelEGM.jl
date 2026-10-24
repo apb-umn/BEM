@@ -1862,7 +1862,9 @@ function updatecutoffs!(OCM::OCModel)
 end
 
 
-function forward!(OCM,ω,ωn,r,tr,τb, wf,bf)
+function forward!(OCM,ω,ωn,r,tr,τb, wf,bf, wfn=wf, bfn=bf)
+    # wf,bf: period-t policies (savings transition); wfn,bfn: period-(t+1) policies,
+    # whose values determine the occupational split of the period-(t+1) distribution
 
     @unpack Nθ,πθ,lθ,Ia,alθ,δ,Θ̄,α,τp,τc,τw,γ,σ_ε = OCM
 
@@ -1873,8 +1875,8 @@ function forward!(OCM,ω,ωn,r,tr,τb, wf,bf)
     cw     = hcat([wf.c[s](ah) for s in 1:Nθ]...)
     cb     = hcat([bf.c[s](ah) for s in 1:Nθ]...)
     πb     = hcat([bf.π[s](ah) for s in 1:Nθ]...)
-    Vw     = hcat([wf.v[s](ah) for s in 1:Nθ]...)
-    Vb     = hcat([bf.v[s](ah) for s in 1:Nθ]...)
+    Vw     = hcat([wfn.v[s](ah) for s in 1:Nθ]...)
+    Vb     = hcat([bfn.v[s](ah) for s in 1:Nθ]...)
     p      = probw.(Vb.-Vw,σ_ε)
 
     anw    = ((1+r) .* ah .+ (1-τw)*w.*exp.(lθ[:,2]') .- (1+τc) .*cw .+tr) ./(1+γ)
@@ -1952,6 +1954,7 @@ function policy_path(OCM,rT,trT,τbT)
         OCM.tr     = trT[t]
         OCM.w      = (1-α)*Θ̄*((rT[t]/(1-τp)+δ)/(Θ̄*α))^(α/(α-1))
         OCM.τb    = τbT[t]
+        setup_egi!(OCM)   # EGM inverse spline depends on (r, w, τb): rebuild along the path
 
         cf_w,af_w,λf_w = policyw(OCM)
         cf_b,af_b,kf,nf,yf,πf,λf_b = policyb(OCM)
@@ -2016,7 +2019,7 @@ function residual_tr!(x0,OCMold,OCMnew,τbT)
     adst    = hcat([alθ[:,1];alθ[:,1]])
     for t in 1:T
 
-        @views forward!(OCMnew,ωT[:,t],ωT[:,t+1],rT[t],trT[t],τbT[t],wfT[t],bfT[t])
+        @views forward!(OCMnew,ωT[:,t],ωT[:,t+1],rT[t],trT[t],τbT[t],wfT[t],bfT[t],wfT[min(t+1,T)],bfT[min(t+1,T)])
 
         nb      = hcat([bfT[t].n[s](ah) for s in 1:Nθ]...)
         kb      = hcat([bfT[t].k[s](ah) for s in 1:Nθ]...)

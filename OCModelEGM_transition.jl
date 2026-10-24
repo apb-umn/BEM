@@ -109,9 +109,10 @@ Aggregate equilibrium conditions. Ensures market clearing, government budget
 balance, and correct pricing in production sectors.
 """
 function G(para::OCModel, Ix, X_, X, Xᵉ, Θ)
-    @unpack α, δ, τw, τp, τd, τc, b, w, γ, r, g, τb, ρ_τ = para
+    @unpack α, δ, τw, τp, τd, τc, b, γ, g, τb, ρ_τ = para
     Ia, Iv, In, Ik, Iyb, Inb, Ic, Iprofit, Ib, _ = Ix   # xlab order (a, v first; Iλ unused)
     R, W, Tr, Frac_b, V, A, C,Taub = X
+    w, r = W, R - 1                                     # current-period prices (not the steady state's)
     TFP = Θ[1]
     A_ = X_[1]
     Taub_=X_[2]

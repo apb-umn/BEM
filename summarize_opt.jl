@@ -145,8 +145,8 @@ function build_results_csv(; dir=".", outfile="Results.csv")
     # Input files and order (corresponding to Rows 1–5)
     rows = [
         ("Baseline",             "moments_comparison_base.csv"),
-        ("Tighter collateral",   "moments_comparison_highchi.csv"),
-        ("Looser collateral",    "moments_comparison_lowchi.csv"),
+        ("Tighter collateral",   "moments_comparison_lowchi.csv"),    # χ = 1.05
+        ("Looser collateral",    "moments_comparison_highchi.csv"),   # χ = 2
         ("Higher tax elasticity","moments_comparison_elasticity.csv"),
         ("Higher income risk",   "moments_comparison_highrisk.csv"),
     ]
