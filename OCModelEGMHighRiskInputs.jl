@@ -263,21 +263,24 @@ function export_parameters_for_paper(model::OCModel, filepath::String)
         "RelRiskAver", "DiscFactor", "Growth",
         "PBcapshr", "PBlabshr", "CCTFP", "CCcapshr", "CCdepr",
         "Alowerbnd", "Maxleverage", "Defspend", "Debt",
-        "TaxWage", "TaxPBinc", "TaxCCinc", "TaxCons", "RhoTau"
+        "TaxWage", "TaxPBinc", "TaxCCinc", "TaxCons", "RhoTau",
+        "Noise", "Chi"
     ]
 
     expressions = [
         "mu", "beta", "gamma",
         "phi", "nu", "Theta", "alpha", "delta",
         "amin", "chiminus", "G", "B",
-        "tauw", "taub", "taup", "tauc", "rhotau"
+        "tauw", "taub", "taup", "tauc", "rhotau",
+        "sigmaeps", "chi"
     ]
 
     values = [
         model.σ, model.βo, model.γ,
         model.α_b, model.ν, model.Θ̄, model.α, model.δ,
         model.a̲, model.χ - 1.0, model.g, model.b,
-        model.τw, model.τb, model.τp, model.τc, model.ρ_τ
+        model.τw, model.τb, model.τp, model.τc, model.ρ_τ,
+        model.σ_ε, model.χ
     ]
 
     nrows = length(values)

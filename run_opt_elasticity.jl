@@ -17,7 +17,8 @@ include("OCModelEGM_opttaxmpi.jl")
 filenamesuffix="elasticity"
 
 # Define your parameter grid
-τb_vals = collect(range(0.21, stop=0.7, length=36))
+# (same spacing as the other grids, but stops at 0.602: the new steady state fails to solve for τb ≥ 0.63 and 0.616 is unreliable)
+τb_vals = collect(range(0.21, stop=0.602, length=29))
 ρ_τ_vals = [0.0]
 
 println("Setting up old steady state (takes a few minutes) on master node...")

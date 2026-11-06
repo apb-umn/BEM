@@ -87,6 +87,14 @@ include("make_data_for_draft.jl")
 
 The code produces several CSV files containing steady-state moments, transition paths for a given reform, and a summary of welfare gains for a grid of business tax rates.
 
+### 6. Compare EGM and Grid-Search Policy Functions
+
+```julia
+include("OCModelEGM_driver_grid.jl")
+```
+
+This produces `grid_egm_policy_workers.csv` and `grid_egm_policy_business.csv`, used for the appendix figure comparing EGM and grid-search policy functions.
+
 ## Citation
 
 If you use this code, please cite:
